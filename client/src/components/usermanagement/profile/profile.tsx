@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Avatar, Menu, MenuItem, IconButton } from '@mui/material';
-import styles from './login.module.css';
+// import styles from './login.module.css';
 
 export default function LoginProfile() {
   //*create state for menu visibility
@@ -22,15 +22,13 @@ export default function LoginProfile() {
         <Avatar alt="userAvatar" src="" />
       </IconButton>
       {/*prettier-ignore*/}
+      {/* <div className={styles.profileContainer}> */}
       <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-          <MenuItem onClick={handleClose} className={styles.profile}>
-            Profile</MenuItem>
-          <MenuItem onClick={handleClose} className={styles.settings}>
-            Settings</MenuItem>
-          <MenuItem onClick={handleClose} className={styles.history}>
-            History</MenuItem>
-          <MenuItem onClick={handleClose} className={styles.logout}>
-            Logout</MenuItem>
+        <MenuItem onClick={handleClose}>Profile</MenuItem>
+        <MenuItem onClick={handleClose}>Settings</MenuItem>
+        <MenuItem onClick={handleClose}>History</MenuItem>
+        <MenuItem onClick={handleClose}>Logout</MenuItem>
+        {/* </div> */}
       </Menu>
     </>
   );
