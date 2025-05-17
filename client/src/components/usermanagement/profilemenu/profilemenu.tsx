@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Avatar, Menu, MenuItem, IconButton } from '@mui/material';
+import logo from '../../../assets/profile.jpg';
 // import styles from './login.module.css';
 
 export default function LoginProfile() {
@@ -19,7 +20,7 @@ export default function LoginProfile() {
   return (
     <>
       <IconButton onClick={handleClick}>
-        <Avatar alt="userAvatar" src="" />
+        <Avatar alt="userAvatar" src={logo} />
       </IconButton>
       {/*prettier-ignore*/}
       {/* <div className={styles.profileContainer}> */}
