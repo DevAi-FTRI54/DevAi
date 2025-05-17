@@ -49,6 +49,9 @@ const FAQ: React.FC = () => {
 
   return (
     <div>
+      <div>
+        <h3>Frequently Asked Questions</h3>
+      </div>
       <Accordion expanded={expanded === 'panel1'} onChange={handleChange('panel1')}>
         <AccordionSummary aria-controls="panel1d-content" id="panel1d-header">
           <Typography component="span">How can I connect to MongoDB's Database</Typography>
