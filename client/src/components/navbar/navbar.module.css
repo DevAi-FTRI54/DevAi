@@ -1,4 +1,4 @@
-.profile,
+/* .profile,
 .nav {
   position: fixed;
   top: 0;
@@ -38,4 +38,12 @@
   color: #c86c4c;
   font-weight: bold;
   border-bottom: 2px dotted #5e767a;
+} */
+
+.NaveBarContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 1100;
 }
