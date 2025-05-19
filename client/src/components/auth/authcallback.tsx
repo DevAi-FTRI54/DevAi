@@ -9,6 +9,7 @@ const AuthCallback: React.FC = () => {
     const completeAuth = async () => {
       const res = await fetch('import.meta.env.VITE_AUTHCOMPLETE');
 
+      //* redirect to /install to install the github app
       if (res.ok) {
         navigate('/install');
       }
