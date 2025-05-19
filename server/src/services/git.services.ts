@@ -1,15 +1,11 @@
-import {
-  simpleGit,
-  SimpleGit,
-  CleanOptions,
-  SimpleGitOptions,
-} from 'simple-git';
+import { simpleGit } from 'simple-git';
 import path from 'path';
 import fs from 'fs/promises';
 
 // https://www.npmjs.com/package/simple-git
 // More on SHA-1: https://graphite.dev/guides/git-hash
 export async function cloneRepo(url: string, sha = 'HEAD') {
+  // Grab just the repo name
   const repoName = url
     .split('/')
     .pop()!

@@ -1,15 +1,21 @@
-import express from 'express';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
+import { Document } from '@langchain/core/documents';
 
-/**
- * - Read LangChain article on LangChain
- * ---> https://js.langchain.com/docs/tutorials/rag/
- * ---> https://js.langchain.com/docs/tutorials/qa_chat_history/
- * - Read ts-morph
- * ---> https://www.npmjs.com/package/ts-morph
- * - Create one Project instance and reuse it
- * - Pass skipFileDependencyResolution: true (skip node modules)
- * - Chunk at function / class granularity
- * - Grab the text via getFullText() and store {startLine, endLine}
- * - Strip imports / exports (optional)
- * - No type-checking on MVP (Calling project.getTypeChecker() is cool—but 10-20× slower; skip until v2.)
- */
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 2000,
+  chunkOverlap: 400,
+});
+
+export async function chunkDocuments(docs: Document[]): Promise<Document[]> {
+  const bigDocs: Document[] = [];
+  const smallDocs: Document[] = [];
+
+  for (const doc of docs) {
+    if (doc.pageContent.length > 6000) {
+      const subDocs = await splitter.splitDocuments([doc]);
+      bigDocs.push(...subDocs);
+    } else smallDocs.push(doc);
+  }
+
+  return [...smallDocs, ...bigDocs];
+}
