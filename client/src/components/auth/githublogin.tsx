@@ -2,7 +2,7 @@ import React from 'react';
 
 const GitHubLogin: React.FC = () => {
   const handleLogin = () => {
-    window.location.href = 'http://localhost:4000/api/auth/github';
+    window.location.href = 'GITHUBAUTHREQ';
   };
 
   return (
