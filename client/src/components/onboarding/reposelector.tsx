@@ -19,7 +19,6 @@ const RepoSelector: React.FC = () => {
   const handleSelect = async () => {
     try {
       const res = await fetch('import.meta.env.VITE_GITHUB_INDEX', {
-        // <-- Replace with actual endpoint like /api/github/index
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ repo: selected }),
