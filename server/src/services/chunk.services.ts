@@ -11,8 +11,9 @@ export async function chunkDocuments(docs: Document[]): Promise<Document[]> {
   const smallDocs: Document[] = [];
 
   for (const doc of docs) {
+    // 6000 tokens ~200 lines of code
     if (doc.pageContent.length > 6000) {
-      const subDocs = await splitter.splitDocuments([doc]);
+      const subDocs = await splitter.splitDocuments([doc]); // <- How is it going to be split?
       bigDocs.push(...subDocs);
     } else smallDocs.push(doc);
   }
