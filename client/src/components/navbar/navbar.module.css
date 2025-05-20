@@ -1,0 +1,49 @@
+/* .profile,
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #5e767a;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 2rem;
+}
+
+.navRight ul {
+  display: flex;
+  gap: 1.5rem;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navRight li {
+  margin: 0;
+}
+
+.nav a {
+  text-decoration: none;
+  color: rgb(247, 243, 243);
+  padding: 0.5em 1em;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.nav a:hover,
+.nav a.active {
+  color: #c86c4c;
+  font-weight: bold;
+  border-bottom: 2px dotted #5e767a;
+} */
+
+.NaveBarContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 1100;
+}
