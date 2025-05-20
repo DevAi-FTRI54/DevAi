@@ -1,4 +1,4 @@
-import expres, { Request, Response } from 'express';
+import express, { Request, Response } from 'express';
 import { cloneRepo } from '../services/git.services.js';
 
 // Local testing for GitHub repo indexing
