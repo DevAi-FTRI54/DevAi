@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import styles from './chatinput.module.css';
 
 //* Typescript declaration:
-interface QueryInputProps {
-  setAnswer: (answer: string) => void;
+interface ChatInputProps {
+  setAnswer: (answer: string, userPrompt: string) => void;
 }
 
 //* UX function for expanding text box with context
@@ -13,7 +13,7 @@ const autoGrow = (event: React.FormEvent<HTMLTextAreaElement>) => {
   textarea.style.height = `${textarea.scrollHeight}px`;
 };
 
-const ChatInput: React.FC<QueryInputProps> = ({ setAnswer }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
   //* setting up the states
   const [promptText, setPromptText] = useState('');
   const [promptType, setPromptType] = useState<'default' | 'Find' | 'Bugs' | 'Debug' | 'WalkThrough' | 'Services'>(
@@ -26,7 +26,7 @@ const ChatInput: React.FC<QueryInputProps> = ({ setAnswer }) => {
   //! check with Marek if this is necessary.
   //* part of session needed for the document
   useEffect(() => {
-    const storedSessionID = localStorage.getITem('documentSessionId');
+    const storedSessionID = localStorage.getItem('documentSessionId');
     if (storedSessionID) {
       setSessionId(storedSessionID);
     }
@@ -67,7 +67,7 @@ const ChatInput: React.FC<QueryInputProps> = ({ setAnswer }) => {
       }
       const data = await response.json();
       console.log('Response ffrom backend:', data);
-      setAnswer(data.answer);
+      setAnswer(data.answer, promptText);
     } catch (err) {
       if (err instanceof Error) setError(err.message || 'Something went wrong');
     } finally {
