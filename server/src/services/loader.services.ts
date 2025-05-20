@@ -11,17 +11,9 @@ import fs from 'fs/promises';
 import path from 'path';
 
 /**
- * - Read LangChain article on LangChain
- * ---> https://js.langchain.com/docs/tutorials/rag/
- * ---> https://js.langchain.com/docs/tutorials/qa_chat_history/
- * - Read ts-morph
- * ---> https://www.npmjs.com/package/ts-morph
- * - [done] Create one Project instance and reuse it
- * - [done] Pass skipFileDependencyResolution: true (skip node modules)
- * - [done] Grab the text via getFullText() and store {startLine, endLine}
- * - [done] Strip imports / exports (optional)
- * - [done] No type-checking on MVP (Calling project.getTypeChecker() is cool—but 10-20× slower; skip until v2.)
- * - Chunk at function / class granularity
+ * https://js.langchain.com/docs/tutorials/rag/
+ * https://js.langchain.com/docs/tutorials/qa_chat_history/
+ * https://www.npmjs.com/package/ts-morph
  */
 
 /* Why we're using a class: https://v03.api.js.langchain.com/classes/langchain.document_loaders_base.BaseDocumentLoader.html
@@ -36,7 +28,7 @@ import path from 'path';
 
 export class TsmorphCodeLoader extends BaseDocumentLoader {
   // super() initializes the parent BaseDocumentLoader
-  constructor(private repoPath: string) {
+  constructor(private repoPath: string, private repoId: string) {
     super();
   }
 
@@ -48,8 +40,8 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
     // STEP 2: Create new instance of ts-morh project
     const project = new Project({
       tsConfigFilePath: tsConfigFilePath,
-      skipFileDependencyResolution: true,
-      skipAddingFilesFromTsConfig: true, // Skip node modules
+      skipFileDependencyResolution: true, // skips imports & exports
+      skipAddingFilesFromTsConfig: true, // skips node modules
     });
 
     // Add all source files to the project
@@ -79,6 +71,7 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
           new Document({
             pageContent: node.getFullText(),
             metadata: {
+              repoId: this.repoId,
               filePath: sourceFile.getFilePath(),
               declarationName: node.getName() ?? '<anonymous>',
               startLine: start,
