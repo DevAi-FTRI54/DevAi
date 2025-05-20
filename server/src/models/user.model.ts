@@ -15,13 +15,10 @@ const userSchema = new mongoose.Schema<IUser>( //uses created typing from line 4
     email: { type: String, required: true, unique: true },
     passwordHash: { type: String, required: true },
     queries: [{ type: Schema.Types.ObjectId, ref: 'Query' }],
+    //Array of documents of type ObjectID, each refers to a doc in Query collection;
   },
-  { timestamps: true }
+  { timestamps: true } //created at + updated at, does both;
 );
-
-const myURI = 'mongodb://localhost:27017';
-
-const URI = process.env.MONGO_URI || myURI;
 
 const User = mongoose.model('User', userSchema);
 

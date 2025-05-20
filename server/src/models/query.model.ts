@@ -3,9 +3,9 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IQuery extends Document {
-  user: mongoose.Types.ObjectId; // Reference to User
-  question: string; // What the user asked
-  createdAt: Date; // When it was asked
+  user: mongoose.Types.ObjectId; //user type is objectID
+  question: string; // question asked
+  createdAt: Date;
   response?: string; // Optional AI response or result
   tags?: string[]; // Optional: for categorization
 }
