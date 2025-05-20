@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "client": "cd client && npm run dev",
-    "server": "cd server && npm run server",
+    "server": "cd server/src && npm run server",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "repository": {
@@ -22,7 +22,9 @@
   },
   "homepage": "https://github.com/champions-cs54/osp54#readme",
   "dependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^15.6.1"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
