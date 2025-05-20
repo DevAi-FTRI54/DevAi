@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "ngrok": "^5.0.0-beta.2"
+    "ngrok": "^5.0.0-beta.2",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.18",
