@@ -11,12 +11,22 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@langchain/core": "^0.3.56",
+    "@langchain/textsplitters": "^0.1.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "langchain": "^0.3.26",
     "mongoose": "^8.15.0",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "simple-git": "^3.27.0"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "ngrok": "^5.0.0-beta.2"
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.18",
+    "concurrently": "^9.1.2",
+    "ts-morph": "^25.0.1"
   }
 }
