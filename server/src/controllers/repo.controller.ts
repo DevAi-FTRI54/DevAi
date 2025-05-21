@@ -1,8 +1,9 @@
 import express, { Request, Response } from 'express';
 import { cloneRepo } from '../services/git.services.js';
+import { indexQueue } from '../jobs/indexRepo.jobs.js';
 
 // Local testing for GitHub repo indexing
-export const indexRepo = (req: Request, res: Response) => {
+export const indexRepoOld = (req: Request, res: Response) => {
   const { repoUrl, sha = 'HEAD' } = req.body;
 
   cloneRepo(repoUrl, sha)
@@ -10,4 +11,11 @@ export const indexRepo = (req: Request, res: Response) => {
     .catch((err) => console.error('repo clone failed:', err));
 
   res.json({ status: 'indexing-started' });
+};
+
+// Using BullMQ Queue & Worker
+export const indexRepo = async (req: Request, res: Response) => {
+  const { repoUrl, sha = 'HEAD' } = req.body;
+  const job = await indexQueue.add('index', { repoUrl, sha });
+  res.json({ jobId: job.id });
 };
