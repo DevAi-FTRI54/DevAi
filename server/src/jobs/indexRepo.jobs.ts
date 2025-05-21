@@ -1,13 +1,61 @@
+import { Worker, Queue, Job } from 'bullmq';
+import { cloneRepo } from '../services/git.services';
+import { TsmorphCodeLoader } from '../services/loader.services';
+import { chunkDocuments } from '../services/chunk.services';
+import { upsert } from '../services/vector.services';
+
 /**
- * indexRepo =>
+ * ## Resources =>
+ * https://docs.bullmq.io/guide/telemetry/running-a-simple-example
+ * https://betterstack.com/community/guides/scaling-nodejs/bullmq-scheduled-tasks/
+ *
+ * ## indexRepo =>
  * 1/ Clone repo [done]
  * 2/ Load repo (ts-morph) [done]
  * 3/ Chunk it down - RecursiveChunkSplitter [done]
  * 4/ Turn it into vector embeddings (LangChain) [done]
  * 5/ Upsert [done]
  *
- * queue =>
+ * ## queue =>
  * 6/ Retrieve & rerank [tue]
  * 7/ Run eval scripts (LangSmith) [tue]
  * 8/ Log costs/latency [tue]
  */
+
+const redisOptions = {
+  host: process.env.REDIS_HOST ?? 'localhost',
+  port: Number(process.env.REDIS_PORT) || 6379,
+};
+
+export const indexQueue = new Queue('index', { connection: redisOptions });
+
+// <------ Worker ------------------------------------>
+const worker = new Worker(
+  'index',
+  async (job: Job<{ repoUrl: string; sha: string }>) => {
+    const { repoUrl, sha } = job.data;
+
+    const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
+    await job.updateProgress(10);
+
+    const loader = new TsmorphCodeLoader(localRepoPath, repoId);
+    const bigDocs = await loader.load();
+    await job.updateProgress(30);
+
+    const chunkedDocs = await chunkDocuments(bigDocs);
+    const total = chunkedDocs.length;
+
+    for (let i = 0; i < total; i++) {
+      await upsert([chunkedDocs[i]]);
+      const percentage = 45 + Math.floor(((i + 1) / total) * 55);
+      await job.updateProgress(percentage);
+    }
+  },
+  { connection: redisOptions }
+)
+  .on('completed', (job) => {
+    console.log(`${job.id} has completed!`);
+  })
+  .on('failed', (job, err) => {
+    console.log(`${job!.id} has failed with ${err.message}`);
+  });

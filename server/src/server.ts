@@ -16,7 +16,7 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+  .catch((err: any) => console.error('MongoDB connection error:', err));
 
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());

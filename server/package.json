@@ -14,6 +14,7 @@
     "@langchain/core": "^0.3.56",
     "@langchain/qdrant": "^0.1.2",
     "@langchain/textsplitters": "^0.1.0",
+    "bullmq": "^5.52.3",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "langchain": "^0.3.26",
@@ -22,12 +23,11 @@
     "simple-git": "^3.27.0"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
-    "ngrok": "^5.0.0-beta.2",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.18",
     "concurrently": "^9.1.2",
+    "ngrok": "^5.0.0-beta.2",
     "ts-morph": "^25.0.1"
   }
 }
