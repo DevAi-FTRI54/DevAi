@@ -1,5 +1,5 @@
 import express from 'express';
-import { indexRepo } from '../controllers/repo.controller.js';
+import { indexRepo } from './index.controller.js';
 
 const router = express.Router();
 router.post('/ingest', indexRepo, (_req, res) => {

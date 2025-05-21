@@ -2,8 +2,8 @@ import 'dotenv/config';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { QdrantVectorStore } from '@langchain/qdrant';
-import { TsmorphCodeLoader } from './loader.services';
-import { chunkDocuments } from './chunk.services';
+import { TsmorphCodeLoader } from './loader.service.js';
+import { chunkDocuments } from './chunk.service.js';
 import type { Document } from '@langchain/core/documents';
 
 // Why Qdrant over Pinecone - https://qdrant.tech/blog/comparing-qdrant-vs-pinecone-vector-databases
@@ -16,7 +16,7 @@ const embeddings = new OpenAIEmbeddings({
   model: 'text-embedding-3-large',
 });
 
-// <------ A Single Collection For All Users ------>
+// --- A Single Collection For All Users ------------------------------
 const COLLECTION = 'devai_collection_01';
 
 // Supporting documentation: https://js.langchain.com/docs/integrations/retrievers/self_query/qdrant/
