@@ -2,8 +2,8 @@ import 'dotenv/config';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { QdrantVectorStore } from '@langchain/qdrant';
-import { TsmorphCodeLoader } from './loader.services';
-import { chunkDocuments } from './chunk.services';
+import { TsmorphCodeLoader } from './loader.service';
+import { chunkDocuments } from './chunk.service';
 import type { Document } from '@langchain/core/documents';
 
 // Why Qdrant over Pinecone - https://qdrant.tech/blog/comparing-qdrant-vs-pinecone-vector-databases

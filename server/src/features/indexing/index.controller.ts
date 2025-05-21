@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { cloneRepo } from '../services/git.services.js';
-import { indexQueue } from '../jobs/indexRepo.jobs.js';
+import { cloneRepo } from './git.service.js';
+import { indexQueue } from './index.job.js';
 
 // Local testing for GitHub repo indexing
 export const indexRepoOld = (req: Request, res: Response) => {

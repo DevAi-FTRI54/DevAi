@@ -1,7 +1,7 @@
 // Receives queries from the client and invokes RAG processing logic.
 import { Request, Response } from 'express';
-import Query from '../models/query.model';
-import User from '../models/user.model';
+import Query from '../../models/query.model';
+import User from '../../models/user.model';
 
 export const createQuery = async (req: Request, res: Response) => {
   try {

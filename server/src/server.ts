@@ -1,5 +1,5 @@
 import express from 'express';
-import authController from './auth/auth.controller.js';
+import authController from './features/auth/auth.controller.js';
 
 const app = express();
 const port = 3333;

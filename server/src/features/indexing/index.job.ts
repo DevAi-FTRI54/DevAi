@@ -1,8 +1,8 @@
 import { Worker, Queue, Job } from 'bullmq';
-import { cloneRepo } from '../services/git.services';
-import { TsmorphCodeLoader } from '../services/loader.services';
-import { chunkDocuments } from '../services/chunk.services';
-import { upsert } from '../services/vector.services';
+import { cloneRepo } from './git.service';
+import { TsmorphCodeLoader } from './loader.service';
+import { chunkDocuments } from './chunk.service';
+import { upsert } from './vector.service';
 
 /**
  * ## Resources =>

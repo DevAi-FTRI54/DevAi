@@ -2,7 +2,7 @@ import express, { ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import { ServerError } from './types/types.js';
-import repoRoute from './routes/repoRoute.js';
+import repoRoute from './features/indexing/index.routes.js';
 
 // import types
 // import controllers
