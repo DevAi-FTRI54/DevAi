@@ -1,8 +1,8 @@
 import { Worker, Queue, Job } from 'bullmq';
-import { cloneRepo } from './git.service';
-import { TsmorphCodeLoader } from './loader.service';
-import { chunkDocuments } from './chunk.service';
-import { upsert } from './vector.service';
+import { cloneRepo } from './git.service.js';
+import { TsmorphCodeLoader } from './loader.service.js';
+import { chunkDocuments } from './chunk.service.js';
+import { upsert } from './vector.service.js';
 
 /**
  * ## Resources =>
@@ -29,7 +29,7 @@ const redisOptions = {
 
 export const indexQueue = new Queue('index', { connection: redisOptions });
 
-// <------ Worker ------------------------------------>
+// --- Worker ------------------------------------------------------------
 const worker = new Worker(
   'index',
   async (job: Job<{ repoUrl: string; sha: string }>) => {
