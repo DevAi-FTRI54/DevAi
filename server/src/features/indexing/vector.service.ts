@@ -1,4 +1,7 @@
-import 'dotenv/config';
+// import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { QdrantVectorStore } from '@langchain/qdrant';
@@ -7,6 +10,13 @@ import { chunkDocuments } from './chunk.service.js';
 import type { Document } from '@langchain/core/documents';
 import { MultiQueryRetriever } from 'langchain/retrievers/multi_query';
 import { ChatOpenAI } from '@langchain/openai';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../config/.env'),
+});
 
 /**
  * Progress bar - Frontend immediately gets { jobId } and polls /jobs/:id/progress

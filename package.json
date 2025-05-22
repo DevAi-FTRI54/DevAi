@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "client": "cd client && npm run dev",
-    "server": "cd server/src && npm run server",
+    "server": "cd server && nodemon --exec node --loader ts-node/esm src/server.ts",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "repository": {
@@ -16,7 +16,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/champions-cs54/osp54/issues"
   },
