@@ -3,14 +3,36 @@ import Query from '../../models/query.model.js';
 import User from '../../models/user.model.js';
 import { Request, Response, NextFunction } from 'express';
 import { answerQuestion } from './rag.service.js';
+import OpenAI, { OpenAIError } from 'openai';
+import { QdrantVectorStore } from '@langchain/qdrant';
 
-export const ask = async (req: Request, res: Response, next: NextFunction) => {
-  const { repoUrl, question } = req.body;
+export const askController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { repoUrl, question } = req.body;
+    const response = await answerQuestion(repoUrl, question);
+    res.json(response);
+  } catch (err: any) {
+    console.log('--- Error inside askController ------------');
+    console.error(err);
 
-  const result = await answerQuestion(repoUrl, question);
-  // store in MongoDB
+    if (err instanceof OpenAIError) {
+      return res
+        .status(502)
+        .json({ message: 'askController: LLM failed', detail: err.message });
+    }
+    if (err.message === 'VECTOR_DB_DOWN') {
+      return res
+        .status(503)
+        .json({ msg: 'askController: Vector store unavailable' });
+    }
 
-  res.json(result);
+    res.status(500).json({ message: 'askController: Unexpected server error' });
+  }
+
   return next();
 };
 

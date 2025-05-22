@@ -64,12 +64,13 @@ app.post('/api/query', (req, res) => {
 
 # SAT/SUN
 
-10. Figure out how to print out on the frontend the progress bar (/jobs/id/:progress)
-11. Start learning Python and start learning about LLMs and fine-tuning
-12. Implement sending cost tokens etc. to the fron-tend
+10. Start learning Python and start learning about LLMs and fine-tuning
+11. Implement sending cost tokens etc. to the fron-tend
+12. Fine-tuning
 
 # ERIC & KYLE
 
-13. Consider implementing sessions so that we don't have to pass repoUrl each time
-14. Adjust MongoDB schema (reflecting our z.object)
-15. Store the response/answer in our MongoDB
+13. Figure out how to print out on the frontend the progress bar (/jobs/id/:progress)
+14. Consider implementing sessions so that we don't have to pass repoUrl each time
+15. Adjust MongoDB schema (reflecting our z.object)
+16. Store the response/answer in our MongoDB
