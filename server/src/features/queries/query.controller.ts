@@ -1,15 +1,17 @@
 // Receives queries from the client and invokes RAG processing logic.
 import Query from '../../models/query.model.js';
 import User from '../../models/user.model.js';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { answerQuestion } from './rag.service.js';
 
-export const ask = async (req: Request, res: Response) => {
-  const { repoId, question } = req.body;
-  const result = await answerQuestion(repoId, question);
+export const ask = async (req: Request, res: Response, next: NextFunction) => {
+  const { repoUrl, question } = req.body;
+
+  const result = await answerQuestion(repoUrl, question);
   // store in MongoDB
 
   res.json(result);
+  return next();
 };
 
 // export const createQuery = async (req: Request, res: Response) => {
