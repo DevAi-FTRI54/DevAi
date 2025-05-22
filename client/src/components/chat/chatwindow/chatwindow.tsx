@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import ChatMessage from '../chatmessage/chatmessages.tsx';
 import styles from './chatwindow.module.css';
 
 //* Used to define the message type
@@ -35,9 +36,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
         )}
         {/* * Map over messages and render each as a chat bubble */}
         {messages.map((msg, idx) => (
-          <div key={idx} className={msg.role === 'user' ? styles.userMessage : styles.assistantMessage}>
-            {msg.content}
-          </div>
+          <ChatMessage key={idx} message={msg} />
         ))}
         {/* * Dummy div for scroll anchor */}
         <div ref={messagesEndRef} />

@@ -8,7 +8,7 @@ const RepoSelector: React.FC = () => {
   //* useEffect runs once on component mount to fetch the list of available repositories
   useEffect(() => {
     const fetchRepos = async () => {
-      const res = await fetch(import.meta.env.VITE_GITHUB_REPOS);
+      const res = await fetch('http://localhost:4000/api/github/repos');
       const data = await res.json();
       setRepos(data); // used to save the fetched repos to state
     };
@@ -18,7 +18,7 @@ const RepoSelector: React.FC = () => {
   //* Sends a POST request to the backend to start indexing the selected repository
   const handleSelect = async () => {
     try {
-      const res = await fetch('import.meta.env.VITE_GITHUB_INDEX', {
+      const res = await fetch('http://localhost:4000/api/github/index', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ repo: selected }),
