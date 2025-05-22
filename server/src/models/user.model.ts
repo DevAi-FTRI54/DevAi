@@ -11,8 +11,7 @@ export interface IUser extends Document {
   passwordHash: string;
   createdAt: Date;
   updatedAt: Date;
-  queries: mongoose.Types.ObjectId[]; //reference to Query documents
-  // queries: Types.Objects[]
+  //queries: mongoose.Types.ObjectId[]; //reference to Query documents
 }
 
 const userSchema = new mongoose.Schema<IUser>( //uses created typing from line 4
