@@ -1,0 +1,22 @@
+.textBox {
+  width: 100%;
+  min-height: 48px;
+  resize: vertical;
+  box-sizing: border-box;
+  font-size: 1rem;
+  padding: 12px;
+  margin: 15px;
+}
+
+.btns {
+  display: flex;
+  gap: 12px;
+}
+
+.button {
+  background-color: rgb(26, 83, 129);
+}
+
+.buttonContainer {
+  padding: 5px;
+}
