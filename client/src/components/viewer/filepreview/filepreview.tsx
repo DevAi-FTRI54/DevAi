@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { coy } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 // Types for GitHub API
 interface GithubFile {
@@ -76,6 +78,18 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl }) => {
     return <div>Loading...</div>;
   }
 
+  function getLanguage(filename: string): string {
+    if (filename.endsWith('.js')) return 'javascript';
+    if (filename.endsWith('.jsx')) return 'jsx';
+    if (filename.endsWith('.ts')) return 'typescript';
+    if (filename.endsWith('.tsx')) return 'tsx';
+    if (filename.endsWith('.json')) return 'json';
+    if (filename.endsWith('.css')) return 'css';
+    if (filename.endsWith('.md')) return 'markdown';
+    if (filename.endsWith('.py')) return 'python';
+    return 'text';
+  }
+
   return (
     <div>
       <h2>Repository Files</h2>
@@ -83,7 +97,9 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl }) => {
       {selectedFile && (
         <div>
           <h3>{selectedFile.url}</h3>
-          <pre>{selectedFile.content}</pre>
+          <SyntaxHighlighter language={getLanguage(selectedFile.url)} style={coy}>
+            {selectedFile.content}
+          </SyntaxHighlighter>
         </div>
       )}
     </div>
