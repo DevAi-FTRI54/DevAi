@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 
 // Helper function for generating unique repoId
 
-const generateUnqiueRepoId = (url: string): string =>
+export const generateUnqiueRepoId = (url: string): string =>
   url
     .replace(/(^\w+:|^)\/\//, '')
     .replace(/\.git$/, '')

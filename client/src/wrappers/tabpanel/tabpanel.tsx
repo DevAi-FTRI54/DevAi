@@ -18,9 +18,6 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-function ChatWindow() {
-  return <div>ChatWindow</div>;
-}
 function FilePreview() {
   return <div>File Preview</div>;
 }
@@ -31,12 +28,8 @@ const TabComps: React.FC = () => {
   return (
     <Box>
       <Tabs value={value} onChange={(_, v) => setValue(v)}>
-        <Tab label="Chat" />
         <Tab label="File Preview" />
       </Tabs>
-      <TabPanel value={value} index={0}>
-        <ChatWindow />
-      </TabPanel>
       <TabPanel value={value} index={1}>
         <FilePreview />
       </TabPanel>

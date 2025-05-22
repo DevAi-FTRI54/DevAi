@@ -5,11 +5,26 @@ import { QdrantVectorStore } from '@langchain/qdrant';
 import { TsmorphCodeLoader } from './loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import type { Document } from '@langchain/core/documents';
+import { MultiQueryRetriever } from 'langchain/retrievers/multi_query';
+import { ChatOpenAI } from '@langchain/openai';
+
+/**
+ * Progress bar - Frontend immediately gets { jobId } and polls /jobs/:id/progress
+ */
 
 // Why Qdrant over Pinecone - https://qdrant.tech/blog/comparing-qdrant-vs-pinecone-vector-databases
 const client = new QdrantClient({
   url: process.env.QDRANT_URL!,
   apiKey: process.env.QDRANT_API_KEY,
+});
+
+const llm = new ChatOpenAI({
+  model: 'gpt-4o-mini',
+  temperature: 0,
+  maxTokens: undefined,
+  timeout: undefined,
+  maxRetries: 2,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const embeddings = new OpenAIEmbeddings({
@@ -29,7 +44,9 @@ export async function upsert(docs: Document[]) {
   return vectorStore;
 }
 
-// factory so chat can pull retriever later
+// -- asRetriever ----------------------------------------------------
+// Factory asRetriever so chat can pull retriever later
+// https://js.langchain.com/docs/how_to/vectorstore_retriever/
 export async function createRetriever(repoId: string, k = 8) {
   const store = await QdrantVectorStore.fromExistingCollection(embeddings, {
     client,
@@ -38,8 +55,19 @@ export async function createRetriever(repoId: string, k = 8) {
 
   return store.asRetriever({
     k,
+    searchType: 'mmr',
     filter: {
       must: [{ key: 'repoId', match: { value: repoId } }],
     },
+  });
+}
+
+export async function createCodeRetriever(repoId: string, k = 8) {
+  const baseRetriever = await createRetriever(repoId, k);
+
+  return MultiQueryRetriever.fromLLM({
+    llm,
+    retriever: baseRetriever,
+    queryCount: 3, // Generate multiple search queries from the user's question
   });
 }
