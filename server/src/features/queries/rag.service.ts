@@ -57,11 +57,16 @@ const formatDoc = (d: Document) =>
 // --- answerQuestion function -----------------------------------------------
 export async function answerQuestion(repoUrl: string, question: string) {
   const repoId = generateUnqiueRepoId(repoUrl);
+
+  // const repoExists = await checkRepositoryExists(repoId); // You need to implement this function
+  // if (!repoExists) {
+  //   throw new Error('REPOSITORY_NOT_INDEXED');
+  // }
+
   const retriever = await createCodeRetriever(repoId, 8);
 
   // --- STEP 1: Define Prompt -----------------------------------------------
-  const SYSTEMPROMPT =
-    "You are an expert code assistant that answers user's questions about their codebase.";
+  const SYSTEMPROMPT = "You are an expert code assistant that answers user's questions about their codebase.";
 
   const USERPROMPT = `Use the following pieces of context to answer the question at the end.
     If you don't know the answer, just say that you don't know, don't try to make up an answer.
@@ -184,10 +189,7 @@ export async function answerQuestion(repoUrl: string, question: string) {
     .addEdge('generate', '__end__')
     .compile();
 
-  const result = await workflow.invoke(
-    { question },
-    { runName: 'ask-question', configurable: { repoId } }
-  );
+  const result = await workflow.invoke({ question }, { runName: 'ask-question', configurable: { repoId } });
 
   const traceUrl = (result as any)[RUN_KEY]?.url ?? null; // LLM observability
   const tokens = (result as any)[RUN_KEY]?.totalTokens ?? undefined;
@@ -196,7 +198,7 @@ export async function answerQuestion(repoUrl: string, question: string) {
   // --- STEP 6: Store the Result in MongoDB ---------------------------------
 
   return {
-    ...result,
+    result,
     traceUrl,
     tokens,
     latency,

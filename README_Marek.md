@@ -71,7 +71,12 @@ app.post('/api/query', (req, res) => {
 
 # ERIC & KYLE
 
-13. Figure out how to print out on the frontend the progress bar (/jobs/id/:progress)
-14. Consider implementing sessions so that we don't have to pass repoUrl each time
-15. Adjust MongoDB schema (reflecting our z.object)
-16. Store the response/answer in our MongoDB
+1. Figure out how to get sha on the front-end and pass it to the backend
+2. Eric + Kyle -> fetch repos from GitHub app - http://localhost:4000/api/github/repos
+3. Figure out how to print out on the frontend the progress bar (/jobs/id/:progress)
+
+## BACKLOG
+
+4. Consider implementing sessions so that we don't have to pass repoUrl each time
+5. Adjust MongoDB schema (reflecting our z.object)
+6. Store the response/answer in our MongoDB

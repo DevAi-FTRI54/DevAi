@@ -47,7 +47,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
     setError(null);
 
     try {
-      const response = await fetch('/api/query', {
+      const response = await fetch('http://localhost:4000/api/query/question', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: promptText, type: promptType, sessionId }),

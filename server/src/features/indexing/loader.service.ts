@@ -1,12 +1,7 @@
 import express from 'express';
 import { BaseDocumentLoader } from '@langchain/core/document_loaders/base';
 import { Document } from '@langchain/core/documents';
-import {
-  Project,
-  ScriptTarget,
-  FunctionDeclaration,
-  ClassDeclaration,
-} from 'ts-morph';
+import { Project, ScriptTarget, FunctionDeclaration, ClassDeclaration } from 'ts-morph';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -46,7 +41,10 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
 
     // Add all source files to the project
     // Search recursively in all subdirectories
-    project.addSourceFilesAtPaths(`${this.repoPath}/**/*.{ts,tsx,js,jsx}`);
+    project.addSourceFilesAtPaths([
+      `${this.repoPath}/**/*.{ts,tsx,js,jsx}`,
+      `!${this.repoPath}/**/node_modules/**`, // exclude everything in node_modules
+    ]);
 
     // STEP 3: Load the docs
     /* Document[] - langchain type 

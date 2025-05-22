@@ -36,18 +36,24 @@ const worker = new Worker(
   'index',
   async (job: Job<{ repoUrl: string; sha: string }>) => {
     const { repoUrl, sha } = job.data;
+    // console.log('\n--- job.data ------');
+    // console.log(job.data);
 
     const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
     await job.updateProgress(10);
 
     const loader = new TsmorphCodeLoader(localRepoPath, repoId);
     const bigDocs = await loader.load();
+    console.log('bigDocs', bigDocs);
     await job.updateProgress(30);
 
     const chunkedDocs = await chunkDocuments(bigDocs);
     const total = chunkedDocs.length;
+    console.log('total: ', total);
 
     for (let i = 0; i < total; i++) {
+      // console.log('\n--- chunkedDoc ------');
+      // console.log(chunkedDocs[i]);
       await upsert([chunkedDocs[i]]);
       const percentage = 45 + Math.floor(((i + 1) / total) * 55);
       await job.updateProgress(percentage);
