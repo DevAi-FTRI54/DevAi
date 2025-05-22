@@ -53,9 +53,10 @@ app.post('/api/query', (req, res) => {
 
 1. Test the entire flow
 2. Improve system prompt and user prompt
-3. Implement reranking
+3. Implement reranking [done]
 4. Run eval scripts (LangSmith)
-5. Log costs/latency
+5. Log costs/latency [done]
+6. Handshake BE/FE
 
 # FRI
 
@@ -64,12 +65,13 @@ app.post('/api/query', (req, res) => {
 
 # SAT/SUN
 
-10. Figure out how to print out on the frontend the progress bar (/jobs/id/:progress)
-11. Start learning Python and start learning about LLMs and fine-tuning
-12. Implement sending cost tokens etc. to the fron-tend
+10. Start learning Python and start learning about LLMs and fine-tuning
+11. Implement sending cost tokens etc. to the fron-tend
+12. Fine-tuning
 
 # ERIC & KYLE
 
-13. Consider implementing sessions so that we don't have to pass repoUrl each time
-14. Adjust MongoDB schema (reflecting our z.object)
-15. Store the response/answer in our MongoDB
+13. Figure out how to print out on the frontend the progress bar (/jobs/id/:progress)
+14. Consider implementing sessions so that we don't have to pass repoUrl each time
+15. Adjust MongoDB schema (reflecting our z.object)
+16. Store the response/answer in our MongoDB

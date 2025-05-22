@@ -1,17 +1,35 @@
 // Receives queries from the client and invokes RAG processing logic.
-import Query from '../../models/query.model.js';
-import User from '../../models/user.model.js';
 import { Request, Response, NextFunction } from 'express';
 import { answerQuestion } from './rag.service.js';
+import { OpenAIError } from 'openai';
 
-export const ask = async (req: Request, res: Response, next: NextFunction) => {
-  const { repoUrl, question } = req.body;
+import { QdrantVectorStore } from '@langchain/qdrant';
+import Query from '../../models/query.model.js';
+import User from '../../models/user.model.js';
 
-  const result = await answerQuestion(repoUrl, question);
-  // store in MongoDB
+export const askController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { repoUrl, question } = req.body;
+    const response = await answerQuestion(repoUrl, question);
+    res.json(response);
+  } catch (err: any) {
+    console.log('--- Error inside askController ------------');
+    console.error(err);
 
-  res.json(result);
-  return next();
+    if (err instanceof OpenAIError) {
+      res
+        .status(502)
+        .json({ message: 'askController: LLM failed', detail: err.message });
+    }
+    if (err.message === 'VECTOR_DB_DOWN') {
+      res.status(503).json({ msg: 'askController: Vector store unavailable' });
+    }
+
+    res.status(500).json({ message: 'askController: Unexpected server error' });
+  }
 };
 
 // export const createQuery = async (req: Request, res: Response) => {
