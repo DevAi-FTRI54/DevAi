@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import GitHubLogin from './components/auth/githublogin';
-import NavBar from './components/navbar/navbar';
+import NavBar from './components/navbar/appbar/navbar';
 import './App.css';
 import FAQ from './components/faq/faq';
 import ChatWrap from './wrappers/chatbotpage/chatwrap';

@@ -81,11 +81,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
         {/*prettier-ignore*/}
         <div className={styles.buttonContainer}>
             <div className={styles.btns}>
-              <button onClick={ () => handleQuickPrompt("Find and explain the logic for the following:", 'Find')}>Find & Explain</button>
-              <button onClick={ () => handleQuickPrompt("What are the most common bugs or pitfalls in this repo?", 'Bugs')}>Common Bugs</button>
-              <button onClick={ () => handleQuickPrompt("Where do I start to debug this type of problem?", 'Debug')}>Debug</button>
-              <button onClick={ () => handleQuickPrompt("Walk me through the data flow for ...", 'WalkThrough')}>Walkthrough</button>
-              <button onClick={ () => handleQuickPrompt("List all the third-party services used in this repo", 'Services')}>Services</button>
+              <button className={styles.button} onClick={ () => handleQuickPrompt("Find and explain the logic for the following:", 'Find')}>Find & Explain</button>
+              <button className={styles.button} onClick={ () => handleQuickPrompt("What are the most common bugs or pitfalls in this repo?", 'Bugs')}>Common Bugs</button>
+              <button className={styles.button} onClick={ () => handleQuickPrompt("Where do I start to debug this type of problem?", 'Debug')}>Debug</button>
+              <button className={styles.button} onClick={ () => handleQuickPrompt("Walk me through the data flow for ...", 'WalkThrough')}>Walkthrough</button>
+              <button className={styles.button} onClick={ () => handleQuickPrompt("List all the third-party services used in this repo", 'Services')}>Services</button>
             </div>
          </div>
         <div className={styles.textBoxContainer}>
@@ -98,7 +98,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
             rows={6}
           />
         </div>
-        <button className={styles.btn} onClick={handleSubmit} disabled={loading}>
+        <button className={styles.button} onClick={handleSubmit} disabled={loading}>
           {loading ? 'Submitting...' : 'Submit'}
         </button>
 
