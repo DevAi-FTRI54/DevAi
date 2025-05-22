@@ -16,10 +16,12 @@ import { upsert } from './vector.service.js';
  * 4/ Turn it into vector embeddings (LangChain) [done]
  * 5/ Upsert [done]
  *
- * ## queue =>
- * 6/ Retrieve & rerank [tue]
- * 7/ Run eval scripts (LangSmith) [tue]
- * 8/ Log costs/latency [tue]
+ * ## query =>
+ * 6/ Receive Query from the User
+ * 7/ Retrieve relevant docs
+ * 8/ rerank [wed]
+ * 9/ Run eval scripts (LangSmith) [thu] -> should be easy
+ * 10/ Log costs/latency [thu] -> should be easy
  */
 
 const redisOptions = {

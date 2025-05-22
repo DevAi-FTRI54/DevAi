@@ -7,6 +7,7 @@ import path from 'path';
 // import taskController from './controllers/taskController';
 
 import repoRoutes from './features/indexing/index.routes.js';
+import queryRoutes from './features/queries/query.routes.js';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 // Define routes
 // --- Repo route ------------------------------------------------
 app.use('/api/index', repoRoutes);
+app.use('/api/query', queryRoutes);
 
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
