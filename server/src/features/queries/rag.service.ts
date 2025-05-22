@@ -1,5 +1,6 @@
 // Handles interaction with the RAG service, including context retrieval and LLM querying.
 
+import 'dotenv/config';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { Annotation, StateGraph } from '@langchain/langgraph';
@@ -8,6 +9,7 @@ import { z } from 'zod';
 import { createCodeRetriever } from '../indexing/vector.service.js';
 import { generateUnqiueRepoId } from '../indexing/git.service.js';
 import { CohereRerank } from '@langchain/cohere';
+import { RUN_KEY } from '@langchain/core/outputs';
 
 // --- Structured Output for ChatOpenAI --------------------------------------
 // https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html
@@ -112,10 +114,10 @@ export async function answerQuestion(repoUrl: string, question: string) {
       topN: 5,
     });
 
-    const rerankedDocs = await reranker.rerank(state.context, state.question);
-    const topDocs = rerankedDocs.map((r) => state.context[r.index]);
+    const ranks = await reranker.rerank(state.context, state.question);
+    const topDocs = ranks.map((r: any) => state.context[r.index]);
 
-    return { context: rerankedDocs };
+    return { context: topDocs };
   };
 
   const generate = async (state: typeof WorkingState.State) => {
@@ -132,7 +134,7 @@ export async function answerQuestion(repoUrl: string, question: string) {
     for (const doc of state.context) {
       const nextChunk = formatDoc(doc);
       if (roughTokens(promptBody + nextChunk) > MAX_TOKENS) break;
-      promptBody + nextChunk;
+      promptBody += nextChunk;
     }
     /* Example format:
 
@@ -150,12 +152,12 @@ export async function answerQuestion(repoUrl: string, question: string) {
     // pipe: https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html#pipe
     // Create a new runnable sequence that runs each individual runnable in series, piping the output of one runnable into another runnable or runnable-like.
     const answerChain = promptTemplate.pipe(structuredLlm);
-    const result = await answerChain.invoke({
+    const response = await answerChain.invoke({
       question: state.question,
       context: promptBody,
     });
 
-    return { result };
+    return { response };
   };
 
   // --- STEP 5: Compile & Test the Application ------------------------------
@@ -186,10 +188,19 @@ export async function answerQuestion(repoUrl: string, question: string) {
     { question },
     { runName: 'ask-question', configurable: { repoId } }
   );
-  const traceUrl = result?.__run?.url ?? null; // LLM observability
-  return result;
+
+  const traceUrl = (result as any)[RUN_KEY]?.url ?? null; // LLM observability
+  const tokens = (result as any)[RUN_KEY]?.totalTokens ?? undefined;
+  const latency = (result as any)[RUN_KEY]?.durationMs ?? undefined;
 
   // --- STEP 6: Store the Result in MongoDB ---------------------------------
+
+  return {
+    ...result,
+    traceUrl,
+    tokens,
+    latency,
+  };
 }
 
 // console.log(answerQuestion(repoUrl, question));

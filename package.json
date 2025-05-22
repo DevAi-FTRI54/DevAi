@@ -22,7 +22,9 @@
   },
   "homepage": "https://github.com/champions-cs54/osp54#readme",
   "dependencies": {
-    "@langchain/cohere": "^0.3.3",
+    "@langchain/core": "^0.3.57",
+    "@langchain/openai": "^0.5.11",
+    "langchain": "^0.3.27",
     "nodemon": "^3.1.10"
   },
   "devDependencies": {

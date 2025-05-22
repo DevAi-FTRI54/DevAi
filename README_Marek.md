@@ -53,9 +53,10 @@ app.post('/api/query', (req, res) => {
 
 1. Test the entire flow
 2. Improve system prompt and user prompt
-3. Implement reranking
+3. Implement reranking [done]
 4. Run eval scripts (LangSmith)
-5. Log costs/latency
+5. Log costs/latency [done]
+6. Handshake BE/FE
 
 # FRI
 

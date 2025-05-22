@@ -1,16 +1,16 @@
 // Receives queries from the client and invokes RAG processing logic.
-import Query from '../../models/query.model.js';
-import User from '../../models/user.model.js';
 import { Request, Response, NextFunction } from 'express';
 import { answerQuestion } from './rag.service.js';
-import OpenAI, { OpenAIError } from 'openai';
+import { OpenAIError } from 'openai';
+
 import { QdrantVectorStore } from '@langchain/qdrant';
+import Query from '../../models/query.model.js';
+import User from '../../models/user.model.js';
 
 export const askController = async (
   req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+  res: Response
+): Promise<void> => {
   try {
     const { repoUrl, question } = req.body;
     const response = await answerQuestion(repoUrl, question);
@@ -20,20 +20,16 @@ export const askController = async (
     console.error(err);
 
     if (err instanceof OpenAIError) {
-      return res
+      res
         .status(502)
         .json({ message: 'askController: LLM failed', detail: err.message });
     }
     if (err.message === 'VECTOR_DB_DOWN') {
-      return res
-        .status(503)
-        .json({ msg: 'askController: Vector store unavailable' });
+      res.status(503).json({ msg: 'askController: Vector store unavailable' });
     }
 
     res.status(500).json({ message: 'askController: Unexpected server error' });
   }
-
-  return next();
 };
 
 // export const createQuery = async (req: Request, res: Response) => {
