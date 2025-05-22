@@ -7,7 +7,7 @@ const AuthCallback: React.FC = () => {
   useEffect(() => {
     //* used to fetch user data or token confirmation
     const completeAuth = async () => {
-      const res = await fetch('import.meta.env.VITE_AUTHCOMPLETE');
+      const res = await fetch('http://localhost:4000/api/auth/complete');
 
       //* redirect to /install to install the github app
       if (res.ok) {

@@ -13,7 +13,7 @@ const ContextTabs: React.FC = () => {
     <Box sx={{ width: '100%' }}>
       <Tabs onChange={handleChange} value={value} aria-label="Tabs where selection follows focus" selectionFollowsFocus>
         <Tab label="Chat Window" />
-        <Tab label="File Preview" />
+        {/* <Tab label="File Preview" /> */}
       </Tabs>
     </Box>
   );

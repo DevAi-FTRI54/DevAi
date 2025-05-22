@@ -28,10 +28,12 @@ const TabComps: React.FC = () => {
   return (
     <Box>
       <Tabs value={value} onChange={(_, v) => setValue(v)}>
-        <Tab label="File Preview" />
+        <Tab label="Index.html" />
+        <Tab label="server.js" />
+        <Tab label="app.jsx" />
       </Tabs>
       <TabPanel value={value} index={1}>
-        <FilePreview />
+        {/* <FilePreview /> */}
       </TabPanel>
     </Box>
   );
