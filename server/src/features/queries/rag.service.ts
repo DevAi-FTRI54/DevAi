@@ -103,6 +103,7 @@ export async function answerQuestion(repoUrl: string, question: string) {
 
   const retrieve = async (state: typeof InputState.State) => {
     try {
+      console.log(`Attempting to retrieve docs for repo: ${repoId}`);
       const retrievedDocs = await retriever.invoke(state.question);
       return { context: retrievedDocs }; // merges into  WorkingState, thus the WorkingState has now access to both question + context
     } catch (err) {
