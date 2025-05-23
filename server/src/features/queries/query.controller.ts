@@ -30,6 +30,7 @@ export const askController = async (
       res
         .status(500)
         .json({ message: 'askController: Unexpected server error' });
+      res.status(500).json({ message: 'askController: Unexpected server error' });
     }
   }
 };
