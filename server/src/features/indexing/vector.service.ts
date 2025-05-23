@@ -9,6 +9,7 @@ import { TsmorphCodeLoader } from './loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import type { Document } from '@langchain/core/documents';
 import { MultiQueryRetriever } from 'langchain/retrievers/multi_query';
+// import { MultiQueryRetriever } from '@langchain/community/retrievers/multi_query';
 import { ChatOpenAI } from '@langchain/openai';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -63,21 +64,57 @@ export async function createRetriever(repoId: string, k = 8) {
     collectionName: COLLECTION,
   });
 
+  try {
+    const points = await client.scroll(COLLECTION, {
+      filter: { must: [{ key: 'metadata.repoId', match: { value: repoId } }] },
+      limit: 5,
+    });
+    console.log(`Found ${points.points?.length || 0} matching documents`);
+  } catch (err: any) {
+    console.error('Error querying points:', err.message);
+    // Continue execution
+  }
+
   return store.asRetriever({
     k,
     searchType: 'mmr',
     filter: {
-      must: [{ key: 'repoId', match: { value: repoId } }],
+      must: [{ key: 'metadata.repoId', match: { value: repoId } }],
     },
   });
 }
 
 export async function createCodeRetriever(repoId: string, k = 8) {
-  const baseRetriever = await createRetriever(repoId, k);
+  try {
+    console.log(`Creating retriever for repo: ${repoId}`);
+    const baseRetriever = await createRetriever(repoId, k);
 
-  return MultiQueryRetriever.fromLLM({
-    llm,
-    retriever: baseRetriever,
-    queryCount: 3, // Generate multiple search queries from the user's question
-  });
+    return MultiQueryRetriever.fromLLM({
+      llm,
+      retriever: baseRetriever,
+      queryCount: 3, // Generate multiple search queries from the user's question
+    });
+  } catch (err) {
+    console.error('Error creating code retriever: ', err);
+    throw err;
+  }
+}
+
+export async function ensureQdrantIndexes() {
+  try {
+    console.log('Creating index for metadata.repoId...');
+    await client.createPayloadIndex(COLLECTION, {
+      field_name: 'metadata.repoId',
+      field_schema: 'keyword',
+    });
+    console.log('✅ Index created for metadata.repoId');
+  } catch (err: any) {
+    // If the index already exists, this will fail
+    if (err.message?.includes('already exists')) {
+      console.log('✅ Index for metadata.repoId already exists');
+      return;
+    }
+    console.error('❌ Failed to create index:', err);
+    throw err;
+  }
 }
