@@ -76,6 +76,7 @@ brew services start redis
 1. Figure out how to get sha on the front-end and pass it to the backend
 2. Eric + Kyle -> fetch repos from GitHub app - http://localhost:4000/api/github/repos
 3. Figure out how to print out on the frontend the progress bar (/jobs/id/:progress)
+   \_ Progress bar - Frontend immediately gets { jobId } and polls /jobs/:id/progress
 
 ## BACKLOG
 

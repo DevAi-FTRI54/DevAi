@@ -12,7 +12,7 @@ export const askController = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { repoUrl, question } = req.body;
+    const { repoUrl, prompt: question } = req.body;
     const response = await answerQuestion(repoUrl, question);
     res.status(200).json(response);
   } catch (err: any) {

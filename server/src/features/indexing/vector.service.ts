@@ -19,10 +19,6 @@ dotenv.config({
   path: path.resolve(__dirname, '../../config/.env'),
 });
 
-/**
- * Progress bar - Frontend immediately gets { jobId } and polls /jobs/:id/progress
- */
-
 // Why Qdrant over Pinecone - https://qdrant.tech/blog/comparing-qdrant-vs-pinecone-vector-databases
 const client = new QdrantClient({
   url: process.env.QDRANT_URL!,
@@ -100,6 +96,9 @@ export async function createCodeRetriever(repoId: string, k = 8) {
   }
 }
 
+// Filtering: https://qdrant.tech/documentation/concepts/filtering/
+// Indexing: https://qdrant.tech/documentation/concepts/indexing/
+// Vector Search Tutorial: https://qdrant.tech/articles/vector-search-filtering/
 export async function ensureQdrantIndexes() {
   try {
     console.log('Creating index for metadata.repoId...');
@@ -109,7 +108,6 @@ export async function ensureQdrantIndexes() {
     });
     console.log('✅ Index created for metadata.repoId');
   } catch (err: any) {
-    // If the index already exists, this will fail
     if (err.message?.includes('already exists')) {
       console.log('✅ Index for metadata.repoId already exists');
       return;
