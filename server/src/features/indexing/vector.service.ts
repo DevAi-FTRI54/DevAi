@@ -73,6 +73,7 @@ export async function createRetriever(repoId: string, k = 8) {
 }
 
 export async function createCodeRetriever(repoId: string, k = 8) {
+  console.log(`Creating retriever for repo: ${repoId}`);
   const baseRetriever = await createRetriever(repoId, k);
 
   return MultiQueryRetriever.fromLLM({

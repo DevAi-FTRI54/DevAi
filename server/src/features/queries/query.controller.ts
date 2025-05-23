@@ -21,9 +21,9 @@ export const askController = async (req: Request, res: Response): Promise<void> 
     }
     if (err.message === 'VECTOR_DB_DOWN') {
       res.status(503).json({ msg: 'askController: Vector store unavailable' });
+    } else {
+      res.status(500).json({ message: 'askController: Unexpected server error' });
     }
-
-    res.status(500).json({ message: 'askController: Unexpected server error' });
   }
 };
 
