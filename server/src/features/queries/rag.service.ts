@@ -108,8 +108,8 @@ export async function answerQuestion(repoUrl: string, question: string) {
 
       const retrievedDocs = await retriever.invoke(state.question);
 
-      console.log('--- retrievedDocs ------------');
-      console.log(retrievedDocs);
+      // console.log('--- retrievedDocs ------------');
+      // console.log(retrievedDocs);
       return { context: retrievedDocs }; // merges into  WorkingState, thus the WorkingState has now access to both question + context
     } catch (err) {
       throw new Error('VECTOR_DB_DOWN');
@@ -119,16 +119,40 @@ export async function answerQuestion(repoUrl: string, question: string) {
   // --- STEP 4: Rerank the retrievedDocs for increase accuracy --------------
   // cohere rerank: https://js.langchain.com/docs/integrations/document_compressors/cohere_rerank/
   const rerank = async (state: typeof WorkingState.State) => {
-    const reranker = new CohereRerank({
-      apiKey: process.env.COHERE_API_KEY,
-      model: 'rerank-english-v2.0',
-      topN: 5,
-    });
+    console.log('--- state ---------');
+    console.log(state);
+    if (!state.context || state.context.length === 0) {
+      console.log('No documents to rerank - skipping reranking step');
+      return { context: [] };
+    }
 
-    const ranks = await reranker.rerank(state.context, state.question);
-    const topDocs = ranks.map((r: any) => state.context[r.index]);
+    try {
+      if (!process.env.COHERE_API_KEY) {
+        console.error('COHERE_API_KEY is missing!');
+        return { context: state.context }; // Return original docs
+      }
 
-    return { context: topDocs };
+      // https://docs.cohere.com/v2/docs/models
+      const reranker = new CohereRerank({
+        apiKey: process.env.COHERE_API_KEY,
+        model: 'rerank-v3.5',
+        topN: Math.min(5, state.context.length),
+      });
+
+      console.log(`Reranking ${state.context.length} documents...`);
+
+      const ranks = await reranker.rerank(state.context, state.question);
+
+      if (!ranks || !Array.isArray(ranks)) {
+        console.error('Reranker returned invalid result: ', ranks);
+      }
+
+      const topDocs = ranks.map((r: any) => state.context[r.index]);
+      return { context: topDocs };
+    } catch (err) {
+      console.error('Error during reranking:', err);
+      return { context: state.context }; // Return original docs
+    }
   };
 
   const generate = async (state: typeof WorkingState.State) => {
@@ -185,7 +209,7 @@ export async function answerQuestion(repoUrl: string, question: string) {
    
     */
 
-  const workflow = new StateGraph(InputState) // 👈 compile over InputState
+  const workflow = new StateGraph(WorkingState) // 👈 compile over WorkingState
     .addNode('retrieve', retrieve)
     .addNode('rerank', rerank)
     .addNode('generate', generate)
