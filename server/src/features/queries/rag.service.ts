@@ -66,7 +66,8 @@ export async function answerQuestion(repoUrl: string, question: string) {
   const retriever = await createCodeRetriever(repoId, 8);
 
   // --- STEP 1: Define Prompt -----------------------------------------------
-  const SYSTEMPROMPT = "You are an expert code assistant that answers user's questions about their codebase.";
+  const SYSTEMPROMPT =
+    "You are an expert code assistant that answers user's questions about their codebase.";
 
   const USERPROMPT = `Use the following pieces of context to answer the question at the end.
     If you don't know the answer, just say that you don't know, don't try to make up an answer.
@@ -104,7 +105,11 @@ export async function answerQuestion(repoUrl: string, question: string) {
   const retrieve = async (state: typeof InputState.State) => {
     try {
       console.log(`Attempting to retrieve docs for repo: ${repoId}`);
+
       const retrievedDocs = await retriever.invoke(state.question);
+
+      console.log('--- retrievedDocs ------------');
+      console.log(retrievedDocs);
       return { context: retrievedDocs }; // merges into  WorkingState, thus the WorkingState has now access to both question + context
     } catch (err) {
       throw new Error('VECTOR_DB_DOWN');
@@ -190,7 +195,10 @@ export async function answerQuestion(repoUrl: string, question: string) {
     .addEdge('generate', '__end__')
     .compile();
 
-  const result = await workflow.invoke({ question }, { runName: 'ask-question', configurable: { repoId } });
+  const result = await workflow.invoke(
+    { question },
+    { runName: 'ask-question', configurable: { repoId } }
+  );
 
   const traceUrl = (result as any)[RUN_KEY]?.url ?? null; // LLM observability
   const tokens = (result as any)[RUN_KEY]?.totalTokens ?? undefined;

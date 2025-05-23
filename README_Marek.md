@@ -51,23 +51,25 @@ app.post('/api/query', (req, res) => {
 
 # THUR
 
-1. Test the entire flow
-2. Improve system prompt and user prompt
 3. Implement reranking [done]
-4. Run eval scripts (LangSmith)
-5. Log costs/latency [done]
-6. Handshake BE/FE
+4. Log costs/latency [done]
+5. Test the entire flow
+6. Improve system prompt and user prompt
+7. Run eval scripts (LangSmith)
+8. Handshake BE/FE
+9. Perfect the entire workflow (remove PAT, integrate repoUrl and sha through GitHub app)
+10. Make the entire workflow work
+11. Implement sending cost tokens etc. to the fron-tend
 
-# FRI
+# macOS with Homebrew
 
-8. Perfect the entire workflow
-9. Make the entire workflow work
+brew install redis
+brew services start redis
 
 # SAT/SUN
 
-10. Start learning Python and start learning about LLMs and fine-tuning
-11. Implement sending cost tokens etc. to the fron-tend
-12. Fine-tuning
+10. Learn Python
+11. Read about LLM fine-tuning (LoRA)
 
 # ERIC & KYLE
 
