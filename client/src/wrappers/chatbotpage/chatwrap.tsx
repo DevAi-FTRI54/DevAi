@@ -26,33 +26,27 @@ const ChatWrap: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex' }}>
+    <div className="flex min-h-screen bg-gradient-to-b from-slate-100 to-slate-200">
       <PersistentDrawerLeft />
-      {/* Main content area */}
-      <div style={{ flex: 1, marginLeft: drawerWidth, padding: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+      <main className="flex-1 flex flex-col items-center pt-24 px-4">
+        {' '}
+        {/* pt-12 = 3rem spacing from top (AppBar) */}
+        {/* Top: Chat Button + Tabs */}
+        <div className="flex flex-row items-center justify-center gap-4 mb-10">
           <button
-            className={styles.btn}
+            className="px-5 py-2 rounded bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
             onClick={handleClick}
-            style={{ marginRight: 16 }} // gives some space between preview and button
           >
             Chat
           </button>
           <TabComps />
         </div>
-        {/* Either render messages inside ChatWindow OR here, not both! */}
-        <ChatWindow messages={messages} />
-
-        {/* If ChatWindow already renders messages, you don't need this */}
-
-        <div>
-          {messages.map((msg, index) => (
-            <ChatMessage key={index} message={msg} />
-          ))}
+        {/* Main chat area */}
+        <div className="w-full max-w-2xl flex flex-col gap-8">
+          <ChatWindow messages={messages} />
+          <ChatInput setAnswer={handleSetAnswer} />
         </div>
-
-        <ChatInput setAnswer={handleSetAnswer} />
-      </div>
+      </main>
     </div>
   );
 };

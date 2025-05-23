@@ -24,21 +24,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
   }, [messages]); // * Triggers scroll when messages update (re-render)
 
   return (
-    <div className={styles.chatWindowContainer}>
-      <div className={styles.header}>
-        <h2>DevAi Onboarding Assistant</h2>
-        <span className={styles.caption}>Ask anything about this codebase during your onboarding</span>
+    <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg flex flex-col mx-auto">
+      <div className="py-6 px-4 border-b flex flex-col items-center">
+        <h2 className="text-2xl font-bold text-center">DevAi Onboarding Assistant</h2>
+        <span className="text-sm text-gray-500 mt-1 text-center">
+          Ask anything about this codebase during your onboarding
+        </span>
       </div>
-      <div className={styles.messagesArea}>
-        {/* * Render empty state if there are no messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 min-h-[200px]">
         {messages.length === 0 && (
-          <div className={styles.emptyState}>start a conversation to get help with your codebase</div>
+          <div className="text-center text-gray-400 italic">Start a conversation to get help with your codebase</div>
         )}
-        {/* * Map over messages and render each as a chat bubble */}
         {messages.map((msg, idx) => (
           <ChatMessage key={idx} message={msg} />
         ))}
-        {/* * Dummy div for scroll anchor */}
         <div ref={messagesEndRef} />
       </div>
     </div>

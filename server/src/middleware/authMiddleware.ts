@@ -20,14 +20,9 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 //Real Code for JWT
 
-export const requireAuth: RequestHandler = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const requireAuth: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization; //create variable for authorization header
-  if (!authHeader)
-    return res.status(401).json({ message: 'Missing auth header' });
+  if (!authHeader) return res.status(401).json({ message: 'Missing auth header' });
   //if not present then return 401 status(unathaurized) and missing message;
   const token = authHeader.split(' ')[1];
   //authHeader is in format   Bearer <token>
