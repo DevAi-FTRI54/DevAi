@@ -64,7 +64,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
 
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col gap-4 p-4 bg-white rounded shadow">
-      <div className="flex flex-wrap gap-2 mb-2">
+      <div className="w-full max-w-2xl mx-auto">
         {QUICK_PROMPTS.map(({ label, text, type }) => (
           <button
             key={type}
@@ -98,8 +98,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
         {loading ? 'Submitting...' : 'Submit'}
       </button>
       {error && <p className="text-red-600">{error}</p>}
-
-      <div className="bg-red-500 text-white p-10">If this is red, Tailwind is working!</div>
     </div>
   );
 };

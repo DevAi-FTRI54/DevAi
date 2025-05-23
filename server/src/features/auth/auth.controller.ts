@@ -9,7 +9,7 @@ import User from '../../models/user.model.js';
 const CLIENT_ID = process.env.GITHUB_CLIENT_ID!;
 const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET!;
 const JWT_SECRET = process.env.JWT_SECRET!;
-const REDIRECT_URI = 'http://localhost:3333/auth/github/callback';
+const REDIRECT_URI = 'ngrok';
 //redirected to this route after the successful github login
 //In your GitHub OAuth app settings, you must set the Authorization callback URL to match your REDIRECT_URI.
 //https://github.com/settings/developers
@@ -23,18 +23,15 @@ export const handleGitHubCallback = async (req: Request, res: Response) => {
   const code = req.query.code as string;
   if (!code) return res.status(400).send('Missing code');
 
-  const tokenResponse = await fetch(
-    `https://github.com/login/oauth/access_token`,
-    {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: new URLSearchParams({
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        code,
-      }),
-    }
-  );
+  const tokenResponse = await fetch(`https://github.com/login/oauth/access_token`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+    body: new URLSearchParams({
+      client_id: process.env.GITHUB_CLIENT_ID!,
+      client_secret: process.env.GITHUB_CLIENT_SECRET!,
+      code,
+    }),
+  });
 
   const { access_token } = await tokenResponse.json();
   if (!access_token) return res.status(401).send('Access token error');
@@ -58,11 +55,7 @@ export const handleGitHubCallback = async (req: Request, res: Response) => {
   }
 
   // 4. Sign JWT
-  const token = jwt.sign(
-    { userId: user._id, githubUsername: user.githubUsername },
-    JWT_SECRET,
-    { expiresIn: '2h' }
-  );
+  const token = jwt.sign({ userId: user._id, githubUsername: user.username }, JWT_SECRET, { expiresIn: '2h' });
 
   // 5. Return or set cookie
   res.cookie('token', token, { httpOnly: true, secure: false }); // Set secure=true in prod

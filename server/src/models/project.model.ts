@@ -6,7 +6,7 @@ export interface IProject extends Document {
   repoName: string;
   repoPath: string; //filepath
   repoUrl: string; // url of repo/project
-  lastindexed: Date; //last time the repo was indexed(ingested)
+  lastindexed: Date; //last time the repo was indexed(ingested) (SHA)
   status: string; // option for already indexed, pending, error
 }
 
