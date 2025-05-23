@@ -1,15 +1,37 @@
-import 'dotenv/config';
+// import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { QdrantVectorStore } from '@langchain/qdrant';
 import { TsmorphCodeLoader } from './loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import type { Document } from '@langchain/core/documents';
+import { MultiQueryRetriever } from 'langchain/retrievers/multi_query';
+// import { MultiQueryRetriever } from '@langchain/community/retrievers/multi_query';
+import { ChatOpenAI } from '@langchain/openai';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../config/.env'),
+});
 
 // Why Qdrant over Pinecone - https://qdrant.tech/blog/comparing-qdrant-vs-pinecone-vector-databases
 const client = new QdrantClient({
   url: process.env.QDRANT_URL!,
   apiKey: process.env.QDRANT_API_KEY,
+});
+
+const llm = new ChatOpenAI({
+  model: 'gpt-4o-mini',
+  temperature: 0,
+  maxTokens: undefined,
+  timeout: undefined,
+  maxRetries: 2,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const embeddings = new OpenAIEmbeddings({
@@ -29,17 +51,68 @@ export async function upsert(docs: Document[]) {
   return vectorStore;
 }
 
-// factory so chat can pull retriever later
+// -- asRetriever ----------------------------------------------------
+// Factory asRetriever so chat can pull retriever later
+// https://js.langchain.com/docs/how_to/vectorstore_retriever/
 export async function createRetriever(repoId: string, k = 8) {
   const store = await QdrantVectorStore.fromExistingCollection(embeddings, {
     client,
     collectionName: COLLECTION,
   });
 
+  try {
+    const points = await client.scroll(COLLECTION, {
+      filter: { must: [{ key: 'metadata.repoId', match: { value: repoId } }] },
+      limit: 5,
+    });
+    console.log(`Found ${points.points?.length || 0} matching documents`);
+  } catch (err: any) {
+    console.error('Error querying points:', err.message);
+    // Continue execution
+  }
+
   return store.asRetriever({
     k,
+    searchType: 'mmr',
     filter: {
-      must: [{ key: 'repoId', match: { value: repoId } }],
+      must: [{ key: 'metadata.repoId', match: { value: repoId } }],
     },
   });
+}
+
+export async function createCodeRetriever(repoId: string, k = 8) {
+  try {
+    console.log(`Creating retriever for repo: ${repoId}`);
+    const baseRetriever = await createRetriever(repoId, k);
+
+    return MultiQueryRetriever.fromLLM({
+      llm,
+      retriever: baseRetriever,
+      queryCount: 3, // Generate multiple search queries from the user's question
+    });
+  } catch (err) {
+    console.error('Error creating code retriever: ', err);
+    throw err;
+  }
+}
+
+// Filtering: https://qdrant.tech/documentation/concepts/filtering/
+// Indexing: https://qdrant.tech/documentation/concepts/indexing/
+// Vector Search Tutorial: https://qdrant.tech/articles/vector-search-filtering/
+export async function ensureQdrantIndexes() {
+  try {
+    console.log('Creating index for metadata.repoId...');
+    await client.createPayloadIndex(COLLECTION, {
+      field_name: 'metadata.repoId',
+      field_schema: 'keyword',
+    });
+    console.log('✅ Index created for metadata.repoId');
+  } catch (err: any) {
+    if (err.message?.includes('already exists')) {
+      console.log('✅ Index for metadata.repoId already exists');
+      return;
+    }
+    console.error('❌ Failed to create index:', err);
+    throw err;
+  }
 }

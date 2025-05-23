@@ -1,72 +1,59 @@
 import React, { useEffect, useState } from 'react';
-import styles from './chatinput.module.css';
 
-//* Typescript declaration:
 interface ChatInputProps {
   setAnswer: (answer: string, userPrompt: string) => void;
 }
 
-//* UX function for expanding text box with context
+type PromptType = 'default' | 'Find' | 'Bugs' | 'Debug' | 'WalkThrough' | 'Services';
+
+const QUICK_PROMPTS: Array<{ label: string; text: string; type: PromptType }> = [
+  { label: 'Find & Explain', text: 'Find and explain the logic for the following: ', type: 'Find' },
+  { label: 'Common Bugs', text: 'What are the most common bugs or pitfalls in this repo?', type: 'Bugs' },
+  { label: 'Debug', text: 'Where do I start to debug this type of problem?', type: 'Debug' },
+  { label: 'Walkthrough', text: 'Walk me through the data flow for ...', type: 'WalkThrough' },
+  { label: 'Services', text: 'List all the third-party services used in this repo', type: 'Services' },
+];
+
 const autoGrow = (event: React.FormEvent<HTMLTextAreaElement>) => {
   const textarea = event.currentTarget;
-  textarea.style.height = 'auto'; //resets height
+  textarea.style.height = 'auto';
   textarea.style.height = `${textarea.scrollHeight}px`;
 };
 
 const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
-  //* setting up the states
   const [promptText, setPromptText] = useState('');
-  const [promptType, setPromptType] = useState<'default' | 'Find' | 'Bugs' | 'Debug' | 'WalkThrough' | 'Services'>(
-    'default'
-  );
+  const [promptType, setPromptType] = useState<PromptType>('default');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState(''); //!check with Marek if this is necessary
+  const [sessionId, setSessionId] = useState('');
 
-  //! check with Marek if this is necessary.
-  //* part of session needed for the document
   useEffect(() => {
     const storedSessionID = localStorage.getItem('documentSessionId');
-    if (storedSessionID) {
-      setSessionId(storedSessionID);
-    }
+    if (storedSessionID) setSessionId(storedSessionID);
   }, []);
 
-  //* needed for the prompts: sets state for passing
-  const handleQuickPrompt = (prompt: string, type: 'Find' | 'Bugs' | 'Debug' | 'WalkThrough' | 'Services') => {
+  const handleQuickPrompt = (prompt: string, type: PromptType) => {
     setPromptText(prompt);
     setPromptType(type);
   };
 
-  //*needed to change the text between the prompts
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPromptText(event.target.value);
   };
 
-  //* needed to handle submit
   const handleSubmit = async () => {
-    if (!promptText.trim()) return; //* trim removes any leading or trailing whitespace while checking if there is text or not.
-
+    if (!promptText.trim()) return;
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/query', {
+      const response = await fetch('http://localhost:4000/api/query/question', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: promptText,
-          type: promptType,
-          sessionId: sessionId,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText, type: promptType, sessionId }),
       });
-      if (!response.ok) {
-        throw new Error('Failed to submit prompt');
-      }
+      if (!response.ok) throw new Error('Failed to submit prompt');
       const data = await response.json();
-      console.log('Response ffrom backend:', data);
       setAnswer(data.answer, promptText);
     } catch (err) {
       if (err instanceof Error) setError(err.message || 'Something went wrong');
@@ -76,35 +63,44 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
   };
 
   return (
-    <>
-      <div className={styles.pageContainer}>
-        {/*prettier-ignore*/}
-        <div className={styles.buttonContainer}>
-            <div className={styles.btns}>
-              <button className={styles.button} onClick={ () => handleQuickPrompt("Find and explain the logic for the following:", 'Find')}>Find & Explain</button>
-              <button className={styles.button} onClick={ () => handleQuickPrompt("What are the most common bugs or pitfalls in this repo?", 'Bugs')}>Common Bugs</button>
-              <button className={styles.button} onClick={ () => handleQuickPrompt("Where do I start to debug this type of problem?", 'Debug')}>Debug</button>
-              <button className={styles.button} onClick={ () => handleQuickPrompt("Walk me through the data flow for ...", 'WalkThrough')}>Walkthrough</button>
-              <button className={styles.button} onClick={ () => handleQuickPrompt("List all the third-party services used in this repo", 'Services')}>Services</button>
-            </div>
-         </div>
-        <div className={styles.textBoxContainer}>
-          <textarea
-            className={styles.textBox}
-            placeholder="Please type your prompt here"
-            value={promptText}
-            onChange={handleChange}
-            onInput={autoGrow}
-            rows={6}
-          />
-        </div>
-        <button className={styles.button} onClick={handleSubmit} disabled={loading}>
-          {loading ? 'Submitting...' : 'Submit'}
-        </button>
-
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="w-full max-w-xl mx-auto flex flex-col gap-4 p-4 bg-white rounded shadow">
+      <div className="flex flex-wrap gap-2 mb-2">
+        {QUICK_PROMPTS.map(({ label, text, type }) => (
+          <button
+            key={type}
+            type="button"
+            className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition disabled:opacity-50"
+            onClick={() => handleQuickPrompt(text, type)}
+            disabled={loading}
+          >
+            {label}
+          </button>
+        ))}
       </div>
-    </>
+      <div>
+        <textarea
+          id="user-prompt"
+          className="w-full min-h-[48px] resize-y text-base p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+          placeholder="Please type your prompt here"
+          value={promptText}
+          onChange={handleChange}
+          onInput={autoGrow}
+          rows={6}
+          disabled={loading}
+        />
+      </div>
+      <button
+        type="button"
+        className="self-end px-4 py-2 rounded bg-red-600 text-white font-semibold hover:bg-red-700 transition disabled:opacity-50"
+        onClick={handleSubmit}
+        disabled={loading || !promptText.trim()}
+      >
+        {loading ? 'Submitting...' : 'Submit'}
+      </button>
+      {error && <p className="text-red-600">{error}</p>}
+
+      <div className="bg-red-500 text-white p-10">If this is red, Tailwind is working!</div>
+    </div>
   );
 };
 

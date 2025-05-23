@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "client": "cd client && npm run dev",
-    "server": "cd server/src && npm run server",
+    "server": "cd server && nodemon --exec node --loader ts-node/esm src/server.ts",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "repository": {
@@ -16,17 +16,22 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/champions-cs54/osp54/issues"
   },
   "homepage": "https://github.com/champions-cs54/osp54#readme",
   "dependencies": {
+    "@langchain/core": "^0.3.57",
+    "@langchain/openai": "^0.5.11",
+    "langchain": "^0.3.27",
     "nodemon": "^3.1.10",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.1"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.1.2",
+    "postcss": "^8.5.3"
   }
 }

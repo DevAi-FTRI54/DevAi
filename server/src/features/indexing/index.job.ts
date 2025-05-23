@@ -16,10 +16,12 @@ import { upsert } from './vector.service.js';
  * 4/ Turn it into vector embeddings (LangChain) [done]
  * 5/ Upsert [done]
  *
- * ## queue =>
- * 6/ Retrieve & rerank [tue]
- * 7/ Run eval scripts (LangSmith) [tue]
- * 8/ Log costs/latency [tue]
+ * ## query =>
+ * 6/ Receive Query from the User
+ * 7/ Retrieve relevant docs
+ * 8/ rerank [wed]
+ * 9/ Run eval scripts (LangSmith) [thu] -> should be easy
+ * 10/ Log costs/latency [thu] -> should be easy
  */
 
 const redisOptions = {
@@ -34,18 +36,24 @@ const worker = new Worker(
   'index',
   async (job: Job<{ repoUrl: string; sha: string }>) => {
     const { repoUrl, sha } = job.data;
+    // console.log('\n--- job.data ------');
+    // console.log(job.data);
 
     const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
     await job.updateProgress(10);
 
     const loader = new TsmorphCodeLoader(localRepoPath, repoId);
     const bigDocs = await loader.load();
+    console.log('bigDocs', bigDocs);
     await job.updateProgress(30);
 
     const chunkedDocs = await chunkDocuments(bigDocs);
     const total = chunkedDocs.length;
+    console.log('total: ', total);
 
     for (let i = 0; i < total; i++) {
+      // console.log('\n--- chunkedDoc ------');
+      // console.log(chunkedDocs[i]);
       await upsert([chunkedDocs[i]]);
       const percentage = 45 + Math.floor(((i + 1) / total) * 55);
       await job.updateProgress(percentage);
