@@ -8,6 +8,7 @@ import path from 'path';
 
 import repoRoutes from './features/indexing/index.routes.js';
 import queryRoutes from './features/queries/query.routes.js';
+import authRoute from './features/auth/auth.routes.js';
 
 const app = express();
 
@@ -24,10 +25,15 @@ app.get('/', (req, res) => {
   });
 });
 
-// Define routes
-// --- Repo route ------------------------------------------------
+// --- Define routes ---------------------------------------------
+// Repo route
 app.use('/api/index', repoRoutes);
+
+// Query LLM route
 app.use('/api/query', queryRoutes);
+
+// Auth route
+app.use('/api/auth', authRoute);
 
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
@@ -57,12 +63,7 @@ app.use((req, res) => {
 });
 
 // --- Global error handler --------------------------------------
-const errorHandler: ErrorRequestHandler = (
-  err: ServerError,
-  _req,
-  res,
-  _next
-) => {
+const errorHandler: ErrorRequestHandler = (err: ServerError, _req, res, _next) => {
   const defaultError: ServerError = {
     log: 'Express error handler caught unknown middleware error',
     status: 500,

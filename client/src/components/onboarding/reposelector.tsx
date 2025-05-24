@@ -1,27 +1,45 @@
 import React, { useEffect, useState } from 'react';
 
-//* define component & set state for repo & which one is selected
+// Helper: Parse query params (optional - you can use a library like 'query-string' if you prefer)
+function getInstallationId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('installation_id') || '';
+}
+
 const RepoSelector: React.FC = () => {
   const [repos, setRepos] = useState<string[]>([]);
   const [selected, setSelected] = useState<string>('');
+  const [installationId, setInstallationId] = useState<string>('');
 
-  //* useEffect runs once on component mount to fetch the list of available repositories
+  // On mount, parse the installation_id from URL
   useEffect(() => {
-    const fetchRepos = async () => {
-      const res = await fetch('http://localhost:4000/api/github/repos'); //* talk to Kyle about this
-      const data = await res.json();
-      setRepos(data); // used to save the fetched repos to state
-    };
-    fetchRepos();
+    const id = getInstallationId();
+    setInstallationId(id);
   }, []);
 
-  //* Sends a POST request to the backend to start indexing the selected repository
+  // Fetch repos when installationId is set
+  useEffect(() => {
+    if (!installationId) return;
+    const fetchRepos = async () => {
+      try {
+        const res = await fetch(`http://localhost:4000/api/github/repos?installation_id=${installationId}`);
+        if (!res.ok) throw new Error('Failed to fetch repos');
+        const data = await res.json();
+        setRepos(data);
+      } catch (err) {
+        console.error('Error fetching repos:', err);
+      }
+    };
+    fetchRepos();
+  }, [installationId]);
+
+  // Ingest selected repo
   const handleSelect = async () => {
     try {
       const res = await fetch('http://localhost:4000/api/index/ingest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoUrl: selected }),
+        body: JSON.stringify({ repoUrl: selected, installation_id: installationId }), // Send installation_id too!
       });
 
       if (!res.ok) {

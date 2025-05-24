@@ -7,10 +7,7 @@ import { QdrantVectorStore } from '@langchain/qdrant';
 import Query from '../../models/query.model.js';
 import User from '../../models/user.model.js';
 
-export const askController = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const askController = async (req: Request, res: Response): Promise<void> => {
   try {
     const { repoUrl, prompt: question } = req.body;
     const response = await answerQuestion(repoUrl, question);
@@ -20,16 +17,11 @@ export const askController = async (
     console.error(err);
 
     if (err instanceof OpenAIError) {
-      res
-        .status(502)
-        .json({ message: 'askController: LLM failed', detail: err.message });
+      res.status(502).json({ message: 'askController: LLM failed', detail: err.message });
     }
     if (err.message === 'VECTOR_DB_DOWN') {
       res.status(503).json({ msg: 'askController: Vector store unavailable' });
     } else {
-      res
-        .status(500)
-        .json({ message: 'askController: Unexpected server error' });
       res.status(500).json({ message: 'askController: Unexpected server error' });
     }
   }

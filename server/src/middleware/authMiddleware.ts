@@ -2,6 +2,8 @@
 import jwt from 'jsonwebtoken'; //install jsonwebtoken; install types
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 
+console.log('Loading authMiddleware.ts');
+
 //Local Dev Testing, not meant for online app use
 
 // export const requireAuth = (
@@ -19,10 +21,16 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 // };
 
 //Real Code for JWT
+interface AuthenticatedRequest extends Request {
+  user: jwt.JwtPayload | string;
+}
 
-export const requireAuth: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth: RequestHandler = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization; //create variable for authorization header
-  if (!authHeader) return res.status(401).json({ message: 'Missing auth header' });
+  if (!authHeader) {
+    res.status(401).json({ message: 'Missing auth header' });
+    return;
+  }
   //if not present then return 401 status(unathaurized) and missing message;
   const token = authHeader.split(' ')[1];
   //authHeader is in format   Bearer <token>
@@ -35,7 +43,7 @@ export const requireAuth: RequestHandler = (req: Request, res: Response, next: N
     // 2) checks if token is signed with the key (secret)
     // 3) extracts the original data (decodes), username/pw etc
 
-    (req as any).user = decoded; //needs added type, or .user won't be recognized as a request method
+    (req as AuthenticatedRequest).user = decoded; //needs added type, or .user won't be recognized as a request method
     //req.user = decoded is the JS version
     // Attach user info to the request
     next();
