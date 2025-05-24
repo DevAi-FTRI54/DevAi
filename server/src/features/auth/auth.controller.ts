@@ -31,27 +31,21 @@ export const getGitHubLoginURL = (req: Request, res: Response) => {
   res.redirect(githubAuthURL);
 };
 
-export const handleGitHubCallback = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const handleGitHubCallback = async (req: Request, res: Response): Promise<any> => {
   console.log('--- req.query ------------');
   console.log(req.query);
   const code = req.query.code as string;
   if (!code) return res.status(400).send('Missing code');
 
-  const tokenResponse = await fetch(
-    `https://github.com/login/oauth/access_token`,
-    {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: new URLSearchParams({
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        code,
-      }),
-    }
-  );
+  const tokenResponse = await fetch(`https://github.com/login/oauth/access_token`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+    body: new URLSearchParams({
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      code,
+    }),
+  });
   console.log('--- tokenResponse ------------');
   console.log(tokenResponse);
 
@@ -64,10 +58,7 @@ export const handleGitHubCallback = async (
 };
 
 // 2. Get GitHub response
-export const completeAuth = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const completeAuth = async (req: Request, res: Response): Promise<any> => {
   const githubToken = req.cookies.github_access_token;
   console.log('--- githubToken ------------');
   console.log(githubToken);
@@ -93,11 +84,7 @@ export const completeAuth = async (
   }
 
   //4. Sign JWT
-  const token = jwt.sign(
-    { userId: user._id, githubUsername: user.username },
-    JWT_SECRET,
-    { expiresIn: '2h' }
-  );
+  const token = jwt.sign({ userId: user._id, githubUsername: user.username }, JWT_SECRET, { expiresIn: '2h' });
 
   // 5. Return or set cookie
   res.cookie('token', token, { httpOnly: true, secure: false }); // Set secure=true in prod

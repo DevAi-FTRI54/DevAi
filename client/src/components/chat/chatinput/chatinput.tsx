@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
 interface ChatInputProps {
-  setAnswer: (answer: string, userPrompt: string, snippet: string) => void;
+  setAnswer: (
+    answer: string,
+    userPrompt: string,
+    snippet: string,
+    file: string,
+    startLine: number,
+    endLine: number
+  ) => void;
 }
 
 type PromptType = 'default' | 'Find' | 'Bugs' | 'Debug' | 'WalkThrough' | 'Services';
@@ -59,7 +66,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
       const data = await response.json();
       console.log(data);
       const snippet = data.result.response.citations?.[0].snippet ?? '';
-      setAnswer(data.result.response.answer, data.result.question, snippet);
+      const file = data.result.response.citations?.[0].file.split('/').pop() ?? '';
+      const startLine = data.result.response.citations?.[0].startLine ?? 0;
+      const endLine = data.result.response.citations?.[0].endLine ?? 0;
+      setAnswer(data.result.response.answer, data.result.question, snippet, file, startLine, endLine);
       // setAnswer(data.result.response.answer, data.result.question);
 
       // setAnswer(data.answer, promptText);
