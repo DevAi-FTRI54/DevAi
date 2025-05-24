@@ -1,7 +1,7 @@
 // Defines API routes for user authentication (login, signup, etc).
 import express, { Router } from 'express';
-import { requireAuth } from '../../middleware/authMiddleware.js';
-import Project from '../../models/project.model.js';
+// import { requireAuth } from '../../middleware/authMiddleware.js';
+// import Project from '../../models/project.model.js';
 import { getGitHubLoginURL, handleGitHubCallback, completeAuth } from './auth.controller.js';
 
 // console.log('typeof Project:', typeof Project); // should be "function"

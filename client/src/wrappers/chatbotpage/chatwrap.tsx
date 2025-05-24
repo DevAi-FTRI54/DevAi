@@ -125,6 +125,9 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   snippet: string;
+  file: string;
+  startLine: number;
+  endLine: number;
 };
 
 const ChatWrap: React.FC = () => {
@@ -134,11 +137,18 @@ const ChatWrap: React.FC = () => {
   const owner = 'Team-Taz-FTRI-54';
   const repo = 'AI-ML-Project';
 
-  const handleSetAnswer = (answer: string, userPrompt: string, snippet: string) => {
+  const handleSetAnswer = (
+    answer: string,
+    userPrompt: string,
+    snippet: string,
+    file: string,
+    startLine: number,
+    endLine: number
+  ) => {
     setMessages((prev) => [
       ...prev,
-      { role: 'user', content: userPrompt, snippet: '' },
-      { role: 'assistant', content: answer, snippet: snippet },
+      { role: 'user', content: userPrompt, snippet: '', file: '', startLine: 0, endLine: 0 },
+      { role: 'assistant', content: answer, snippet: snippet, file: file, startLine: startLine, endLine: endLine },
     ]);
   };
 

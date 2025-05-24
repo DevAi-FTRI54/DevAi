@@ -169,6 +169,9 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   snippet?: string;
+  file?: string;
+  startLine?: number;
+  endLine?: number;
 }
 
 const ChatMessage: React.FC<{ message: Message }> = ({ message }) => {
@@ -206,6 +209,10 @@ const ChatMessage: React.FC<{ message: Message }> = ({ message }) => {
       >
         {message.content}
       </ReactMarkdown>
+      <div className="mt-4 mb-4">
+        File: {message.file}: ({message.startLine}-{message.endLine})
+      </div>
+
       {message.snippet && <pre className="mt-2 bg-gray-100 text-sm p-2 rounded overflow-x-auto">{message.snippet}</pre>}
     </div>
   );

@@ -7,6 +7,9 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   snippet: string;
+  file: string;
+  startLine: number;
+  endLine: number;
 };
 
 //* Props interface: messages are passed in from parent
