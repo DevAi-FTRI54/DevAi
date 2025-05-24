@@ -6,9 +6,10 @@ interface GitHubLazyFileTreeProps {
   owner: string;
   repo: string;
   token?: string;
+  onFileSelect?: (filePath: string) => void;
 }
 
-const GitHubLazyFileTree: React.FC<GitHubLazyFileTreeProps> = ({ owner, repo, token }) => {
+const GitHubLazyFileTree: React.FC<GitHubLazyFileTreeProps> = ({ owner, repo, token, onFileSelect }) => {
   const [rootItems, setRootItems] = useState<GitHubContentItem[]>([]);
 
   useEffect(() => {
@@ -35,6 +36,7 @@ const GitHubLazyFileTree: React.FC<GitHubLazyFileTreeProps> = ({ owner, repo, to
           owner={owner}
           repo={repo}
           token={token}
+          onFileSelect={onFileSelect}
         />
       ))}
     </div>
