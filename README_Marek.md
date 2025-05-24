@@ -51,30 +51,19 @@ app.post('/api/query', (req, res) => {
 
 # THUR
 
-1. Implement reranking [done]
-2. Log costs/latency [done]
-3. Test the entire flow
+1. Implement eval scripts (LangSmith)
+2. Implement cost/latency (LangGraph)
+3. Improve system prompt and user prompt
 4. Implement type prompt inside askController
-5. Improve system prompt and user prompt
-6. Implement MongoDB
-
-## BACKLOG
-
-8. Run eval scripts (LangSmith)
-9. Handshake BE/FE
-10. Perfect the entire workflow (remove PAT, integrate repoUrl and sha through GitHub app)
-11. Make the entire workflow work
-12. Implement sending cost tokens etc. to the fron-tend
+5. Read about LLM fine-tuning (LoRA)
+6. Learn basics of Python
+7. Perfect the entire workflow (remove PAT, integrate repoUrl and sha through GitHub app)
+8. Implement MongoDB
 
 # macOS with Homebrew
 
 brew install redis
 brew services start redis
-
-# SAT/SUN
-
-10. Learn Python
-11. Read about LLM fine-tuning (LoRA)
 
 # ERIC & KYLE
 

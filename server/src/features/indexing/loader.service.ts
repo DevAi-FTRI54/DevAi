@@ -1,9 +1,15 @@
 import express from 'express';
 import { BaseDocumentLoader } from '@langchain/core/document_loaders/base';
 import { Document } from '@langchain/core/documents';
-import { Project, ScriptTarget, FunctionDeclaration, ClassDeclaration } from 'ts-morph';
+import {
+  Project,
+  ScriptTarget,
+  FunctionDeclaration,
+  ClassDeclaration,
+} from 'ts-morph';
 import fs from 'fs/promises';
 import path from 'path';
+import { glob } from 'glob';
 
 /**
  * https://js.langchain.com/docs/tutorials/rag/
@@ -39,12 +45,25 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
       skipAddingFilesFromTsConfig: true, // skips node modules
     });
 
-    // Add all source files to the project
-    // Search recursively in all subdirectories
-    project.addSourceFilesAtPaths([
-      `${this.repoPath}/**/*.{ts,tsx,js,jsx}`,
-      `!${this.repoPath}/**/node_modules/**`, // exclude everything in node_modules
-    ]);
+    const projectPath = this.repoPath;
+
+    // Add all source files to the project; search recursively in all subdirectories
+    // project.addSourceFilesAtPaths(`${projectPath}/**/*.{ts,tsx,js,jsx}`);
+
+    // STEP 2.1: Use glob for better pattern matchin syntax
+    // https://www.npmjs.com/package/glob
+    const filePaths = glob.sync(`${projectPath}/**/*.{ts,tsx,js,jsx}`, {
+      ignore: [
+        `${projectPath}/**/node_modules/**`,
+        `${projectPath}/**/dist/**`,
+      ],
+    });
+
+    filePaths.map((file: any) => project.addSourceFileAtPath(file));
+    const sourceFiles = project.getSourceFiles();
+
+    console.log(' --- project.getFileSystem() ---------');
+    console.log(project.getFileSystem());
 
     // STEP 3: Load the docs
     /* Document[] - langchain type 
@@ -57,7 +76,22 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
     */
     const docs: Document[] = [];
 
-    project.getSourceFiles().forEach((sourceFile) => {
+    sourceFiles.forEach((sourceFile: any) => {
+      // STEP 3.1: First add ENTIRE file content
+      docs.push(
+        new Document({
+          pageContent: sourceFile.getFullText(),
+          metadata: {
+            repoId: this.repoId,
+            filePath: sourceFile.getFilePath(),
+            declarationName: path.basename(sourceFile.getFilePath()),
+            startLine: sourceFile.getStartLineNumber(true),
+            endLine: sourceFile.getEndLineNumber(),
+          },
+        })
+      );
+
+      // STEP 3.2: Second add individual functions and classes
       const addDoc = (node: FunctionDeclaration | ClassDeclaration) => {
         // Grab start & end lines
         const start = node.getStartLineNumber(true);
@@ -78,12 +112,12 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
           })
         );
       };
-
       // For each source file, get all functions and classess
       // Pass both as "nodes" into the addDoc func
       sourceFile.getFunctions().forEach(addDoc);
       sourceFile.getClasses().forEach(addDoc);
     });
+
     return docs;
   }
 }
