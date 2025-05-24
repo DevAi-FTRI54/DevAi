@@ -7,9 +7,10 @@ import { Annotation, StateGraph } from '@langchain/langgraph';
 import { Document } from '@langchain/core/documents';
 import { z } from 'zod';
 import { createCodeRetriever } from '../indexing/vector.service.js';
-import { generateUnqiueRepoId } from '../indexing/git.service.js';
+import { generateUniqueRepoId } from '../indexing/git.service.js';
 import { CohereRerank } from '@langchain/cohere';
 import { RUN_KEY } from '@langchain/core/outputs';
+import { SYSTEM_PROMPTS } from './prompts.js';
 
 // --- Structured Output for ChatOpenAI --------------------------------------
 // https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html
@@ -56,7 +57,7 @@ const formatDoc = (d: Document) =>
 
 // --- answerQuestion function -----------------------------------------------
 export async function answerQuestion(repoUrl: string, question: string) {
-  const repoId = generateUnqiueRepoId(repoUrl);
+  const repoId = generateUniqueRepoId(repoUrl);
 
   // const repoExists = await checkRepositoryExists(repoId); // You need to implement this function
   // if (!repoExists) {
@@ -66,8 +67,7 @@ export async function answerQuestion(repoUrl: string, question: string) {
   const retriever = await createCodeRetriever(repoId, 8);
 
   // --- STEP 1: Define Prompt -----------------------------------------------
-  const SYSTEMPROMPT =
-    "You are an expert code assistant that answers user's questions about their codebase.";
+  const SYSTEMPROMPT = "You are an expert code assistant that answers user's questions about their codebase.";
 
   const USERPROMPT = `Use the following pieces of context to answer the question at the end.
     If you don't know the answer, just say that you don't know, don't try to make up an answer.
@@ -80,8 +80,10 @@ export async function answerQuestion(repoUrl: string, question: string) {
     
     Helpful answer:`;
 
+  const SYSTEM_PROMPT_ERIC = SYSTEM_PROMPTS.Find.content;
+
   const promptTemplate = ChatPromptTemplate.fromMessages([
-    ['system', SYSTEMPROMPT],
+    ['system', SYSTEM_PROMPT_ERIC],
     ['user', USERPROMPT],
   ]);
 
@@ -142,12 +144,17 @@ export async function answerQuestion(repoUrl: string, question: string) {
       console.log(`Reranking ${state.context.length} documents...`);
 
       const ranks = await reranker.rerank(state.context, state.question);
+      // console.log('--- ranks ---------');
+      // console.log(ranks);
 
       if (!ranks || !Array.isArray(ranks)) {
         console.error('Reranker returned invalid result: ', ranks);
       }
 
       const topDocs = ranks.map((r: any) => state.context[r.index]);
+      // console.log('--- topDocs ---------');
+      // console.log(topDocs);
+
       return { context: topDocs };
     } catch (err) {
       console.error('Error during reranking:', err);
@@ -191,6 +198,8 @@ export async function answerQuestion(repoUrl: string, question: string) {
       question: state.question,
       context: promptBody,
     });
+    console.log('--- response ------------');
+    console.log(response);
 
     return { response };
   };
@@ -219,10 +228,7 @@ export async function answerQuestion(repoUrl: string, question: string) {
     .addEdge('generate', '__end__')
     .compile();
 
-  const result = await workflow.invoke(
-    { question },
-    { runName: 'ask-question', configurable: { repoId } }
-  );
+  const result = await workflow.invoke({ question }, { runName: 'ask-question', configurable: { repoId } });
 
   const traceUrl = (result as any)[RUN_KEY]?.url ?? null; // LLM observability
   const tokens = (result as any)[RUN_KEY]?.totalTokens ?? undefined;

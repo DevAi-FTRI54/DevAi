@@ -5,24 +5,26 @@ import crypto from 'node:crypto';
 
 // Helper function for generating unique repoId
 
-export const generateUnqiueRepoId = (url: string): string =>
-  url
+export const generateUniqueRepoId = (url: string): string => {
+  const baseId = url
     .replace(/(^\w+:|^)\/\//, '')
     .replace(/\.git$/, '')
     .replace(/\W+/g, '_');
 
+  // Hash the baseId to guarantee uniqeueness
+
+  return baseId;
+};
+
 // https://www.npmjs.com/package/simple-git
 // More on SHA-1: https://graphite.dev/guides/git-hash
-export async function cloneRepo(
-  url: string,
-  sha = 'HEAD'
-): Promise<{ localRepoPath: string; repoId: string }> {
+export async function cloneRepo(url: string, sha = 'HEAD'): Promise<{ localRepoPath: string; repoId: string }> {
   // // Grab just the repo name
   // const repoName = url
   //   .split('/')
   //   .pop()!
   //   .replace(/\.git$/, '');
-  const repoId = generateUnqiueRepoId(url);
+  const repoId = generateUniqueRepoId(url);
   const localRepoPath = path.resolve('.cache', 'repos', repoId, sha);
 
   try {

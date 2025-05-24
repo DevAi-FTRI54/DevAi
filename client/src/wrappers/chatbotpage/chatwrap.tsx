@@ -3,22 +3,26 @@ import { useNavigate } from 'react-router-dom';
 
 import ChatInput from '../../components/chat/chatinput/chatinput';
 import ChatWindow from '../../components/chat/chatwindow/chatwindow';
-import ChatMessage from '../../components/chat/chatmessage/chatmessages';
+// import ChatMessage from '../../components/chat/chatmessage/chatmessages';
 import PersistentDrawerLeft from '../../components/navbar/sidebar/sidebarDrawer';
 import TabComps from '../tabpanel/tabpanel';
-import styles from './chatwrap.module.css';
+// import styles from './chatwrap.module.css';
 
-const drawerWidth = 240; // keep this in sync with sidebarDrawer
+// const drawerWidth = 240; // keep this in sync with sidebarDrawer
 
-type Message = { role: 'user' | 'assistant'; content: string };
+type Message = { role: 'user' | 'assistant'; content: string; snippet: string };
 
 const ChatWrap: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
 
   const navigate = useNavigate();
 
-  const handleSetAnswer = (answer: string, userPrompt: string) => {
-    setMessages((prev) => [...prev, { role: 'user', content: userPrompt }, { role: 'assistant', content: answer }]);
+  const handleSetAnswer = (answer: string, userPrompt: string, snippet: string) => {
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', content: userPrompt, snippet: '' },
+      { role: 'assistant', content: answer, snippet: snippet },
+    ]);
   };
 
   const handleClick = () => {

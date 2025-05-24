@@ -21,5 +21,6 @@ export const indexRepo = async (req: Request, res: Response) => {
   // console.log('sha: ', sha);
 
   const job = await indexQueue.add('index', { repoUrl, sha });
+  console.log('✅ Repo indexed successfully.');
   res.json({ jobId: job.id });
 };

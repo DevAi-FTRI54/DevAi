@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 interface ChatInputProps {
-  setAnswer: (answer: string, userPrompt: string) => void;
+  setAnswer: (answer: string, userPrompt: string, snippet: string) => void;
 }
 
 type PromptType = 'default' | 'Find' | 'Bugs' | 'Debug' | 'WalkThrough' | 'Services';
@@ -47,14 +47,21 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
     setError(null);
 
     try {
+      // Temporarily hard code our repo
+      const repoUrl = 'https://github.com/Team-Taz-FTRI-54/AI-ML-Project.git';
+
       const response = await fetch('http://localhost:4000/api/query/question', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptText, type: promptType, sessionId }),
+        body: JSON.stringify({ url: repoUrl, prompt: promptText, type: promptType, sessionId }),
       });
       if (!response.ok) throw new Error('Failed to submit prompt');
       const data = await response.json();
-      setAnswer(data.answer, promptText);
+      console.log(data);
+      setAnswer(data.result.response.answer, data.result.question, data.result.response.citations[0].snippet);
+      // setAnswer(data.result.response.answer, data.result.question);
+
+      // setAnswer(data.answer, promptText);
     } catch (err) {
       if (err instanceof Error) setError(err.message || 'Something went wrong');
     } finally {

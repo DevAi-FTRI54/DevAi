@@ -55,11 +55,12 @@ app.post('/api/query', (req, res) => {
 4. Log costs/latency [done]
 5. Test the entire flow
 6. Improve system prompt and user prompt
-7. Run eval scripts (LangSmith)
-8. Handshake BE/FE
-9. Perfect the entire workflow (remove PAT, integrate repoUrl and sha through GitHub app)
-10. Make the entire workflow work
-11. Implement sending cost tokens etc. to the fron-tend
+7. Implement type prompt inside askController
+8. Run eval scripts (LangSmith)
+9. Handshake BE/FE
+10. Perfect the entire workflow (remove PAT, integrate repoUrl and sha through GitHub app)
+11. Make the entire workflow work
+12. Implement sending cost tokens etc. to the fron-tend
 
 # macOS with Homebrew
 
