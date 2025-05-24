@@ -51,11 +51,15 @@ app.post('/api/query', (req, res) => {
 
 # THUR
 
-3. Implement reranking [done]
-4. Log costs/latency [done]
-5. Test the entire flow
-6. Improve system prompt and user prompt
-7. Implement type prompt inside askController
+1. Implement reranking [done]
+2. Log costs/latency [done]
+3. Test the entire flow
+4. Implement type prompt inside askController
+5. Improve system prompt and user prompt
+6. Implement MongoDB
+
+## BACKLOG
+
 8. Run eval scripts (LangSmith)
 9. Handshake BE/FE
 10. Perfect the entire workflow (remove PAT, integrate repoUrl and sha through GitHub app)
@@ -78,6 +82,7 @@ brew services start redis
 2. Eric + Kyle -> fetch repos from GitHub app - http://localhost:4000/api/github/repos
 3. Figure out how to print out on the frontend the progress bar (/jobs/id/:progress)
    \_ Progress bar - Frontend immediately gets { jobId } and polls /jobs/:id/progress
+4. Figure out how to make "snippet" optional
 
 ## BACKLOG
 

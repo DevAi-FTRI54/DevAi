@@ -6,6 +6,7 @@ import FAQ from './components/faq/faq';
 import ChatWrap from './wrappers/chatbotpage/chatwrap';
 import AuthCallback from './components/auth/authcallback';
 import MainContent from './components/homepage/homepage';
+// import { HomePage } from './components/homepage/homepage';
 import InstallAppPrompt from './components/onboarding/installappprompt';
 import RepoSelector from './components/onboarding/reposelector';
 
@@ -16,7 +17,8 @@ function App() {
       <NavBar />
       {/* Define your routes */}
       <Routes>
-        <Route path="/home" element={<MainContent />} />
+        <Route path="/" element={<MainContent />} />
+        {/* <Route path="/" element={<HomePage />} /> */}
         <Route path="/login" element={<GitHubLogin />} />
         <Route path="/githubapp" element={<AuthCallback />} />
         <Route path="/install-github-app" element={<InstallAppPrompt />} />
