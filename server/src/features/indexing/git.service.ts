@@ -18,7 +18,10 @@ export const generateUniqueRepoId = (url: string): string => {
 
 // https://www.npmjs.com/package/simple-git
 // More on SHA-1: https://graphite.dev/guides/git-hash
-export async function cloneRepo(url: string, sha = 'HEAD'): Promise<{ localRepoPath: string; repoId: string }> {
+export async function cloneRepo(
+  url: string,
+  sha = 'HEAD'
+): Promise<{ localRepoPath: string; repoId: string }> {
   // // Grab just the repo name
   // const repoName = url
   //   .split('/')

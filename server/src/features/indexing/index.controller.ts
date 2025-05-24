@@ -16,11 +16,10 @@ import { indexQueue } from './index.job.js';
 // Using BullMQ Queue & Worker
 export const indexRepo = async (req: Request, res: Response) => {
   const { repoUrl, sha = 'HEAD' } = req.body;
-  // console.log('\n--- indexRepo ------');
-  // console.log('repoUrl: ', repoUrl);
-  // console.log('sha: ', sha);
+  console.log('\n--- indexRepo ------');
+  console.log('repoUrl: ', repoUrl);
+  console.log('sha: ', sha);
 
   const job = await indexQueue.add('index', { repoUrl, sha });
-  console.log('✅ Repo indexed successfully.');
   res.json({ jobId: job.id });
 };
