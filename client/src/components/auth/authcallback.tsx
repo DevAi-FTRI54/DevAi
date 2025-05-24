@@ -5,15 +5,24 @@ const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    //* used to fetch user data or token confirmation
     const completeAuth = async () => {
-      const res = await fetch('http://localhost:4000/api/auth/complete');
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
 
-      //* redirect to /install to install the github app
+      if (!code) return;
+
+      const res = await fetch('http://localhost:4000/api/auth/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+        credentials: 'include',
+      });
+
       if (res.ok) {
         navigate('/install');
       }
     };
+
     completeAuth();
   }, [navigate]);
 

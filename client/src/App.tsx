@@ -4,6 +4,10 @@ import NavBar from './components/navbar/appbar/navbar';
 import './App.css';
 import FAQ from './components/faq/faq';
 import ChatWrap from './wrappers/chatbotpage/chatwrap';
+import AuthCallback from './components/auth/authcallback';
+import MainContent from './components/homepage/homepage';
+import InstallAppPrompt from './components/onboarding/installappprompt';
+import RepoSelector from './components/onboarding/reposelector';
 
 function App() {
   return (
@@ -12,12 +16,12 @@ function App() {
       <NavBar />
       {/* Define your routes */}
       <Routes>
+        <Route path="/home" element={<MainContent />} />
         <Route path="/login" element={<GitHubLogin />} />
+        <Route path="/githubapp" element={<AuthCallback />} />
+        <Route path="/install-github-app" element={<InstallAppPrompt />} />
+        <Route path="select-repo" element={<RepoSelector />} />
         <Route path="/chat" element={<ChatWrap />} />
-        {/* <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/install" element={<InstallAppPrompt />} />
-        <Route path="/select-repo" element={<RepoSelector />} /> */}
-
         <Route path="/faq" element={<FAQ />} />
       </Routes>
     </Router>
