@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import ChatMessage from '../chatmessage/chatmessages.tsx';
-import styles from './chatwindow.module.css';
+// import styles from './chatwindow.module.css';
 
 //* Used to define the message type
 type Message = {
   role: 'user' | 'assistant';
   content: string;
+  snippet: string;
 };
 
 //* Props interface: messages are passed in from parent

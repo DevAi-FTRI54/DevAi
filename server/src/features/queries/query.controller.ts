@@ -9,7 +9,7 @@ import User from '../../models/user.model.js';
 
 export const askController = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { repoUrl, prompt: question } = req.body;
+    const { url: repoUrl, prompt: question } = req.body;
     const response = await answerQuestion(repoUrl, question);
     res.status(200).json(response);
   } catch (err: any) {
