@@ -15,44 +15,53 @@ interface GithubFile {
   type: 'file' | 'dir';
 }
 
-interface SelectedFile {
-  url: string;
-  content: string;
-}
-
 interface RepoViewerProps {
   repoUrl: string; // Should be in the format "owner/repo"
+  selectedPath: string;
 }
 
-const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl }) => {
+const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath }) => {
   const [fileData, setFileData] = useState<GithubFile[] | null>(null);
-  const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchRepoData() {
       try {
-        const response = await fetch(`https://api.github.com/repos/${repoUrl}/contents`);
-        const data: GithubFile[] = await response.json();
-        setFileData(data);
+        const response = await fetch(`https://api.github.com/repos/${repoUrl}/contents/${selectedPath}`);
+        const data = await response.json();
+
+        // If it's a directory, render directory items
+        if (Array.isArray(data)) {
+          setFileData(data);
+          setFileContent(null);
+        }
+        // If it's a file, fetch its content
+        else if (data.type === 'file' && data.download_url) {
+          const contentRes = await fetch(data.download_url);
+          const content = await contentRes.text();
+          setFileContent(content);
+          setFileData(null);
+        }
       } catch (error) {
         console.error('Error fetching repo data:', error);
       }
     }
+
     fetchRepoData();
-  }, [repoUrl]);
+  }, [repoUrl, selectedPath]);
 
   async function fetchFileContent(fileUrl: string) {
     try {
       const response = await fetch(fileUrl);
       const content = await response.text();
-      setSelectedFile({ url: fileUrl, content });
+      setFileContent(content);
     } catch (error) {
       console.error('Error fetching file content:', error);
     }
   }
 
   // Since the GitHub API does not provide tree in one go,
-  // We'll display just the root directory for now.
+  // We'll display either the selected file or the selected folder
   function renderDirectory(items: GithubFile[]) {
     return (
       <ul>
@@ -74,10 +83,6 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl }) => {
     );
   }
 
-  if (!fileData) {
-    return <div>Loading...</div>;
-  }
-
   function getLanguage(filename: string): string {
     if (filename.endsWith('.js')) return 'javascript';
     if (filename.endsWith('.jsx')) return 'jsx';
@@ -93,12 +98,12 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl }) => {
   return (
     <div>
       <h2>Repository Files</h2>
-      {renderDirectory(fileData)}
-      {selectedFile && (
+      {fileData && renderDirectory(fileData)}
+      {fileContent && (
         <div>
-          <h3>{selectedFile.url}</h3>
-          <SyntaxHighlighter language={getLanguage(selectedFile.url)} style={coy}>
-            {selectedFile.content}
+          <h3>{selectedPath}</h3>
+          <SyntaxHighlighter language={getLanguage(selectedPath)} style={coy}>
+            {fileContent}
           </SyntaxHighlighter>
         </div>
       )}

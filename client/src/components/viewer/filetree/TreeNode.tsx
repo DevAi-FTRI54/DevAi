@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-//* this file is to handle recursive rendering & lazy load on file tree structure in GithubContentItem
+//* This file handles recursive rendering & lazy loading of the file tree from GitHub
 export interface GitHubContentItem {
   name: string;
   path: string;
@@ -14,9 +14,10 @@ interface TreeNodeProps {
   owner: string;
   repo: string;
   token?: string;
+  onFileSelect?: (filePath: string) => void;
 }
 
-const TreeNode: React.FC<TreeNodeProps> = ({ name, path, type, owner, repo, token }) => {
+const TreeNode: React.FC<TreeNodeProps> = ({ name, path, type, owner, repo, token, onFileSelect }) => {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<GitHubContentItem[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -38,12 +39,20 @@ const TreeNode: React.FC<TreeNodeProps> = ({ name, path, type, owner, repo, toke
     }
   };
 
+  const handleFileClick = () => {
+    if (type === 'file' && onFileSelect) {
+      onFileSelect(path); // Send the full file path to parent
+    }
+  };
+
   return (
     <div style={{ marginLeft: 20 }}>
-      <div onClick={handleToggle} style={{ cursor: type === 'dir' ? 'pointer' : 'default' }}>
+      <div onClick={type === 'dir' ? handleToggle : handleFileClick} style={{ cursor: 'pointer' }}>
         {type === 'dir' ? (expanded ? '📂' : '📁') : '📄'} {name}
       </div>
+
       {loading && <div style={{ marginLeft: 20 }}>Loading...</div>}
+
       {expanded && children.length > 0 && (
         <div>
           {children.map((child) => (
@@ -55,6 +64,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ name, path, type, owner, repo, toke
               owner={owner}
               repo={repo}
               token={token}
+              onFileSelect={onFileSelect} // Pass down the callback
             />
           ))}
         </div>

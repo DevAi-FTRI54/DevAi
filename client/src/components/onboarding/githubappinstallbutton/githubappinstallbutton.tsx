@@ -1,17 +1,34 @@
 import React from 'react';
-
-// const GITHUB_APP_CLIENT_ID = 'YOUR_GITHUB_APP_CLIENT_ID'; // Not always used in install link
-// const GITHUB_APP_SLUG = 'devai-repo-agent'; // from GitHub App settings
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 const GitHubAppInstallButton: React.FC = () => {
   const handleInstall = () => {
-    // This is the GitHub install link for your app
     window.location.href = `https://github.com/apps/devai-repo-agent/installations/new`;
   };
 
   return (
-    <button onClick={handleInstall} style={{ fontSize: 18 }}>
-      🚀 Install GitHub App
+    <button
+      onClick={handleInstall}
+      style={{
+        fontSize: 18,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        background: '#22272E',
+        color: '#fff',
+        border: 'none',
+        padding: '0.6rem 1.2rem',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+        transition: 'background 0.2s',
+      }}
+      onMouseOver={(e) => (e.currentTarget.style.background = '#2f3541')}
+      onMouseOut={(e) => (e.currentTarget.style.background = '#22272E')}
+    >
+      <FontAwesomeIcon icon={faGithub} />
+      Install GitHub App
     </button>
   );
 };

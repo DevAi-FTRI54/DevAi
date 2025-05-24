@@ -1,4 +1,6 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 const GitHubLogin: React.FC = () => {
   const handleLogin = () => {
@@ -29,11 +31,15 @@ const GitHubLogin: React.FC = () => {
           cursor: 'pointer',
           boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
           transition: 'background 0.2s',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
         }}
         onMouseOver={(e) => (e.currentTarget.style.background = '#2f3541')}
         onMouseOut={(e) => (e.currentTarget.style.background = '#22272E')}
       >
-        🔐 Login with GitHub
+        <FontAwesomeIcon icon={faGithub} />
+        Login with GitHub
       </button>
     </div>
   );
