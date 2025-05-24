@@ -58,7 +58,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
       if (!response.ok) throw new Error('Failed to submit prompt');
       const data = await response.json();
       console.log(data);
-      setAnswer(data.result.response.answer, data.result.question, data.result.response.citations[0].snippet);
+      const snippet = data.result.response.citations?.[0].snippet ?? '';
+      setAnswer(data.result.response.answer, data.result.question, snippet);
       // setAnswer(data.result.response.answer, data.result.question);
 
       // setAnswer(data.answer, promptText);
@@ -70,13 +71,13 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto flex flex-col gap-4 p-4 bg-white rounded shadow">
-      <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-white rounded-xl shadow">
+      <div className="w-full max-w-3xl mx-auto flex justify-center space-x-2">
         {QUICK_PROMPTS.map(({ label, text, type }) => (
           <button
             key={type}
             type="button"
-            className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition disabled:opacity-50"
+            className="px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition disabled:opacity-50"
             onClick={() => handleQuickPrompt(text, type)}
             disabled={loading}
           >
@@ -84,26 +85,27 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
           </button>
         ))}
       </div>
-      <div>
+      {/* This is the updated textarea + button wrapper */}
+      <div className="relative w-full">
         <textarea
           id="user-prompt"
-          className="w-full min-h-[48px] resize-y text-base p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+          className="w-full min-h-[48px] resize-none overflow-hidden text-base p-1 pr-20 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
           placeholder="Please type your prompt here"
           value={promptText}
           onChange={handleChange}
           onInput={autoGrow}
-          rows={6}
+          rows={2}
           disabled={loading}
         />
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded bg-red-600 text-white font-semibold hover:bg-red-700 transition disabled:opacity-50"
+          onClick={handleSubmit}
+          disabled={loading || !promptText.trim()}
+        >
+          {loading ? '...' : 'Submit'}
+        </button>
       </div>
-      <button
-        type="button"
-        className="self-end px-4 py-2 rounded bg-red-600 text-white font-semibold hover:bg-red-700 transition disabled:opacity-50"
-        onClick={handleSubmit}
-        disabled={loading || !promptText.trim()}
-      >
-        {loading ? 'Submitting...' : 'Submit'}
-      </button>
       {error && <p className="text-red-600">{error}</p>}
     </div>
   );
