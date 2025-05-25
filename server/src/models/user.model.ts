@@ -11,6 +11,7 @@ export interface IUser extends Document {
   accessToken: string;
   email: string;
   passwordHash: string;
+  installationId?: number;
   createdAt: Date;
   updatedAt: Date;
   //queries: mongoose.Types.ObjectId[]; //reference to Query documents
@@ -23,6 +24,7 @@ const userSchema = new mongoose.Schema<IUser>( //uses created typing from line 4
     avatarUrl: { type: String }, // Optional: GitHub avatar
     email: { type: String }, // Optional: public GitHub email
     accessToken: { type: String }, // (Optional) only if you want to make GitHub API requests
+    installationId: { type: Number }, //(Optional) only if User has already installed github APP
     createdAt: { type: Date, default: Date.now },
     //queries: [{ type: Schema.Types.ObjectId, ref: 'Query' }],
     //Array of documents of type ObjectID, each refers to a doc in Query collection;
