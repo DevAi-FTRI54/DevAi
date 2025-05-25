@@ -18,6 +18,8 @@
     "@langchain/openai": "^0.5.11",
     "@langchain/qdrant": "^0.1.2",
     "@langchain/textsplitters": "^0.1.0",
+    "@octokit/auth-app": "^8.0.1",
+    "@octokit/rest": "^21.1.1",
     "bullmq": "^5.52.3",
     "cookie-parser": "^1.4.7",
     "cookieparser": "^0.1.0",
