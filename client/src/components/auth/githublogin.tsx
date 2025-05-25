@@ -38,7 +38,7 @@ const GitHubLogin: React.FC = () => {
           padding: '0.75rem 2rem',
           fontSize: '1.0rem',
           background: '#22272E',
-          color: '#fff',
+          color: 'bg-custom-blue text-white',
           border: 'none',
           borderRadius: '8px',
           cursor: 'pointer',
