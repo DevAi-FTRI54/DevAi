@@ -15,15 +15,28 @@ const GitHubLogin: React.FC = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#181C20', // Optional: your DevAi dark background
+        background: '#181C20',
       }}
     >
-      <h1 style={{ color: '#fff', marginBottom: '1.5rem' }}>Login to DevAi</h1>
+      <h1
+        style={{
+          fontSize: '1.5rem',
+          color: '#fff',
+          marginBottom: '1.5rem',
+          fontFamily: "'TT Hoves Pro Trial', Arial, sans-serif",
+          fontWeight: 400,
+          lineHeight: 1,
+          letterSpacing: '0.01em',
+          textAlign: 'center',
+        }}
+      >
+        Get started with DevAi
+      </h1>
       <button
         onClick={handleLogin}
         style={{
           padding: '0.75rem 2rem',
-          fontSize: '1.1rem',
+          fontSize: '1.0rem',
           background: '#22272E',
           color: '#fff',
           border: 'none',

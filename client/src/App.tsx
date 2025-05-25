@@ -1,14 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import GitHubLogin from './components/auth/githublogin';
-import NavBar from './components/navbar/appbar/navbar';
+import NavBar from './components/bars/navbar/navbar';
 import './App.css';
-import FAQ from './components/faq/faq';
+import FAQ from './wrappers/faqpage/faq';
 import ChatWrap from './wrappers/chatbotpage/chatwrap';
 import AuthCallback from './components/auth/authcallback';
-import MainContent from './components/homepage/homepage';
+import MainContent from './wrappers/homepage/homepage';
 // import { HomePage } from './components/homepage/homepage';
-import InstallAppPrompt from './components/onboarding/installappprompt';
-import RepoSelector from './components/onboarding/reposelector';
+import InstallAppPrompt from './components/auth/installappprompt';
+import RepoSelector from './components/auth/reposelector';
 
 function App() {
   return (
