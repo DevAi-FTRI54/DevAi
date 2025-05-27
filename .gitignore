@@ -12,8 +12,12 @@ node_modules
 #  Python (ml/)
 #####################################
 # virtual-envs
-.venv/
-venv/
+ml/venv/
+
+# data & models (handled elsewhere)
+ml/data/*
+ml/models/*
+./venv/
 
 # byte-code
 __pycache__/
@@ -21,7 +25,4 @@ __pycache__/
 
 # Jupyter
 .ipynb_checkpoints/
-
-# data & models (handled elsewhere)
-ml/data/*
-ml/models/*
+./venv/
