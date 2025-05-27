@@ -8,7 +8,7 @@ const InstallAppPrompt: React.FC = () => {
     <div className="flex flex-col items-center justify-center h-screen">
       <h1 className="font-tt-hoves text-2xl font-semibold mb-4 flex items-center gap-2">
         <FontAwesomeIcon icon={faGithub} />
-        Install DevAI GitHub App
+        Install DevAi GitHub App
       </h1>
       <p className="font-tt-hoves mb-6 max-w-md text-center">
         To index your repositories and power AI features, please install the DevAI GitHub App on your repositories.
