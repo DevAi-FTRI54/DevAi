@@ -7,3 +7,21 @@ client/node_modules
 server/node_modules
 node_modules
 .cache
+
+#####################################
+#  Python (ml/)
+#####################################
+# virtual-envs
+.venv/
+venv/
+
+# byte-code
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# data & models (handled elsewhere)
+ml/data/*
+ml/models/*
