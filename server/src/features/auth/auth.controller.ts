@@ -15,7 +15,7 @@ const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET!;
 if (!CLIENT_SECRET) throw new Error('Missing GITHUB_CLIENT_SECRET env var');
 const JWT_SECRET = process.env.JWT_SECRET!;
 if (!JWT_SECRET) throw new Error('Missing JWT_SECRET env var');
-const REDIRECT_URI = 'https://62b7-47-14-82-7.ngrok-free.app/api/auth/callback';
+const REDIRECT_URI = 'https://4276-47-14-82-7.ngrok-free.app/api/auth/callback';
 //redirected to this route after the successful github login
 //In your GitHub OAuth app settings, you must set the Authorization callback URL to match your REDIRECT_URI.
 //https://github.com/settings/developers
