@@ -10,22 +10,15 @@ const GitHubAppInstallButton: React.FC = () => {
   return (
     <button
       onClick={handleInstall}
-      style={{
-        fontSize: 18,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        background: '#22272E',
-        color: '#fff',
-        border: 'none',
-        padding: '0.6rem 1.2rem',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-        transition: 'background 0.2s',
-      }}
-      onMouseOver={(e) => (e.currentTarget.style.background = '#2f3541')}
-      onMouseOut={(e) => (e.currentTarget.style.background = '#22272E')}
+      className="
+        flex items-center gap-2 
+        bg-[#22272E] text-white 
+        px-5 py-2 rounded-lg 
+        cursor-pointer shadow-md 
+        transition-colors 
+        font-tt-hoves text-[18px] 
+        hover:bg-[#2f3541]
+      "
     >
       <FontAwesomeIcon icon={faGithub} />
       Install GitHub App

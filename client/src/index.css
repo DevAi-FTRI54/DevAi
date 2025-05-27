@@ -4,23 +4,17 @@
 
 @font-face {
   font-family: 'TT Hoves Pro';
-  src: url('/fonts/TT-Hoves-Pro-Regular.woff2') format('woff2'), url('/fonts/TT-Hoves-Pro-Regular.woff') format('woff');
+  src: url('/fonts/tt_hoves_pro/TT-Hoves-Pro-Trial-Regular.ttf') format('truetype'),
+    url('/fonts/tt_hoves_pro/TT-Hoves-Pro-Trial-Expanded-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'TT Hoves Pro';
-  src: url('/fonts/TT-Hoves-Pro-Bold.woff2') format('woff2'), url('/fonts/TT-Hoves-Pro-Bold.woff') format('woff');
+  src: url('/fonts/tt_hoves_pro/TT-Hoves-Pro-Trial-Bold.ttf') format('truetype'),
+    url('/fonts/tt_hoves_pro/TT-Hoves-Pro-Trial-Expanded-Bold.ttf') format('truetype');
   font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'TT Hoves Pro Trial';
-  src: url('/fonts/TT-Hoves-Pro-Trial-Regular.woff2') format('woff2'),
-    url('/fonts/TT-Hoves-Pro-Trial-Regular.woff') format('woff');
-  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }

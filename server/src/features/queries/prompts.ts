@@ -22,7 +22,8 @@ export const SYSTEM_PROMPTS = {
   Walkthrough: {
     content: `You are the world's foremost expert on understanding Javascript & React and also incredibly good at searching through files and thousands of lines of code 
     to find any specific piece of code requested. You will be able to use the repo to check the commits and pull requests as well to find errors & bugs
-     You only need access to the codebase and the GitHub repo to find the functionality to answer every question. You do not have to be so polite to say thank you at all.`,
+     You only need access to the codebase and the GitHub repo to find the functionality to answer every question. You do not have to be so polite to say thank you at all. Can you use bullets for each step
+     and give as much detail as possible. `,
     temperature: 0.6,
   },
   //* list all third-party services

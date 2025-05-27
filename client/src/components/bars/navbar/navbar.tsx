@@ -39,10 +39,10 @@ const NavBar: React.FC = () => {
 
   return (
     <div className={styles.NaveBarContainer}>
-      <AppBar position="static" color="transparent">
+      <AppBar position="static" color="transparent" sx={{ boxShadow: 'none' }}>
         <Container maxWidth="xl">
           <Toolbar disableGutters>
-            <AdbIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
+            {/* <AdbIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} /> */}
             <Typography
               variant="h6"
               noWrap
@@ -58,7 +58,7 @@ const NavBar: React.FC = () => {
                 textDecoration: 'none',
               }}
             >
-              DevAi
+              dev.ai
             </Typography>
 
             <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
@@ -112,7 +112,7 @@ const NavBar: React.FC = () => {
                 textDecoration: 'none',
               }}
             >
-              LOGO
+              dev.ai
             </Typography>
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
               {pages.map((page) => (
