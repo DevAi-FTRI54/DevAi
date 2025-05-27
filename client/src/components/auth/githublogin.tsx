@@ -8,35 +8,13 @@ const GitHubLogin: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#181C20', // Optional: your DevAi dark background
-      }}
-    >
-      <h1 style={{ color: '#fff', marginBottom: '1.5rem' }}>Login to DevAi</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#181C20]">
+      <h1 className="text-2xl text-white mb-6 font-tt-hoves font-normal leading-none tracking-tight text-center">
+        Get started with DevAi
+      </h1>
       <button
         onClick={handleLogin}
-        style={{
-          padding: '0.75rem 2rem',
-          fontSize: '1.1rem',
-          background: '#22272E',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-          transition: 'background 0.2s',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}
-        onMouseOver={(e) => (e.currentTarget.style.background = '#2f3541')}
-        onMouseOut={(e) => (e.currentTarget.style.background = '#22272E')}
+        className="px-8 py-3 text-base bg-[#22272E] hover:bg-[#2f3541] text-white rounded-lg shadow-md flex items-center gap-2 transition-colors font-tt-hoves"
       >
         <FontAwesomeIcon icon={faGithub} />
         Login with GitHub

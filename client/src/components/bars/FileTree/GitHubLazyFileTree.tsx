@@ -1,0 +1,40 @@
+import React, { useEffect, useState } from 'react';
+import TreeNode from '../FileTree/TreeNode';
+import type { GitHubContentItem } from '../../../types';
+import type { GitHubLazyFileTreeProps } from '../../../types';
+
+const GitHubLazyFileTree: React.FC<GitHubLazyFileTreeProps> = ({ owner, repo, token, onFileSelect }) => {
+  const [rootItems, setRootItems] = useState<GitHubContentItem[]>([]);
+
+  useEffect(() => {
+    const fetchRoot = async () => {
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`, {
+        headers,
+      });
+      const data: GitHubContentItem[] = await res.json();
+      setRootItems(data);
+    };
+
+    fetchRoot();
+  }, [owner, repo, token]);
+
+  return (
+    <div>
+      {rootItems.map((item) => (
+        <TreeNode
+          key={item.path}
+          name={item.name}
+          path={item.path}
+          type={item.type}
+          owner={owner}
+          repo={repo}
+          token={token}
+          onFileSelect={onFileSelect}
+        />
+      ))}
+    </div>
+  );
+};
+
+export default GitHubLazyFileTree;

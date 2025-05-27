@@ -26,7 +26,7 @@ const AuthCallback: React.FC = () => {
     completeAuth();
   }, [navigate]);
 
-  return <div className="p-4">Authenticating with GitHub...</div>;
+  return <div className="font-tt-hoves p-4">Authenticating with GitHub...</div>;
 };
 
 export default AuthCallback;

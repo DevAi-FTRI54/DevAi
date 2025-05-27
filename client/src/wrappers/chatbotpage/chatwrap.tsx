@@ -1,134 +1,9 @@
-// import React, { useState } from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import PermanentSidebar from '../../components/navbar/sidebar/sidebarDrawer';
-// import ChatWindow from '../../components/chat/chatwindow/chatwindow';
-// import ChatInput from '../../components/chat/chatinput/chatinput';
-// // import TabComps from '../tabpanel/tabpanel'; // Uncomment if using tabs
-
-// type Message = {
-//   role: 'user' | 'assistant';
-//   content: string;
-//   snippet: string;
-// };
-
-// const ChatWrap: React.FC = () => {
-//   const [messages, setMessages] = useState<Message[]>([]);
-//   const navigate = useNavigate();
-
-//   const owner = 'Team-Taz-FTRI-54';
-//   const repo = 'AI-ML-Project';
-
-//   const handleSetAnswer = (answer: string, userPrompt: string, snippet: string) => {
-//     setMessages((prev) => [
-//       ...prev,
-//       { role: 'user', content: userPrompt, snippet: '' },
-//       { role: 'assistant', content: answer, snippet: snippet },
-//     ]);
-//   };
-
-//   const handleFileSelect = (filePath: string) => {
-//     navigate(`/fileviewer?path=${encodeURIComponent(filePath)}`);
-//   };
-
-//   return (
-//     <div style={{ display: 'flex' }}>
-//       <PermanentSidebar owner={owner} repo={repo} onFileSelect={handleFileSelect} />
-//       <main className="flex-1 flex flex-col items-center pt-24 px-4">
-//         {/* Optional: Top Chat Controls */}
-//         {/* <div className="flex flex-row items-center justify-center gap-4 mb-10">
-//           <button
-//             className="px-5 py-2 rounded bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
-//           >
-//             Chat
-//           </button>
-//           <TabComps />
-//         </div> */}
-
-//         {/* Chat content */}
-//         <div className="w-full max-w-2xl flex flex-col gap-1">
-//           <ChatWindow messages={messages} />
-//           <ChatInput setAnswer={handleSetAnswer} />
-//         </div>
-//       </main>
-//     </div>
-//   );
-// };
-
-// export default ChatWrap;
-
-// import { useState } from 'react';
-// // import { useNavigate } from 'react-router-dom';
-
-// import ChatInput from '../../components/chat/chatinput/chatinput';
-// import ChatWindow from '../../components/chat/chatwindow/chatwindow';
-// // import ChatMessage from '../../components/chat/chatmessage/chatmessages';
-// import PersistentDrawerLeft from '../../components/navbar/sidebar/sidebarDrawer';
-// // import TabComps from '../tabpanel/tabpanel';
-// // import styles from './chatwrap.module.css';
-
-// // const drawerWidth = 240; // keep this in sync with sidebarDrawer
-
-// type Message = { role: 'user' | 'assistant'; content: string; snippet: string };
-
-// const ChatWrap: React.FC = () => {
-//   const [messages, setMessages] = useState<Message[]>([]);
-
-//   // const navigate = useNavigate();
-
-//   const handleSetAnswer = (answer: string, userPrompt: string, snippet: string) => {
-//     setMessages((prev) => [
-//       ...prev,
-//       { role: 'user', content: userPrompt, snippet: '' },
-//       { role: 'assistant', content: answer, snippet: snippet },
-//     ]);
-//   };
-
-//   // // const handleClick = () => {
-//   //   navigate('/chat');
-//   // };
-
-//   return (
-//     <div className="flex min-h-screen bg-gradient-to-b from-slate-500 to-blue-950">
-//       <PersistentDrawerLeft />
-//       <main className="flex-1 flex flex-col items-center pt-24 px-4">
-//         {' '}
-//         {/* pt-12 = 3rem spacing from top (AppBar) */}
-//         {/* Top: Chat Button + Tabs */}
-//         {/* <div className="flex flex-row items-center justify-center gap-4 mb-10">
-//           <button
-//             className="px-5 py-2 rounded bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
-//             onClick={handleClick}
-//           >
-//             Chat
-//           </button>
-//           <TabComps />
-//         </div> */}
-//         {/* Main chat area */}
-//         <div className="w-full max-w-2xl flex flex-col gap-1">
-//           <ChatWindow messages={messages} />
-//           <ChatInput setAnswer={handleSetAnswer} />
-//         </div>
-//       </main>
-//     </div>
-//   );
-// };
-
-// export default ChatWrap;
-
 import React, { useState } from 'react';
-import PermanentSidebar from '../../components/navbar/sidebar/sidebarDrawer';
-import ChatWindow from '../../components/chat/chatwindow/chatwindow';
-import ChatInput from '../../components/chat/chatinput/chatinput';
-import RepoViewer from '../../components/viewer/filepreview/filepreview';
-
-type Message = {
-  role: 'user' | 'assistant';
-  content: string;
-  snippet: string;
-  file: string;
-  startLine: number;
-  endLine: number;
-};
+import PermanentSidebar from '../../components/bars/FileTree/sidebarDrawer';
+import ChatWindow from '../../components/chat/chatwindow';
+import ChatInput from '../../components/chat/chatinput';
+import RepoViewer from '../../components/chat/filepreview';
+import type { Message } from '../../types';
 
 const ChatWrap: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -148,7 +23,14 @@ const ChatWrap: React.FC = () => {
     setMessages((prev) => [
       ...prev,
       { role: 'user', content: userPrompt, snippet: '', file: '', startLine: 0, endLine: 0 },
-      { role: 'assistant', content: answer, snippet: snippet, file: file, startLine: startLine, endLine: endLine },
+      {
+        role: 'assistant',
+        content: answer,
+        snippet: snippet ?? '',
+        file: file,
+        startLine: startLine,
+        endLine: endLine,
+      },
     ]);
   };
 
