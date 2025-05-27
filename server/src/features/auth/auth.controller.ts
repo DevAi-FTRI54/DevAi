@@ -81,9 +81,13 @@ export const completeAuth = async (
   let user = await User.findOne({ githubUsername: githubData.login });
   if (!user) {
     user = new User({
-      githubUsername: githubData.login,
-      email: githubData.email || `${githubData.login}@github.com`,
+      githubId: githubData.id.toString(), // required and unique
+      username: githubData.login,
+      avatarUrl: githubData.avatar_url,
+      email: githubData.email || `${githubData.login}@users.noreply.github.com`,
+      accessToken: githubToken, // optional but handy
     });
+
     await user.save();
   }
 
