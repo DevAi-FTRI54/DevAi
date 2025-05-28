@@ -19,6 +19,8 @@ const RepoSelector: React.FC = () => {
 
   // const [selected, setSelected] = useState<string>('');
   const [installationId, setInstallationId] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // On mount, parse the installation_id from URL
   useEffect(() => {
@@ -36,7 +38,8 @@ const RepoSelector: React.FC = () => {
         return r.json() as Promise<Repo[]>;
       })
       .then(setRepos)
-      .catch(console.error);
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   // Ingest selected repo
