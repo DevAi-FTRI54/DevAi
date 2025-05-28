@@ -5,7 +5,7 @@ import GitHubAppInstallButton from './githubappinstallbutton'; // Adjust path as
 
 const InstallAppPrompt: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#181C20]">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#23262f]">
       <h1 className="font-tt-hoves text-2xl font-semibold mb-4 flex items-center gap-2  text-white ">
         <FontAwesomeIcon icon={faGithub} />
         Install DevAi GitHub App

@@ -13,7 +13,7 @@ const ProgressBar: React.FC = () => {
 
   useEffect(() => {
     const fetchStatus = async () => {
-      const res = await fetch('http://localhost:4000/api/github/ingestion-status');
+      const res = await fetch('/api/github/ingestion-status');
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
@@ -21,7 +21,7 @@ const ProgressBar: React.FC = () => {
     };
     fetchStatus();
 
-    const interval = setInterval(fetchStatus, 5000);
+    const interval = setInterval(fetchStatus, 1000);
     return () => clearInterval(interval);
   }, []);
 

@@ -13,13 +13,10 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath }) => {
         const response = await fetch(`https://api.github.com/repos/${repoUrl}/contents/${selectedPath}`);
         const data = await response.json();
 
-        // If it's a directory, render directory items
         if (Array.isArray(data)) {
           setFileData(data);
           setFileContent(null);
-        }
-        // If it's a file, fetch its content
-        else if (data.type === 'file' && data.download_url) {
+        } else if (data.type === 'file' && data.download_url) {
           const contentRes = await fetch(data.download_url);
           const content = await contentRes.text();
           setFileContent(content);
@@ -29,7 +26,6 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath }) => {
         console.error('Error fetching repo data:', error);
       }
     }
-
     fetchRepoData();
   }, [repoUrl, selectedPath]);
 
@@ -43,18 +39,16 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath }) => {
     }
   }
 
-  // Since the GitHub API does not provide tree in one go,
-  // We'll display either the selected file or the selected folder
   function renderDirectory(items: GithubFile[]) {
     return (
-      <ul>
+      <ul className="pl-4 space-y-1">
         {items.map((item) => (
           <li key={item.sha}>
             {item.type === 'dir' ? (
-              <strong>{item.name} (dir)</strong>
+              <strong className="text-blue-400">{item.name} (dir)</strong>
             ) : (
               <span
-                style={{ cursor: 'pointer', color: 'blue' }}
+                className="cursor-pointer text-blue-500 hover:underline"
                 onClick={() => item.download_url && fetchFileContent(item.download_url)}
               >
                 {item.name}
@@ -79,15 +73,34 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath }) => {
   }
 
   return (
-    <div bg-gray-200>
-      <h2>Repository Files</h2>
+    <div className="w-full">
+      {/* Repo and Path in one line, file path smaller */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <span className="text-lg font-semibold text-gray-400">Repo:</span>
+        {selectedPath && (
+          <span className="text-lg text-gray-400 break-all truncate max-w-xs" title={selectedPath}>
+            /{selectedPath}
+          </span>
+        )}
+      </div>
+
+      {/* Directory or file view */}
       {fileData && renderDirectory(fileData)}
+
       {fileContent && (
-        <div>
-          <h3>{selectedPath}</h3>
-          <SyntaxHighlighter language={getLanguage(selectedPath)} style={coy}>
-            {fileContent}
-          </SyntaxHighlighter>
+        <div className="mt-4">
+          {/* Syntax-highlighted code block */}
+          <div className="rounded-lg overflow-hidden border border-[#39415a] bg-[#161b2a]">
+            <SyntaxHighlighter
+              language={getLanguage(selectedPath)}
+              style={coy}
+              customStyle={{ margin: 0, background: 'transparent', fontSize: 14 }}
+              wrapLongLines
+              showLineNumbers
+            >
+              {fileContent}
+            </SyntaxHighlighter>
+          </div>
         </div>
       )}
     </div>
