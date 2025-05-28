@@ -16,7 +16,7 @@ import AdbIcon from '@mui/icons-material/Adb';
 import styles from './navbar.module.css';
 
 const pages = ['FAQ', 'History', 'Repos', 'Notes'];
-const settings = ['Profile', 'Account', 'Settings', 'Dashboard', 'Logout'];
+const settings = ['Account', 'Settings', 'Logout'];
 
 const NavBar: React.FC = () => {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);

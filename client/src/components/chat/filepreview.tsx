@@ -79,7 +79,7 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath }) => {
   }
 
   return (
-    <div>
+    <div bg-gray-200>
       <h2>Repository Files</h2>
       {fileData && renderDirectory(fileData)}
       {fileContent && (

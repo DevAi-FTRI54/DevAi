@@ -2,7 +2,7 @@ const MainContent = () => (
   <div
     className="relative min-h-screen w-full flex flex-col items-center overflow-hidden"
     style={{
-      background: 'linear-gradient(120deg, #473e63 0%, #18181b 40%, #9e6c39 100%)',
+      background: 'lingit ear-gradient(120deg, #473e63 0%, #18181b 40%, #9e6c39 100%)',
     }}
   >
     {/* Gradient Overlay */}

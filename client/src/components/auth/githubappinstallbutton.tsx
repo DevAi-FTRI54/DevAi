@@ -4,7 +4,10 @@ import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 const GitHubAppInstallButton: React.FC = () => {
   const handleInstall = () => {
-    window.location.href = `https://github.com/apps/devai-repo-agent/installations/new`;
+    const redirectUrl = 'http://localhost:3000/select-repo'; // or your prod URL!
+    window.location.href = `https://github.com/apps/devairepoagent/installations/new?redirect_url=${encodeURIComponent(
+      redirectUrl
+    )}`;
   };
 
   return (
