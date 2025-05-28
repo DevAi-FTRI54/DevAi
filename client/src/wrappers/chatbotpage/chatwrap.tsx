@@ -26,7 +26,7 @@ const ChatWrap: React.FC = () => {
       {
         role: 'assistant',
         content: answer,
-        snippet: snippet ?? '',
+        snippet: snippet || '',
         file: file,
         startLine: startLine,
         endLine: endLine,
@@ -36,32 +36,33 @@ const ChatWrap: React.FC = () => {
 
   const handleFileSelect = (filePath: string) => {
     setSelectedFilePath(filePath);
-    // Optional: navigate(`/fileviewer?path=${encodeURIComponent(filePath)}`);
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen pt-[64px] overflow-hidden ">
-      {/* Sidebar - always visible on desktop, top on mobile */}
-      <div className="w-full md:w-1/5 border-r border-gray-200">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] mt-[64px] overflow-hidden bg-gray-300">
+      {/* Sidebar */}
+      <div className="w-full md:w-1/5 h-full">
         <PermanentSidebar owner={owner} repo={repo} onFileSelect={handleFileSelect} />
       </div>
 
       {/* Chat Area */}
-      <div className="w-full md:w-2/5 flex flex-col items-center px-4 py-6">
-        <div className="text-center mb-6">
+      <div className="w-full md:w-2/5 flex flex-col px-4 py-6 overflow-hidden h-full">
+        <div className="text-center mb-4 shrink-0">
           <h1 className="text-2xl font-bold">DevAi Onboarding Assistant</h1>
           <p className="text-sm text-gray-500">Ask anything about this codebase during your onboarding</p>
         </div>
 
-        <div className="w-full max-w-2xl flex-1 flex flex-col gap-2">
+        <div className="w-full max-w-2xl flex-1 flex flex-col gap-2 overflow-y-auto">
           <ChatWindow messages={messages} />
+        </div>
 
+        <div className="w-full max-w-2xl shrink-0">
           <ChatInput setAnswer={handleSetAnswer} />
         </div>
       </div>
 
       {/* File Viewer */}
-      <div className="w-full md:w-2/5 border-l border-gray-200 p-4 overflow-y-auto">
+      <div className="w-full md:w-2/5 border-l border-gray-200 p-4 h-full overflow-y-auto">
         {selectedFilePath ? (
           <RepoViewer repoUrl={`${owner}/${repo}`} selectedPath={selectedFilePath} />
         ) : (
