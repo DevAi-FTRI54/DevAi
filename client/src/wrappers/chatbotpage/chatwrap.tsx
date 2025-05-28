@@ -39,34 +39,33 @@ const ChatWrap: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] mt-[64px] overflow-hidden bg-gray-300">
+    <div className="flex h-[calc(100vh-56px)] bg-[#121629]">
       {/* Sidebar */}
-      <div className="w-full md:w-1/5 h-full">
+      <div className="w-1/5 h-full bg-[#232946] border-r border-[#39415a] overflow-y-auto min-h-0">
         <PermanentSidebar owner={owner} repo={repo} onFileSelect={handleFileSelect} />
       </div>
 
       {/* Chat Area */}
-      <div className="w-full md:w-2/5 flex flex-col px-4 py-6 overflow-hidden h-full">
-        <div className="text-center mb-4 shrink-0">
-          <h1 className="text-2xl font-bold">DevAi Onboarding Assistant</h1>
-          <p className="text-sm text-gray-500">Ask anything about this codebase during your onboarding</p>
-        </div>
-
-        <div className="w-full max-w-2xl flex-1 flex flex-col gap-2 overflow-y-auto">
+      <div className="w-2/5 flex flex-col h-full px-6 py-8 min-h-0">
+        {/* <div className="text-center mb-4 shrink-0">
+          <h1 className="text-2xl font-bold text-[#5EEAD4]">DevAi Onboarding Assistant</h1>
+          <p className="text-sm text-gray-400">Ask anything about this codebase during your onboarding</p>
+        </div> */}
+        {/* ChatWindow scrolls independently */}
+        <div className="w-full max-w-2xl flex-1 flex flex-col gap-2 overflow-y-auto min-h-0">
           <ChatWindow messages={messages} />
         </div>
-
         <div className="w-full max-w-2xl shrink-0">
           <ChatInput setAnswer={handleSetAnswer} />
         </div>
       </div>
 
       {/* File Viewer */}
-      <div className="w-full md:w-2/5 border-l border-gray-200 p-4 h-full overflow-y-auto">
+      <div className="w-2/5 h-full overflow-y-auto bg-[#232946] border-l border-[#39415a] p-6 min-h-0">
         {selectedFilePath ? (
           <RepoViewer repoUrl={`${owner}/${repo}`} selectedPath={selectedFilePath} />
         ) : (
-          <div className="text-gray-500 italic">Select a file to view its contents</div>
+          <div className="text-gray-400 italic">Select a file to view its contents</div>
         )}
       </div>
     </div>
