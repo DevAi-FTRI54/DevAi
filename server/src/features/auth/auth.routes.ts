@@ -7,6 +7,7 @@ import {
   getGitHubLoginURL,
   handleGitHubCallback,
   completeAuth,
+  listRepos,
 } from './auth.controller.js';
 
 // console.log('typeof Project:', typeof Project); // should be "function"
@@ -18,6 +19,7 @@ const router: Router = express.Router();
 router.get('/github', getGitHubLoginURL);
 router.get('/callback', handleGitHubCallback);
 router.get('/complete', completeAuth);
+router.get('/repos', listRepos);
 
 router.get('/app/install/callback', requireAuth, saveInstallationId);
 //redirect after Github App install;

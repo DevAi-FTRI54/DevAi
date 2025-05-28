@@ -13,7 +13,12 @@ import authRoute from './features/auth/auth.routes.js';
 const app = express();
 
 // --- Global middleware -----------------------------------------
-app.use(cors());
+app.use(
+  cors({
+    origin: 'http://localhost:5173', // your React dev host
+    credentials: true, // allow cookies
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
@@ -63,7 +68,12 @@ app.use((req, res) => {
 });
 
 // --- Global error handler --------------------------------------
-const errorHandler: ErrorRequestHandler = (err: ServerError, _req, res, _next) => {
+const errorHandler: ErrorRequestHandler = (
+  err: ServerError,
+  _req,
+  res,
+  _next
+) => {
   const defaultError: ServerError = {
     log: 'Express error handler caught unknown middleware error',
     status: 500,

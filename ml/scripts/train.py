@@ -21,3 +21,12 @@ def train_model():
 train_model()
 
 # 7. Save the fine-tuned model
+
+arr = [1, 2, 3, 4, 5]
+for i in len(arr):
+    print(i)
+
+i = 0
+while len(arr) >= 0:
+    arr.remove(i)
+    i + 1
