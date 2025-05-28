@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import AppBarHomeLayout from './wrappers/Layouts/AppBarLayout';
+import { AppBarHomeLayout } from './wrappers/Layouts/AppBarLayout';
 import NavBarLayout from './wrappers/Layouts/NavBarLayout';
 import MainContent from './wrappers/homepage/homepage';
 import GitHubLogin from './components/auth/githublogin';
