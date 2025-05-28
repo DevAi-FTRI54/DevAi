@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import type { GitHubContentItem } from '../../../types';
-import type { TreeNodeProps } from '../../../types';
+import type { GitHubContentItem, TreeNodeProps } from '../../../types';
 
 const TreeNode: React.FC<TreeNodeProps> = ({ name, path, type, owner, repo, token, onFileSelect }) => {
   const [expanded, setExpanded] = useState(false);
@@ -10,7 +9,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({ name, path, type, owner, repo, toke
 
   const handleToggle = async () => {
     if (type !== 'dir') return;
-
     setExpanded(!expanded);
 
     if (!loaded) {
@@ -26,20 +24,35 @@ const TreeNode: React.FC<TreeNodeProps> = ({ name, path, type, owner, repo, toke
 
   const handleFileClick = () => {
     if (type === 'file' && onFileSelect) {
-      onFileSelect(path); // Send the full file path to parent
+      onFileSelect(path);
     }
   };
 
   return (
-    <div style={{ marginLeft: 20 }}>
-      <div onClick={type === 'dir' ? handleToggle : handleFileClick} style={{ cursor: 'pointer' }}>
-        {type === 'dir' ? (expanded ? '📂' : '📁') : '📄'} {name}
+    <div>
+      <div
+        className={`
+          flex items-center cursor-pointer font-mono select-none
+          ${
+            type === 'dir'
+              ? expanded
+                ? 'text-[#5EEAD4]'
+                : 'text-blue-400'
+              : 'text-blue-300 hover:bg-[#393E6B] hover:text-[#5EEAD4] rounded'
+          }
+          px-1 py-0.5 transition
+        `}
+        style={{ marginLeft: '0.25rem' }}
+        onClick={type === 'dir' ? handleToggle : handleFileClick}
+      >
+        {type === 'dir' ? (expanded ? '📂' : '📁') : '📄'}
+        <span className="ml-2">{name}</span>
       </div>
 
-      {loading && <div style={{ marginLeft: 20 }}>Loading...</div>}
+      {loading && <div className="pl-6 text-gray-400 text-xs animate-pulse">Loading…</div>}
 
       {expanded && children.length > 0 && (
-        <div>
+        <div className="pl-4 border-l border-[#232946] ml-1">
           {children.map((child) => (
             <TreeNode
               key={child.path}
@@ -49,7 +62,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ name, path, type, owner, repo, toke
               owner={owner}
               repo={repo}
               token={token}
-              onFileSelect={onFileSelect} // Pass down the callback
+              onFileSelect={onFileSelect}
             />
           ))}
         </div>

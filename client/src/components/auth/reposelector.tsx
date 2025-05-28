@@ -69,43 +69,37 @@ const RepoSelector: React.FC = () => {
   };
 
   return (
-    <div className='p-6 max-w-xl mx-auto'>
-      <h2 className='text-xl font-bold mb-4'>Select a repository to index</h2>
+    <div className="min-h-screen w-full bg-[#23262f] flex items-center justify-center">
+      <div className="p-6 max-w-xl w-full">
+        <h2 className="text-xl font-bold mb-4">Select a repository to index</h2>
 
-      {loading && <p className='text-gray-500'>Loading repositories...</p>}
+        {/* Dropdown to select a repository */}
+        <select
+          className="w-full p-2 border rounded mb-4"
+          value={selectedRepo?.id ?? ''}
+          // onChange={(e) => setSelected(e.target.value)}
+          onChange={(e) => {
+            const repo = repos.find((r) => r.id === Number(e.target.value));
+            setRepo(repo ?? null);
+          }}
+        >
+          <option value="">-- Choose a repo --</option>
+          {repos.map((repo: Repo) => (
+            <option key={repo.id} value={repo.id}>
+              {repo.full_name}
+            </option>
+          ))}
+        </select>
 
-      {error && (
-        <div className='p-3 bg-red-100 text-red-800 rounded mb-4'>
-          Error: {error}
-        </div>
-      )}
-
-      {/* Dropdown to select a repository */}
-      <select
-        className='w-full p-2 border rounded mb-4'
-        value={selectedRepo?.id ?? ''}
-        // onChange={(e) => setSelected(e.target.value)}
-        onChange={(e) => {
-          const repo = repos.find((r) => r.id === Number(e.target.value));
-          setRepo(repo ?? null);
-        }}
-      >
-        <option value=''>-- Choose a repo --</option>
-        {repos.map((repo: Repo) => (
-          <option key={repo.id} value={repo.id}>
-            {repo.full_name}
-          </option>
-        ))}
-      </select>
-
-      {/* Button to trigger the ingestion */}
-      <button
-        onClick={handleSelect}
-        className='px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700'
-        disabled={!selectedRepo}
-      >
-        🚀 Ingest Repo
-      </button>
+        {/* Button to trigger the ingestion */}
+        <button
+          onClick={handleSelect}
+          className="px-6 py-2 bg-green-600 text-white rounded  hover:bg-green-700"
+          disabled={!selectedRepo}
+        >
+          🚀 Ingest Repo
+        </button>
+      </div>
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import ChatMessage from './chatmessages';
 
-//* Used to define the message type
 type Message = {
   role: 'user' | 'assistant';
   content: string;
@@ -11,32 +10,29 @@ type Message = {
   endLine: number;
 };
 
-//* Props interface: messages are passed in from parent
 type ChatWindowProps = {
   messages: Message[];
 };
 
-//* define the component
 const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
-  // * Ref points to an invisible element at the bottom of the messages list for auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // * Auto-scroll to the bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]); // * Triggers scroll when messages update (re-render)
+  }, [messages]);
 
   return (
-    <div className="w-full max-w-2xl flex flex-col mx-auto">
-      <div className="flex-1 overflow-y-auto px-4 py-6 min-h-[200px] max-h-[500px]">
+    <div className="w-full max-w-2xl flex flex-col mx-auto bg-[#181A2B] rounded-xl shadow-inner h-full">
+      {/* <div className="flex-1 overflow-y-auto px-4 py-6 min-h-[200px]">
         {messages.length === 0 && (
-          <div className="text-center text-gray-400 italic">Start a conversation to get help with your codebase</div>
-        )}
-        {messages.map((msg, idx) => (
-          <ChatMessage key={idx} message={msg} />
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+          // <div className="text-center text-gray-400 italic">Start a conversation to get help with your codebase</div>
+        )} */}
+      <div className="flex flex-col items-center w-full"></div>
+      {messages.map((msg, idx) => (
+        <ChatMessage key={idx} message={msg} />
+      ))}
+      <div ref={messagesEndRef} />
+      // {/* </div> */}
     </div>
   );
 };

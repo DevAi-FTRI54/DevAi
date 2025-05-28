@@ -8,7 +8,7 @@ const GitHubLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#181C20]">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#23262f]">
       <h1 className="text-2xl text-white mb-6 font-tt-hoves font-normal leading-none tracking-tight text-center">
         Get started with DevAi
       </h1>
