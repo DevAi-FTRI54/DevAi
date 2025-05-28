@@ -69,7 +69,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-white rounded-xl shadow">
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-gray-500 rounded-xl shadow">
       <div className="w-full max-w-3xl mx-auto flex justify-center space-x-2">
         {QUICK_PROMPTS.map(({ label, text, type }) => (
           <button

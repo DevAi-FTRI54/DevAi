@@ -1,49 +1,75 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Message } from '../../types';
+
+interface CodeProps {
+  inline?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}
 
 const ChatMessage: React.FC<{ message: Message }> = ({ message }) => {
   return (
     <div
-      className={`p-3 my-2 max-w-[80%] text-sm rounded-lg ${
-        message.role === 'user'
-          ? 'bg-blue-500 text-white self-end ml-auto'
-          : 'bg-gray-200 text-black self-start mr-auto'
-      }`}
+      className={`p-3 my-2 max-w-[80%] text-sm rounded-lg
+        ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
     >
       <ReactMarkdown
         components={{
-          code({ inline, className, children, ...props }) {
+          code({ inline, className, children, ...props }: CodeProps) {
             const match = /language-(\w+)/.exec(className || '');
-            const codeString = Array.isArray(children) ? children.join('') : String(children);
+            const codeString =
+              typeof children === 'string' ? children : Array.isArray(children) ? children.join('') : '';
 
             return !inline && match ? (
               <SyntaxHighlighter
-                style={oneDark}
+                style={vscDarkPlus}
                 language={match[1]}
-                PreTag="div"
-                customStyle={{ overflowX: 'auto', borderRadius: '0.5rem', padding: '1rem' }}
+                customStyle={{
+                  overflowX: 'auto',
+                  borderRadius: '0.5rem',
+                  padding: '1rem',
+                  fontFamily: `'Fira Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace`,
+                }}
                 {...props}
               >
                 {codeString.replace(/\n$/, '')}
               </SyntaxHighlighter>
             ) : (
-              <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props}>
+              <code
+                className="bg-gray-100 px-1 py-0.5 rounded text-sm"
+                style={{
+                  fontFamily: `'Fira Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace`,
+                }}
+                {...props}
+              >
                 {codeString}
               </code>
             );
           },
         }}
       >
-        {message.content}
+        {message.role === 'user' ? `**_${message.content}_**` : message.content}
       </ReactMarkdown>
-      <div className="mt-4 mb-4">
-        File: {message.file}: ({message.startLine}-{message.endLine})
-      </div>
 
-      {message.snippet && <pre className="mt-2 bg-gray-100 text-sm p-2 rounded overflow-x-auto">{message.snippet}</pre>}
+      {message.role !== 'user' && message.file && (
+        <div className="mt-4 mb-4 text-xs text-gray-600">
+          File: <strong>{message.file}</strong> ({message.startLine}-{message.endLine})
+        </div>
+      )}
+
+      {message.role !== 'user' && message.snippet && (
+        <pre
+          className="mt-2 bg-gray-100 text-sm p-2 rounded overflow-x-auto"
+          style={{
+            fontFamily: `'Fira Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace`,
+          }}
+        >
+          {message.snippet}
+        </pre>
+      )}
     </div>
   );
 };

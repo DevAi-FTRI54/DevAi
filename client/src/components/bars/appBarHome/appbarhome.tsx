@@ -39,7 +39,7 @@ function AppBarHome() {
         left: 0,
         right: 0,
         mt: 2,
-        borderRadius: 3,
+        borderRadius: '36px',
         backgroundColor: '#24292e',
         boxShadow: 'none',
       }}
@@ -133,7 +133,11 @@ function AppBarHome() {
 
           {/* Right - Login */}
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-            <Button component={Link} to="/login" sx={{ my: 1, color: 'white', textTransform: 'none' }}>
+            <Button
+              component={Link}
+              to="/login"
+              sx={{ my: 1, color: 'white', borderRadius: '24px', textTransform: 'none' }}
+            >
               Login
             </Button>
           </Box>

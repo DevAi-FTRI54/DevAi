@@ -26,7 +26,7 @@ const ChatWrap: React.FC = () => {
       {
         role: 'assistant',
         content: answer,
-        snippet: snippet ?? '',
+        snippet: snippet || '',
         file: file,
         startLine: startLine,
         endLine: endLine,
@@ -39,13 +39,7 @@ const ChatWrap: React.FC = () => {
   };
 
   return (
-    <div
-      className="flex flex-col md:flex-row h-[calc(100vh-64px)] mt-[64px] overflow-hidden"
-      style={{
-        background:
-          'radial-gradient(circle,rgba(12, 17, 24, 1) 0%, rgba(20, 20, 43, 1) 74%, rgba(100, 100, 110, 1) 98%)',
-      }}
-    >
+    <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] mt-[64px] overflow-hidden bg-gray-300">
       {/* Sidebar */}
       <div className="w-full md:w-1/5 h-full">
         <PermanentSidebar owner={owner} repo={repo} onFileSelect={handleFileSelect} />
