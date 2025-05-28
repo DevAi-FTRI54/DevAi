@@ -19,6 +19,8 @@ const RepoSelector: React.FC = () => {
 
   // const [selected, setSelected] = useState<string>('');
   const [installationId, setInstallationId] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // On mount, parse the installation_id from URL
   useEffect(() => {
@@ -36,7 +38,8 @@ const RepoSelector: React.FC = () => {
         return r.json() as Promise<Repo[]>;
       })
       .then(setRepos)
-      .catch(console.error);
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   // Ingest selected repo
@@ -69,6 +72,14 @@ const RepoSelector: React.FC = () => {
     <div className='p-6 max-w-xl mx-auto'>
       <h2 className='text-xl font-bold mb-4'>Select a repository to index</h2>
 
+      {loading && <p className='text-gray-500'>Loading repositories...</p>}
+
+      {error && (
+        <div className='p-3 bg-red-100 text-red-800 rounded mb-4'>
+          Error: {error}
+        </div>
+      )}
+
       {/* Dropdown to select a repository */}
       <select
         className='w-full p-2 border rounded mb-4'
@@ -80,7 +91,7 @@ const RepoSelector: React.FC = () => {
         }}
       >
         <option value=''>-- Choose a repo --</option>
-        {repos.map((repo: any) => (
+        {repos.map((repo: Repo) => (
           <option key={repo.id} value={repo.id}>
             {repo.full_name}
           </option>
