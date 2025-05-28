@@ -113,7 +113,7 @@ export const completeAuth = async (
   );
 
   if (isAppInstalled) {
-    return res.redirect('http://localhost:3000/dashboard');
+    return res.redirect('http://localhost:3000/select-repo');
   } else {
     const installURL = `https://github.com/apps/${process.env.GITHUB_APP_SLUG}/installations/new`;
     return res.redirect(installURL);
