@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 import User from '../../models/user.model.js';
-import mongoose from 'mongoose';
 
 console.log('Loading auth.controller.ts');
 
@@ -15,7 +14,7 @@ console.log('Loading auth.controller.ts');
 // if (!CLIENT_SECRET) throw new Error('Missing GITHUB_CLIENT_SECRET env var');
 const JWT_SECRET = process.env.JWT_SECRET!;
 if (!JWT_SECRET) throw new Error('Missing JWT_SECRET env var');
-const REDIRECT_URI = 'https://9f6f-185-185-128-204.ngrok-free.app/api/auth/callback';
+const REDIRECT_URI = 'https://29e4-47-14-82-7.ngrok-free.app/api/auth/callback';
 
 const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID!;
 const GITHUB_APP_CLIENT_SECRET = process.env.GITHUB_APP_CLIENT_SECRET!;
@@ -34,7 +33,9 @@ export const getGitHubLoginURL = (req: Request, res: Response) => {
   // )}&scope=read:user user:email`;
   // res.redirect(githubAuthURL);
   console.log('Using client_id:', GITHUB_APP_CLIENT_ID);
-  const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_APP_CLIENT_ID}`;
+  const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_APP_CLIENT_ID}&redirect_uri=${encodeURIComponent(
+    REDIRECT_URI
+  )}`;
   res.redirect(githubAuthURL);
 };
 
@@ -69,7 +70,7 @@ export const handleGitHubCallback = async (req: Request, res: Response): Promise
     sameSite: 'lax', // 'lax' allows GET redirects to carry cookies
   });
 
-  return res.redirect('https://9f6f-185-185-128-204.ngrok-free.app/api/auth/complete'); // This will trigger completeAuth controller
+  return res.redirect('https://29e4-47-14-82-7.ngrok-free.app/api/auth/complete'); // This will trigger completeAuth controller
   // return res.redirect('http://localhost:4000/api/auth/complete'); // This will trigger completeAuth controller
   // res.redirect('http://localhost:3000/authcallback'); //*potentially not necessary
 };
@@ -144,7 +145,7 @@ export const completeAuth = async (req: Request, res: Response): Promise<any> =>
 
     if (isInstalled) {
       console.log('✅ GitHub App is installed');
-      return res.redirect('https://9f6f-185-185-128-204.ngrok-free.app/select-repo');
+      return res.redirect('https://29e4-47-14-82-7.ngrok-free.app.app/select-repo');
     } else {
       const installUrl = `https://github.com/apps/${APP_SLUG}/installations/new?redirect_url=${encodeURIComponent(
         REDIRECT_AFTER_INSTALL

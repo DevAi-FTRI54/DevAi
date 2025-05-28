@@ -7,24 +7,28 @@ import InstallAppPrompt from './components/auth/installappprompt';
 import RepoSelector from './components/auth/reposelector';
 import ChatWrap from './wrappers/chatbotpage/chatwrap';
 import FAQ from './wrappers/faqpage/faq';
+import NotFound from './components/settings/notfound';
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* All routes with AppBarHome */}
-        <Route element={<AppBarHomeLayout />}>
-          <Route path="/" element={<MainContent />} />
-          <Route path="/login" element={<GitHubLogin />} />
-          <Route path="/install-github-app" element={<InstallAppPrompt />} />
-          <Route path="/select-repo" element={<RepoSelector />} />
-        </Route>
+        {/* Homepage with AppBarHomeLayout */}
+        {/* prettier-ignore */}
+        <Route path="/" element={<AppBarHomeLayout><MainContent /></AppBarHomeLayout> }/>
+        {/* prettier-ignore */}
+        <Route path="/faq" element={<AppBarHomeLayout><FAQ /></AppBarHomeLayout> }/>
+        <Route path="/login" element={<GitHubLogin />} />
+        <Route path="/install-github-app" element={<InstallAppPrompt />} />
+        <Route path="/select-repo" element={<RepoSelector />} />
 
-        {/* All routes with NavBar */}
+        {/* Pages with NavBarLayout */}
         <Route element={<NavBarLayout />}>
           <Route path="/chat" element={<ChatWrap />} />
-          <Route path="/faq" element={<FAQ />} />
         </Route>
+
+        {/* GLOBAL 404 CATCH-ALL */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

@@ -52,6 +52,7 @@ const ChatWrap: React.FC = () => {
           <p className="text-sm text-gray-400">Ask anything about this codebase during your onboarding</p>
         </div> */}
         {/* ChatWindow scrolls independently */}
+
         <div className="w-full max-w-2xl flex-1 flex flex-col gap-2 overflow-y-auto min-h-0">
           <ChatWindow messages={messages} />
         </div>

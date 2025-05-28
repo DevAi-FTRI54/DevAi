@@ -86,7 +86,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
       <div className="relative w-full">
         <textarea
           id="user-prompt"
-          className="w-full min-h-[48px] resize-none overflow-hidden text-base p-2 pr-20 border border-[#39415a] rounded focus:outline-none focus:ring-2 focus:ring-[#5EEAD4] bg-[#181A2B] text-[#eaeaea] transition"
+          className="w-full min-h-[48px] resize-none overflow-hidden text-base p-2 pr-20 border border-[#39415a] rounded focus:outline-none focus:ring-2 focus:ring-[#5ea9ea] bg-[#181A2B] text-[#eaeaea] transition"
           placeholder="Please type your prompt here"
           value={promptText}
           onChange={handleChange}
