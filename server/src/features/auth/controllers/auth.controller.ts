@@ -44,6 +44,7 @@ export const handleGitHubCallback = async (req: Request, res: Response): Promise
       sameSite: 'lax', // 'lax' allows GET redirects to carry cookies
     });
 
+    // return res.redirect(`https://0926-47-14-82-7.ngrok-free.app/api/auth/complete`);
     return res.redirect(`${FRONTEND_BASE_URL}/api/auth/complete`);
   } catch (error) {
     handleApiError(error, res, 'GitHub callback failed');
@@ -89,6 +90,7 @@ export const completeAuth = async (req: Request, res: Response): Promise<any> =>
     if (isInstalled) {
       console.log('✅ GitHub App is installed');
       res.redirect(`${FRONTEND_BASE_URL}/select-repo`);
+      location.reload();
     } else {
       const installUrl = getAppInstallationUrl();
       console.log('🔁 Redirecting to install GitHub App:', installUrl);

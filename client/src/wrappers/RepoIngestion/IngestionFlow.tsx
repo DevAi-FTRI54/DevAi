@@ -8,13 +8,13 @@ const IngestionFlow: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <>
+    <div className=" text-gray min-h-screen">
       {!jobId ? (
         <RepoSelector onStartIngestion={setJobId} />
       ) : (
         <ProgressBar jobId={jobId} onComplete={() => navigate('/chat')} />
       )}
-    </>
+    </div>
   );
 };
 
