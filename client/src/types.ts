@@ -68,9 +68,8 @@ export interface Props {
 }
 
 export interface IngestionStatusData {
-  repoName: string;
+  repoUrl: string;
   status: 'pending' | 'indexing' | 'completed' | 'failed';
-  chunkCount: number;
   lastUpdated: string;
   percentage: number;
 }

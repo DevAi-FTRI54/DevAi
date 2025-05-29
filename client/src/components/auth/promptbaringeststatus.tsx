@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
 export interface IngestionStatusData {
-  repoName: string;
-  status: 'pending' | 'indexing' | 'completed' | 'failed';
-  chunkCount: number;
+  status: string | 'pending' | 'indexing' | 'completed' | 'failed';
   lastUpdated: string;
-  percentage: number;
+  progress: number;
+  data: {
+    repoUrl: string;
+    sha: string;
+  };
 }
 
 interface ProgressBarProps {
@@ -25,7 +27,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ jobId, onComplete }) => {
         const data: IngestionStatusData = await res.json();
         setStatus(data);
 
-        if (data.percentage >= 100 || data.status === 'completed') {
+        if (data.progress >= 100 || data.status === 'completed') {
           setTimeout(() => onComplete(), 400);
         }
       }
@@ -57,22 +59,19 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ jobId, onComplete }) => {
       <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
         <div
           className="bg-blue-600 h-4 rounded-full transition-all duration-300"
-          style={{ width: `${status.percentage}%` }}
+          style={{ width: `${status.progress}%` }}
         />
       </div>
-      <div className="mb-2">{status.percentage}%</div>
+      <div className="mb-2">{status.progress}%</div>
       <p>
-        <strong>Repo:</strong> {status.repoName}
+        <strong>RepoURL:</strong> {status.data.repoUrl}
       </p>
       <p className={getStatusColor(status.status)}>
         <strong>Status:</strong> {status.status.toUpperCase()}
       </p>
-      <p>
+      {/* <p>
         <strong>Chunks:</strong> {status.chunkCount}
-      </p>
-      <p>
-        <strong>Last Updated:</strong> {new Date(status.lastUpdated).toLocaleString()}
-      </p>
+      </p> */}
     </div>
   );
 };
