@@ -4,45 +4,33 @@ import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 import User from '../../../models/user.model.js';
 import mongoose from 'mongoose';
-import {
-  exchangeCodeForToken,
-  getGitHubUserProfile,
-  getRepositoriesWithMeta,
-} from '../services/github.service.js';
-import {
-  getAppInstallationUrl,
-  checkIfAppInstalled,
-  getAppInstallations,
-} from '../services/installation.service.js';
+import { exchangeCodeForToken, getGitHubUserProfile, getRepositoriesWithMeta } from '../services/github.service.js';
+import { getAppInstallationUrl, checkIfAppInstalled, getAppInstallations } from '../services/installation.service.js';
 import { findOrCreateUser } from '../services/user.service.js';
 import { generateUserJWTToken } from '../services/jwt.service.js';
 import { handleApiError } from '../utils/error.utils.js';
+import 'dotenv/config';
 
 console.log('Loading auth.controller.ts');
 
 //Github OAuth credentials for the app NOT FOR THE USER!!!!
 //Github code and access token are for users and are dynamic (Different Thing)
 const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID!;
-const FRONTEND_BASE_URL =
-  process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
 
 const REDIRECT_URI = process.env.REDIRECT_URI!;
 
 // Simple redirect to Github Oauth login
 export const getGitHubLoginURL = (req: Request, res: Response) => {
-  const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_APP_CLIENT_ID}&redirect_uri=${encodeURIComponent(
-    REDIRECT_URI
-  )}&scope=repo,read:org,user:email`;
-
-  // const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_APP_CLIENT_ID}`;
+  // const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_APP_CLIENT_ID}&redirect_uri=${encodeURIComponent(
+  //   REDIRECT_URI
+  // )}&scope=repo,read:org,user:email`;
+  const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_APP_CLIENT_ID}`;
   res.redirect(githubAuthURL);
 };
 
 // Process Github callback with auth code
-export const handleGitHubCallback = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const handleGitHubCallback = async (req: Request, res: Response): Promise<any> => {
   try {
     const code = req.query.code as string;
     if (!code) return res.status(400).send('Missing code');
@@ -63,10 +51,7 @@ export const handleGitHubCallback = async (
 };
 
 // 2. Get GitHub response
-export const completeAuth = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const completeAuth = async (req: Request, res: Response): Promise<any> => {
   try {
     const githubToken = req.cookies.github_access_token;
     if (!githubToken) return res.status(401).send('Missing GitHub token');

@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import jwt from 'jsonwebtoken';
 import { GitHubApiError } from '../utils/error.utils.js';
+import 'dotenv/config';
 import { GITHUB_APP_PRIVATE_KEY } from '../../../config/auth.js';
 
 // GitHub OAuth and App configurations
@@ -62,11 +63,7 @@ export async function getGitHubUserProfile(accessToken: string): Promise<any> {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new GitHubApiError(
-      'Failed to fetch user profile',
-      response.status,
-      data
-    );
+    throw new GitHubApiError('Failed to fetch user profile', response.status, data);
   }
 
   return data;
@@ -75,93 +72,63 @@ export async function getGitHubUserProfile(accessToken: string): Promise<any> {
 // Generate JWT for GitHub App authentication
 export async function generateAppJwt(): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  return jwt.sign(
-    { iat: now - 60, exp: now + 600, iss: GITHUB_APP_ID },
-    GITHUB_APP_PRIVATE_KEY,
-    { algorithm: 'RS256' }
-  );
+  return jwt.sign({ iat: now - 60, exp: now + 600, iss: GITHUB_APP_ID }, GITHUB_APP_PRIVATE_KEY, {
+    algorithm: 'RS256',
+  });
 }
 
 // Get installation access token
-export async function getInstallationToken(
-  installationId: string
-): Promise<string> {
+export async function getInstallationToken(installationId: string): Promise<string> {
   const jwtToken = await generateAppJwt();
 
-  const response = await fetch(
-    `https://api.github.com/app/installations/${installationId}/access_tokens`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${jwtToken}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    }
-  );
+  const response = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${jwtToken}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
 
   const data = await response.json();
   if (!response.ok) {
-    throw new GitHubApiError(
-      'Failed to get installation token',
-      response.status,
-      data
-    );
+    throw new GitHubApiError('Failed to get installation token', response.status, data);
   }
 
   return data.token;
 }
 
 // Fetch repositories for installation
-export async function fetchRepositories(
-  installationToken: string
-): Promise<any[]> {
-  const response = await fetch(
-    'https://api.github.com/installation/repositories',
-    {
-      headers: {
-        Authorization: `token ${installationToken}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    }
-  );
+export async function fetchRepositories(installationToken: string): Promise<any[]> {
+  const response = await fetch('https://api.github.com/installation/repositories', {
+    headers: {
+      Authorization: `token ${installationToken}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
 
   const data = await response.json();
   if (!response.ok) {
-    throw new GitHubApiError(
-      'Failed to fetch repositories',
-      response.status,
-      data
-    );
+    throw new GitHubApiError('Failed to fetch repositories', response.status, data);
   }
 
   return data.repositories;
 }
 
 // Get commit information for a repository
-export async function fetchCommitInfo(
-  repo: Repository,
-  installationToken: string
-): Promise<RepositoryWithMeta> {
-  const response = await fetch(
-    `https://api.github.com/repos/${repo.full_name}/commits/${repo.default_branch}`,
-    {
-      headers: {
-        Authorization: `token ${installationToken}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    }
-  );
+export async function fetchCommitInfo(repo: Repository, installationToken: string): Promise<RepositoryWithMeta> {
+  const response = await fetch(`https://api.github.com/repos/${repo.full_name}/commits/${repo.default_branch}`, {
+    headers: {
+      Authorization: `token ${installationToken}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
 
   const data = await response.json();
   if (!response.ok) {
-    throw new GitHubApiError(
-      'Failed to fetch commit info',
-      response.status,
-      data
-    );
+    throw new GitHubApiError('Failed to fetch commit info', response.status, data);
   }
 
   return {
@@ -173,16 +140,12 @@ export async function fetchCommitInfo(
 }
 
 // Get repositories with additional metadata
-export async function getRepositoriesWithMeta(
-  installationId: string
-): Promise<RepositoryWithMeta[]> {
+export async function getRepositoriesWithMeta(installationId: string): Promise<RepositoryWithMeta[]> {
   try {
     const installationToken = await getInstallationToken(installationId);
     const repositories = await fetchRepositories(installationToken);
 
-    return Promise.all(
-      repositories.map((repo) => fetchCommitInfo(repo, installationToken))
-    );
+    return Promise.all(repositories.map((repo) => fetchCommitInfo(repo, installationToken)));
   } catch (err) {
     console.error('Repository metadata fetch failed:', err);
     throw err;
