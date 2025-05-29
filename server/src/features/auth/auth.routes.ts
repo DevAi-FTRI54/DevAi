@@ -13,6 +13,7 @@ import {
 console.log('Loading auth.routes.ts');
 const router: Router = express.Router();
 
+// /api/auth/
 router.get('/github', getGitHubLoginURL);
 router.get('/callback', handleGitHubCallback);
 router.get('/complete', completeAuth);
