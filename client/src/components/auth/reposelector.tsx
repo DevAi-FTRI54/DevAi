@@ -70,8 +70,12 @@ const RepoSelector: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-[#23262f] flex items-center justify-center">
-      <div className="p-6 max-w-xl w-full">
+      <div className="p-6 max-w-xl mx-auto">
         <h2 className="text-xl font-bold mb-4">Select a repository to index</h2>
+
+        {loading && <p className="text-gray-500">Loading repositories...</p>}
+
+        {error && <div className="p-3 bg-red-100 text-red-800 rounded mb-4">Error: {error}</div>}
 
         {/* Dropdown to select a repository */}
         <select
@@ -94,7 +98,7 @@ const RepoSelector: React.FC = () => {
         {/* Button to trigger the ingestion */}
         <button
           onClick={handleSelect}
-          className="px-6 py-2 bg-green-600 text-white rounded  hover:bg-green-700"
+          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
           disabled={!selectedRepo}
         >
           🚀 Ingest Repo
