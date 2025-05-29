@@ -6,17 +6,25 @@ const MainContent = () => {
   return (
     <div
       className="relative h-screen w-full flex flex-col items-center overflow-hidden"
-      style={{
-        background: 'linear-gradient(120deg, #18181b 0%, #473e63 60%, #9e6c39 100%)',
-      }}
+      style={
+        {
+          // background: 'linear-gradient(120deg, #18181b 0%, #473e63 60%, #9e6c39 100%)',
+          // background: 'linear-gradient(120deg, #18181b 0%, #473e63 60%, #121629)',
+        }
+      }
     >
       {/* Gradient Overlay */}
       <div
         className="absolute inset-0 z-0 pointer-events-none"
         style={{
+          //   background: `
+          //   radial-gradient(circle at 25% 75%, #66339988 0%, transparent 50%),
+          //   radial-gradient(circle at 85% 85%, #ff9f4380 0%, transparent 65%),
+          //   radial-gradient(ellipse at 50% 0%, #18181b 60%, transparent 100%)
+          // `,
           background: `
-          radial-gradient(circle at 25% 75%, #66339988 0%, transparent 50%),
-          radial-gradient(circle at 85% 85%, #ff9f4380 0%, transparent 65%),
+          radial-gradient(circle at 25% 75%, #39415a 0%, transparent 50%),
+          radial-gradient(circle at 85% 85%, #121629 0%, transparent 65%),
           radial-gradient(ellipse at 50% 0%, #18181b 60%, transparent 100%)
         `,
         }}
@@ -26,15 +34,15 @@ const MainContent = () => {
       <div className="relative z-10 w-full flex flex-col items-center justify-center flex-1 px-4 mt-14">
         {/* Hero Section */}
         <section className="flex flex-col items-center justify-center text-center mt-14 mb-6 max-w-3xl">
-          <h1 className="font-tt-hoves text-3xl md:text-5xl font-bold mb-4 leading-tight">
+          <h1 className="font-tt-hoves text-3xl md:text-5xl  mb-4 leading-tight">
             <span className="text-white">A </span>
             <span style={{ color: '#bb9af7' }}>Code </span>
-            <span style={{ color: '#e0af68' }}>Reader </span>
+            <span style={{ color: '#869ed7' }}>Reader </span>
             <span className="text-white">Built for</span>
             <br />
             <span className="text-white">Developers</span>
           </h1>
-          <p className="font-tt-hoves text-base text-gray-300 mb-6">
+          <p className="font-tt-hoves text-base text-gray-300 mb-6 max-w-lg mx-auto">
             An AI assistant that instantly reads, understands, and explains your codebase—so you can spend less time
             digging and more time building.
           </p>
