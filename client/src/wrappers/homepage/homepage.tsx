@@ -43,7 +43,7 @@ const MainContent = () => {
             <span className="text-white">Developers</span>
           </h1>
           <p className="font-tt-hoves text-base text-gray-300 mb-6 max-w-lg mx-auto">
-            An AI assistant that instantly reads, understands, and explains your codebase—so you can spend less time
+            An AI assistant that instantly reads, understands, and explains your codebase - so you can spend less time
             digging and more time building.
           </p>
           <button
