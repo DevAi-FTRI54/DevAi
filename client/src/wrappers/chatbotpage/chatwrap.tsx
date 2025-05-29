@@ -46,18 +46,17 @@ const ChatWrap: React.FC = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="w-2/5 flex flex-col h-full px-6 py-8 min-h-0">
-        {/* <div className="text-center mb-4 shrink-0">
-          <h1 className="text-2xl font-bold text-[#5EEAD4]">DevAi Onboarding Assistant</h1>
-          <p className="text-sm text-gray-400">Ask anything about this codebase during your onboarding</p>
-        </div> */}
-        {/* ChatWindow scrolls independently */}
-
-        <div className="w-full max-w-2xl flex-1 flex flex-col gap-2 overflow-y-auto min-h-0">
-          <ChatWindow messages={messages} />
-        </div>
-        <div className="w-full max-w-2xl shrink-0">
-          <ChatInput setAnswer={handleSetAnswer} />
+      <div className="w-2/5 flex flex-col h-full px-6 py-0 min-h-0 items-center">
+        {/* Centered wrapper, full height column */}
+        <div className="flex flex-col items-center w-full h-full max-w-2xl mx-auto">
+          {/* Chat messages area: scrollable and grows */}
+          <div className="flex-1 w-full overflow-y-auto min-h-0">
+            <ChatWindow messages={messages} />
+          </div>
+          {/* Chat input area: fixed at bottom */}
+          <div className="w-full mt-4">
+            <ChatInput setAnswer={handleSetAnswer} />
+          </div>
         </div>
       </div>
 

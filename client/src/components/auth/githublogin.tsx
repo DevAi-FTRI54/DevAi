@@ -14,7 +14,7 @@ const GitHubLogin: React.FC = () => {
       </h1>
       <button
         onClick={handleLogin}
-        className="px-8 py-3 text-base bg-[#22272E] hover:bg-[#2f3541] text-white rounded-lg shadow-md flex items-center gap-2 transition-colors font-tt-hoves"
+        className="px-8 py-3 text-base bg-[#5ea9ea] hover:bg-[#31677a] text-white rounded-lg shadow-md flex items-center gap-2 transition-colors font-tt-hoves"
       >
         <FontAwesomeIcon icon={faGithub} />
         Login with GitHub

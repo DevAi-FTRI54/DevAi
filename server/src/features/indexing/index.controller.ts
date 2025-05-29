@@ -24,10 +24,7 @@ export const indexRepo = async (req: Request, res: Response) => {
   res.json({ jobId: job.id, message: 'Repository ingestion started' });
 };
 
-export const getJobStatus = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getJobStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const job = await indexQueue.getJob(id);
@@ -39,10 +36,18 @@ export const getJobStatus = async (
 
     const state = await job.getState();
     const progress = job.progress || 0;
+    const jobProgress = {
+      id: job.id,
+      status: state,
+      progress,
+      data: job.data,
+    };
+    console.log('--- jobProgress ---------');
+    console.log(jobProgress);
 
     res.json({
       id: job.id,
-      state,
+      status: state,
       progress,
       data: job.data,
     });

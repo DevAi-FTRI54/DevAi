@@ -40,7 +40,7 @@ const worker = new Worker(
     // console.log(job.data);
 
     const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
-    await job.updateProgress(10);
+    await job.updateProgress(15);
 
     const loader = new TsmorphCodeLoader(localRepoPath, repoId);
     const bigDocs = await loader.load();
@@ -55,7 +55,7 @@ const worker = new Worker(
       // console.log('\n--- chunkedDoc ------');
       // console.log(chunkedDocs[i]);
       await upsert([chunkedDocs[i]]);
-      const percentage = 45 + Math.floor(((i + 1) / total) * 55);
+      const percentage = 36 + Math.floor(((i + 1) / total) * 64);
       await job.updateProgress(percentage);
     }
   },

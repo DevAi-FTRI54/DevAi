@@ -32,7 +32,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
         <ChatMessage key={idx} message={msg} />
       ))}
       <div ref={messagesEndRef} />
-      // {/* </div> */}
+      {/* </div> */}
     </div>
   );
 };
