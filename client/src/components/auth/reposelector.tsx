@@ -70,7 +70,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
   return (
     <div className="min-h-screen w-full bg-[#23262f] flex items-center justify-center">
       <div className="p-6 max-w-xl mx-auto">
-        <h2 className="text-xl font-bold mb-4">Select a repository to index</h2>
+        <h2 className="text-xl text-white font-bold mb-4">Select a repository to index</h2>
         {loading && <p className="text-gray-500">Loading repositories...</p>}
         {error && <div className="p-3 bg-red-100 text-red-800 rounded mb-4">Error: {error}</div>}
 
