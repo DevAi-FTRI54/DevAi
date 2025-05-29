@@ -66,3 +66,11 @@ export interface Props {
   fileViewer: React.ReactNode;
   onFileSelect?: (filePath: string) => void;
 }
+
+export interface IngestionStatusData {
+  repoName: string;
+  status: 'pending' | 'indexing' | 'completed' | 'failed';
+  chunkCount: number;
+  lastUpdated: string;
+  percentage: number;
+}
