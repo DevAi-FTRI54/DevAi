@@ -21,5 +21,32 @@ export const indexRepo = async (req: Request, res: Response) => {
   console.log('sha: ', sha);
 
   const job = await indexQueue.add('index', { repoUrl, sha });
-  res.json({ jobId: job.id });
+  res.json({ jobId: job.id, message: 'Repository ingestion started' });
+};
+
+export const getJobStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const job = await indexQueue.getJob(id);
+
+    if (!job) {
+      res.status(404).json({ error: 'Job not found' });
+      return;
+    }
+
+    const state = await job.getState();
+    const progress = job.progress || 0;
+
+    res.json({
+      id: job.id,
+      state,
+      progress,
+      data: job.data,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get job status' });
+  }
 };
