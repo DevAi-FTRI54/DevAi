@@ -33,6 +33,7 @@ export const getGitHubLoginURL = (req: Request, res: Response) => {
   const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_APP_CLIENT_ID}&redirect_uri=${encodeURIComponent(
     REDIRECT_URI
   )}&scope=repo,read:org,user:email`;
+
   // const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_APP_CLIENT_ID}`;
   res.redirect(githubAuthURL);
 };

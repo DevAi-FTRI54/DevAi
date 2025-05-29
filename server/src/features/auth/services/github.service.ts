@@ -1,15 +1,17 @@
 import fetch from 'node-fetch';
 import jwt from 'jsonwebtoken';
 import { GitHubApiError } from '../utils/error.utils.js';
+import { GITHUB_APP_PRIVATE_KEY } from '../../../config/auth.js';
 
 // GitHub OAuth and App configurations
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID!;
 const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID!;
 const GITHUB_APP_CLIENT_SECRET = process.env.GITHUB_APP_CLIENT_SECRET!;
-const GITHUB_APP_PRIVATE_KEY = process.env.GITHUB_APP_PRIVATE_KEY!.replace(
-  /\\n/g,
-  '\n'
-);
+// const GITHUB_APP_PRIVATE_KEY = process.env.GITHUB_APP_PRIVATE_KEY!.replace(
+//   /\\n/g,
+//   '\n'
+// );
+
 const REDIRECT_URI =
   process.env.REDIRECT_URI || 'http://localhost:4000/api/auth/callback';
 
