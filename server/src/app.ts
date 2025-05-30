@@ -4,6 +4,7 @@ import 'dotenv/config';
 import { ServerError } from './types/types.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import { allowedOrigins } from '../src/config/allowedOrigins.js';
 // import taskController from './controllers/taskController';
 
 import repoRoutes from './features/indexing/index.routes.js';
@@ -13,12 +14,14 @@ import authRoute from './features/auth/auth.routes.js';
 const app = express();
 
 // --- Global middleware -----------------------------------------
+
 app.use(
   cors({
-    origin: 'http://localhost:5173', // your React dev host
+    origin: allowedOrigins, // your React dev host
     credentials: true, // allow cookies
   })
 );
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads

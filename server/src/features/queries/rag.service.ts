@@ -56,7 +56,11 @@ const formatDoc = (d: Document) =>
 // const question = 'Where do I find MongoDB?';
 
 // --- answerQuestion function -----------------------------------------------
-export async function answerQuestion(repoUrl: string, question: string) {
+export async function answerQuestion(
+  repoUrl: string,
+  question: string,
+  type: string
+) {
   const repoId = generateUniqueRepoId(repoUrl);
 
   // const repoExists = await checkRepositoryExists(repoId); // You need to implement this function
@@ -67,12 +71,10 @@ export async function answerQuestion(repoUrl: string, question: string) {
   const retriever = await createCodeRetriever(repoId, 8);
 
   // --- STEP 1: Define Prompt -----------------------------------------------
-  const SYSTEMPROMPT = "You are an expert code assistant that answers user's questions about their codebase.";
+  const SYSTEMPROMPT =
+    "You are an expert code assistant that answers user's questions about their codebase.";
 
   const USERPROMPT = `Use the following pieces of context to answer the question at the end.
-    If you don't know the answer, just say that you don't know, don't try to make up an answer.
-    Use three sentences maximum and keep the answer as concise as possible.
-    Always say "thanks for asking!" at the end of the answer.
 
     Context: {context}\n\n
 
@@ -80,10 +82,13 @@ export async function answerQuestion(repoUrl: string, question: string) {
     
     Helpful answer:`;
 
-  const SYSTEM_PROMPT_ERIC = SYSTEM_PROMPTS.Find.content;
+  // const SYSTEM_PROMPT_ERIC = SYSTEM_PROMPTS.Find.content;
+  const prompts = SYSTEM_PROMPTS as Record<string, { content: string }>;
+  const systemPromptType = type in prompts ? type : 'Find';
+  const selectedSystemPrompt = prompts[systemPromptType].content;
 
   const promptTemplate = ChatPromptTemplate.fromMessages([
-    ['system', SYSTEM_PROMPT_ERIC],
+    ['system', selectedSystemPrompt],
     ['user', USERPROMPT],
   ]);
 
@@ -228,7 +233,10 @@ export async function answerQuestion(repoUrl: string, question: string) {
     .addEdge('generate', '__end__')
     .compile();
 
-  const result = await workflow.invoke({ question }, { runName: 'ask-question', configurable: { repoId } });
+  const result = await workflow.invoke(
+    { question },
+    { runName: 'ask-question', configurable: { repoId } }
+  );
 
   const traceUrl = (result as any)[RUN_KEY]?.url ?? null; // LLM observability
   const tokens = (result as any)[RUN_KEY]?.totalTokens ?? undefined;
