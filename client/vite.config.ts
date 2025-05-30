@@ -15,5 +15,5 @@ export default defineConfig({
       },
     },
     allowedHosts: ['999b-185-185-128-204.ngrok-free.app'],
-  },
+    },
 });

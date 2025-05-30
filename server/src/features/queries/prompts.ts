@@ -71,6 +71,7 @@ export const SYSTEM_PROMPTS = {
   },
   //* where do i start to debug
   Debug: {
+
     content: `### GOAL
         Produce a step-by-step investigation plan pointing the user to the best file/function to start debugging.
 
@@ -103,6 +104,7 @@ export const SYSTEM_PROMPTS = {
   },
   //* provide a walkthrough of data flow of
   Walkthrough: {
+
     content: `### GOAL
         Deliver a detailed data-flow walkthrough of the specified functionality or component.
 
@@ -168,7 +170,7 @@ export const SYSTEM_PROMPTS = {
     `,
     temperature: 0.5,
   },
-} as const;
+};
 
 export const buildUserPrompt = (
   style: string,
