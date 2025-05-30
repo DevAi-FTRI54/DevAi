@@ -8,10 +8,10 @@ export interface GitHubLazyFileTreeProps {
 export interface Message {
   role: 'user' | 'assistant';
   content: string;
-  snippet: string;
-  file: string;
-  startLine: number;
-  endLine: number;
+  snippet?: string;
+  file?: string;
+  startLine?: number;
+  endLine?: number;
 }
 
 export interface ChatInputProps {
