@@ -19,12 +19,15 @@ const IngestionFlow: React.FC = () => {
       {!jobId ? (
         <RepoSelector onStartIngestion={handleStartIngestion} />
       ) : (
-        <ProgressBar
-          jobId={jobId}
-          onComplete={() =>
-            navigate('/chat', { state: { repo: selectedRepo } })
-          }
-        />
+        <ProgressBar jobId={jobId} onComplete={() => navigate('/chat', { state: { repo: selectedRepo } })} />
+        // <ProgressBar
+        //   jobId={jobId}
+        //   onComplete={() => {
+        //     // Add repo id or other info as a query param if needed
+        //     const repoParam = selectedRepo ? `?repoId=${selectedRepo.id}` : '';
+        //     window.location.href = `https://a59d8fd60bb0.ngrok.app/chat${repoParam}`;
+        //   }}
+        // />
       )}
     </div>
   );
