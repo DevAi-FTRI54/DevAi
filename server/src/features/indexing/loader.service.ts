@@ -39,11 +39,20 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
     const tsConfigFilePath = await findTsConfigFile(this.repoPath);
 
     // STEP 2: Create new instance of ts-morh project
-    const project = new Project({
-      tsConfigFilePath: tsConfigFilePath,
+    const projectConfig: any = {
       skipFileDependencyResolution: true, // skips imports & exports
       skipAddingFilesFromTsConfig: true, // skips node modules
-    });
+    };
+
+    // Only add tsConfigFilePath if we found one
+    if (tsConfigFilePath) {
+      projectConfig.tsConfigFilePath = tsConfigFilePath;
+      console.log(`🔧 Using TypeScript config: ${tsConfigFilePath}`);
+    } else {
+      console.log(`🔧 No tsconfig found - using default TypeScript settings`);
+    }
+
+    const project = new Project(projectConfig);
 
     const projectPath = this.repoPath;
 
@@ -123,7 +132,7 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
 }
 
 // Identify the exact location of the tsconfig.json
-async function findTsConfigFile(repoPath: string): Promise<string> {
+async function findTsConfigFile(repoPath: string): Promise<string | null> {
   // Not exhaustive but should suffice is in 90%+ of the cases
   const possiblePaths = [
     path.join(repoPath, 'tsconfig.json'),
@@ -144,5 +153,6 @@ async function findTsConfigFile(repoPath: string): Promise<string> {
     }
   }
 
-  throw new Error(`Could not find tsconfig.json in repository: ${repoPath}`);
+  console.log(`⚠️  No tsconfig.json found in repository: ${repoPath}`);
+  return null;
 }

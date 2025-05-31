@@ -20,11 +20,22 @@ const DrawerHeader = styled('div')(() => ({
 interface PermanentSidebarProps {
   owner: string;
   repo: string;
+  repoData: {
+    id: number;
+    full_name: string;
+    html_url: string;
+    sha: string;
+  };
   onFileSelect: (filePath: string) => void;
   token?: string; // Optional if you want to pass auth token
 }
 
-const PermanentSidebar: React.FC<PermanentSidebarProps> = ({ owner, repo, onFileSelect, token }) => {
+const PermanentSidebar: React.FC<PermanentSidebarProps> = ({
+  owner,
+  repo,
+  onFileSelect,
+  token,
+}) => {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -41,11 +52,11 @@ const PermanentSidebar: React.FC<PermanentSidebarProps> = ({ owner, repo, onFile
             color: '#C8D6E5', // <--- Optional: set font color to match!
           },
         }}
-        variant="permanent"
-        anchor="left"
+        variant='permanent'
+        anchor='left'
       >
         <DrawerHeader>
-          <Typography variant="subtitle1" fontWeight="bold" noWrap>
+          <Typography variant='subtitle1' fontWeight='bold' noWrap>
             {owner}/{repo}
           </Typography>
         </DrawerHeader>

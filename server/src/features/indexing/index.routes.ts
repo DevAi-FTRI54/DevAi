@@ -4,7 +4,7 @@ import { indexRepo, getJobStatus } from './index.controller.js';
 const router = express.Router();
 router.post('/ingest', indexRepo, (_req, res) => {
   console.log('✅ Repo indexed successfully');
-  res.status(200).json();
+  // res.status(200).json();
 });
 
 router.get('/status/:id', getJobStatus);
