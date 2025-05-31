@@ -15,6 +15,7 @@ export interface Message {
 }
 
 export interface ChatInputProps {
+  repoUrl: string;
   setAnswer: (
     answer: string,
     userPrompt: string,
@@ -72,4 +73,20 @@ export interface IngestionStatusData {
   status: 'pending' | 'indexing' | 'completed' | 'failed';
   lastUpdated: string;
   percentage: number;
+}
+
+export interface ChatWrapProps {
+  repo: {
+    id: number;
+    full_name: string;
+    html_url: string;
+    sha: string;
+  };
+}
+
+export interface Repo {
+  id: number;
+  full_name: string;
+  html_url: string;
+  sha: string;
 }

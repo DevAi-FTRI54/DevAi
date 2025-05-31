@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Message, ChatInputProps } from '../../types';
+import type { ChatInputProps } from '../../types';
 
 type PromptType =
   | 'default'
@@ -44,7 +44,7 @@ const autoGrow = (event: React.FormEvent<HTMLTextAreaElement>) => {
   textarea.style.height = `${textarea.scrollHeight}px`;
 };
 
-const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
   const [promptText, setPromptText] = useState('');
   const [promptType, setPromptType] = useState<PromptType>('default');
   const [loading, setLoading] = useState(false);
@@ -72,9 +72,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
 
     try {
       // Temporarily hard code our repo
-      const repoUrl = 'https://github.com/Team-Taz-FTRI-54/AI-ML-Project.git';
+      // const repoUrl = 'https://github.com/Team-Taz-FTRI-54/AI-ML-Project.git';
 
-      const response = await fetch('http://localhost:4000/api/query/question', {
+      const response = await fetch('/api/query/question', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -101,6 +101,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ setAnswer }) => {
         startLine,
         endLine
       );
+      setPromptText('');
     } catch (err) {
       if (err instanceof Error) setError(err.message || 'Something went wrong');
     } finally {

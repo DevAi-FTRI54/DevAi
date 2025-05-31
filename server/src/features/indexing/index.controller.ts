@@ -21,10 +21,23 @@ export const indexRepo = async (req: Request, res: Response) => {
   console.log('sha: ', sha);
 
   const job = await indexQueue.add('index', { repoUrl, sha });
-  res.json({ jobId: job.id, message: 'Repository ingestion started' });
+  console.log('--- SENDING TO THE FRONTEND ------------');
+  console.log({
+    jobId: job.id,
+    repoUrl: repoUrl,
+    message: 'Repository ingestion started',
+  });
+  res.json({
+    jobId: job.id,
+    repoUrl: repoUrl,
+    message: 'Repository ingestion started',
+  });
 };
 
-export const getJobStatus = async (req: Request, res: Response): Promise<void> => {
+export const getJobStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
     const job = await indexQueue.getJob(id);

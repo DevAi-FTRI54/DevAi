@@ -3,14 +3,22 @@ import PermanentSidebar from '../../components/bars/FileTree/sidebarDrawer';
 import ChatWindow from '../../components/chat/chatwindow';
 import ChatInput from '../../components/chat/chatinput';
 import RepoViewer from '../../components/chat/filepreview';
-import type { Message } from '../../types';
+import type { Message, ChatWrapProps } from '../../types';
 
-const ChatWrap: React.FC = () => {
+const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
-  const owner = 'Team-Taz-FTRI-54';
-  const repo = 'AI-ML-Project';
+  // Extract owner and repoName from the repo full name
+  const [owner, repoName] = repo.full_name.split('/');
+
+  console.log('--- repo ------');
+  console.log(repo);
+  console.log(owner);
+  console.log(repoName);
+
+  // const owner = 'Team-Taz-FTRI-54';
+  // const repoHardCoded = 'AI-ML-Project';
 
   const handleSetAnswer = (
     answer: string,
@@ -51,7 +59,8 @@ const ChatWrap: React.FC = () => {
       <div className='w-1/5 h-full bg-[#232946] border-r border-[#39415a] overflow-y-auto min-h-0'>
         <PermanentSidebar
           owner={owner}
-          repo={repo}
+          repo={repoName}
+          repoData={repo}
           onFileSelect={handleFileSelect}
         />
       </div>
@@ -66,7 +75,7 @@ const ChatWrap: React.FC = () => {
           </div>
           {/* Chat input area: fixed at bottom */}
           <div className='w-full mt-4'>
-            <ChatInput setAnswer={handleSetAnswer} />
+            <ChatInput repoUrl={repo.html_url} setAnswer={handleSetAnswer} />
           </div>
         </div>
       </div>
@@ -75,7 +84,7 @@ const ChatWrap: React.FC = () => {
       <div className='w-2/5 h-full overflow-y-auto bg-[#232946] border-l border-[#39415a] p-6 min-h-0'>
         {selectedFilePath ? (
           <RepoViewer
-            repoUrl={`${owner}/${repo}`}
+            repoUrl={`${owner}/${repoName}`}
             selectedPath={selectedFilePath}
           />
         ) : (

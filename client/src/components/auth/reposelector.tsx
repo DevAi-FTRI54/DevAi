@@ -8,7 +8,7 @@ type Repo = {
 };
 
 interface RepoSelectorProps {
-  onStartIngestion: (jobId: string) => void;
+  onStartIngestion: (jobId: string, repo: Repo) => void;
 }
 
 const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
@@ -59,7 +59,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
       const body = await res.json();
       const jobId: string = body.jobId;
 
-      onStartIngestion(jobId);
+      onStartIngestion(jobId, selectedRepo);
       alert(`Started ingesting ${selectedRepo.full_name}`);
     } catch (error) {
       console.error('Error indexing repo:', error);
@@ -68,21 +68,25 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#23262f] flex items-center justify-center">
-      <div className="p-6 max-w-xl mx-auto">
-        <h2 className="text-xl font-bold mb-4">Select a repository to index</h2>
-        {loading && <p className="text-gray-500">Loading repositories...</p>}
-        {error && <div className="p-3 bg-red-100 text-red-800 rounded mb-4">Error: {error}</div>}
+    <div className='min-h-screen w-full bg-[#23262f] flex items-center justify-center'>
+      <div className='p-6 max-w-xl mx-auto'>
+        <h2 className='text-xl font-bold mb-4'>Select a repository to index</h2>
+        {loading && <p className='text-gray-500'>Loading repositories...</p>}
+        {error && (
+          <div className='p-3 bg-red-100 text-red-800 rounded mb-4'>
+            Error: {error}
+          </div>
+        )}
 
         <select
-          className="w-full p-2 border rounded mb-4"
+          className='w-full p-2 border rounded mb-4'
           value={selectedRepo?.id ?? ''}
           onChange={(e) => {
             const repo = repos.find((r) => r.id === Number(e.target.value));
             setRepo(repo ?? null);
           }}
         >
-          <option value="">-- Choose a repo --</option>
+          <option value=''>-- Choose a repo --</option>
           {repos.map((repo: Repo) => (
             <option key={repo.id} value={repo.id}>
               {repo.full_name}
@@ -92,7 +96,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
 
         <button
           onClick={handleSelect}
-          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          className='px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700'
           disabled={!selectedRepo}
         >
           🚀 Ingest Repo
