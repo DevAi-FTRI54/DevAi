@@ -15,7 +15,7 @@ const IngestionFlow: React.FC = () => {
   };
 
   return (
-    <>
+    <div className=" text-gray min-h-screen">
       {!jobId ? (
         <RepoSelector onStartIngestion={handleStartIngestion} />
       ) : (
@@ -26,7 +26,7 @@ const IngestionFlow: React.FC = () => {
           }
         />
       )}
-    </>
+    </div>
   );
 };
 

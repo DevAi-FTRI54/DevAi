@@ -77,7 +77,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
             Error: {error}
           </div>
         )}
-
         <select
           className='w-full p-2 border rounded mb-4'
           value={selectedRepo?.id ?? ''}
