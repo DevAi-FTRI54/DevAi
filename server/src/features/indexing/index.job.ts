@@ -47,15 +47,18 @@ const worker = new Worker(
     console.log('bigDocs', bigDocs);
     await job.updateProgress(30);
 
-    const chunkedDocs = await chunkDocuments(bigDocs);
+    const chunkedDocs = (await chunkDocuments(bigDocs))
+      .filter((d) => d.pageContent && d.pageContent.trim().length > 0)
+      .filter((d) => d.pageContent.length < 4 * 1024 * 4); // ~16 kB ≈ 8 k tokens safety
+
     const total = chunkedDocs.length;
     console.log('total: ', total);
 
     for (let i = 0; i < total; i++) {
-      // console.log('\n--- chunkedDoc ------');
-      // console.log(chunkedDocs[i]);
       await upsert([chunkedDocs[i]]);
       const percentage = 36 + Math.floor(((i + 1) / total) * 64);
+      console.log('--- chunkedDocs[0] ---------');
+      console.log(chunkedDocs[i]);
       await job.updateProgress(percentage);
     }
   },
