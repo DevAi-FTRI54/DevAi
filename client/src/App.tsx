@@ -1,9 +1,4 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import NavBarLayout from './wrappers/Layouts/NavBarLayout';
 import MainContent from './wrappers/homepage/homepage';
 import GitHubLogin from './components/auth/githublogin';
@@ -14,27 +9,15 @@ import { AppBarHomeLayout } from './wrappers/Layouts/AppBarLayout';
 import IngestionFlow from '../src/wrappers/RepoIngestion/IngestionFlow';
 import ChatPage from './components/chat/ChatPage';
 // import ChatWrap from './wrappers/chatbotpage/chatwrap';
+import ChatHistory from './components/chat/chathistory';
 
 function App() {
   return (
     <Router>
+      {/* prettier-ignore */}
       <Routes>
-        <Route
-          path='/'
-          element={
-            <AppBarHomeLayout>
-              <MainContent />
-            </AppBarHomeLayout>
-          }
-        />
-        <Route
-          path='/faq'
-          element={
-            <AppBarHomeLayout>
-              <FAQ />
-            </AppBarHomeLayout>
-          }
-        />
+        <Route path='/' element={<AppBarHomeLayout> <MainContent /> </AppBarHomeLayout>} />
+        <Route path='/faq' element={<AppBarHomeLayout><FAQ /></AppBarHomeLayout>} />
         <Route path='/login' element={<GitHubLogin />} />
         <Route path='/install-github-app' element={<InstallAppPrompt />} />
         <Route path='/ingest' element={<IngestionFlow />} />{' '}
@@ -47,6 +30,7 @@ function App() {
         {/* Pages with NavBarLayout */}
         <Route element={<NavBarLayout />}>
           <Route path='/chat' element={<ChatPage />} />
+          <Route path='/chathistory' element={<ChatHistory />} />
         </Route>
         {/* GLOBAL 404 CATCH-ALL */}
         <Route path='*' element={<NotFound />} />
