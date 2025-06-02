@@ -24,6 +24,10 @@ export interface ChatInputProps {
     startLine: number,
     endLine: number
   ) => void;
+  // streamingAnswer?: string;
+  // isStreaming?: boolean;
+  setStreamingAnswer?: (answer: string) => void;
+  setIsStreaming?: (streaming: boolean) => void;
 }
 
 export interface ChatHistoryEntry {

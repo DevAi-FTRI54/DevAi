@@ -44,7 +44,12 @@ const autoGrow = (event: React.FormEvent<HTMLTextAreaElement>) => {
   textarea.style.height = `${textarea.scrollHeight}px`;
 };
 
-const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
+const ChatInput: React.FC<ChatInputProps> = ({
+  repoUrl,
+  setAnswer,
+  setStreamingAnswer,
+  setIsStreaming,
+}) => {
   const [promptText, setPromptText] = useState('');
   const [promptType, setPromptType] = useState<PromptType>('default');
   const [loading, setLoading] = useState(false);
@@ -70,15 +75,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
     setLoading(true);
     setError(null);
 
-    try {
-      console.log('📤 Making request to:', '/api/query/question');
-      console.log('📤 Request body:', {
-        url: repoUrl,
-        prompt: promptText,
-        type: promptType,
-        sessionId,
-      });
+    console.log('🚀 Starting streaming...');
+    setIsStreaming?.(true);
+    setStreamingAnswer?.('');
 
+    try {
       const response = await fetch('/api/query/question', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,24 +91,91 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
         }),
       });
       if (!response.ok) throw new Error('Failed to submit prompt');
-      const data = await response.json();
 
-      const snippet = data.result.response.citations?.[0].snippet ?? '';
-      const file =
-        data.result.response.citations?.[0].file.split('/').pop() ?? '';
-      const startLine = data.result.response.citations?.[0].startLine ?? 0;
-      const endLine = data.result.response.citations?.[0].endLine ?? 0;
-      setAnswer(
-        data.result.response.answer,
-        data.result.question,
-        snippet,
-        file,
-        startLine,
-        endLine
-      );
+      // const data = await response.json();
+      // const snippet = data.result.response.citations?.[0].snippet ?? '';
+      // const file =
+      //   data.result.response.citations?.[0].file.split('/').pop() ?? '';
+      // const startLine = data.result.response.citations?.[0].startLine ?? 0;
+      // const endLine = data.result.response.citations?.[0].endLine ?? 0;
+      // setAnswer(
+      //   data.result.response.answer,
+      //   data.result.question,
+      //   snippet,
+      //   file,
+      //   startLine,
+      //   endLine
+      // );
 
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      let accumulatedAnswer = '';
+      let finalCitations = [];
+      let finalQuestion = '';
+
+      while (true) {
+        const { done, value } = (await reader?.read()) ?? {
+          done: true,
+          value: undefined,
+        };
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          try {
+            if (line.startsWith('data: ')) {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.type === 'status') {
+                console.log('Status: ', data.message);
+              } else if (data.type === 'answer_chunk') {
+                accumulatedAnswer += data.content + ' ';
+
+                setStreamingAnswer?.(accumulatedAnswer);
+              } else if (data.type === 'citations') {
+                finalCitations = data.data;
+                finalQuestion = data.question;
+              } else if (data.type === 'complete') {
+                console.log('✅ Received complete signal');
+
+                setIsStreaming?.(false);
+                setStreamingAnswer?.('');
+
+                const snippet = finalCitations?.[0]?.snippet ?? '';
+                const file = finalCitations?.[0]?.file?.split('/').pop() ?? '';
+                const startLine = finalCitations?.[0]?.startLine ?? 0;
+                const endLine = finalCitations?.[0]?.endLine ?? 0;
+
+                setAnswer(
+                  accumulatedAnswer.trim(),
+                  finalQuestion,
+                  snippet,
+                  file,
+                  startLine,
+                  endLine
+                );
+
+                setLoading(false);
+              } else if (data.type === 'error') {
+                throw new Error(data.message);
+              }
+            }
+          } catch (parseError) {
+            console.error('❌ Parse error:', parseError, 'Line:', line);
+            setIsStreaming?.(false);
+            setStreamingAnswer?.('');
+            console.warn('Failed to parse SSE data:', line);
+          }
+        }
+      }
       setPromptText('');
     } catch (err) {
+      console.error('❌ Submit error:', err);
+      setIsStreaming?.(false);
+      setStreamingAnswer?.('');
       if (err instanceof Error) setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
@@ -116,6 +184,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
 
   return (
     <div className='w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-[#232946] rounded-xl shadow-lg'>
+      {/* Quick Prompts */}
       <div className='w-full max-w-3xl mx-auto flex justify-center space-x-2'>
         {QUICK_PROMPTS.map(({ label, text, type }) => (
           <button
@@ -129,6 +198,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
           </button>
         ))}
       </div>
+
+      {/* Input Area */}
       <div className='relative w-full'>
         <textarea
           id='user-prompt'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import PermanentSidebar from '../../components/bars/FileTree/sidebarDrawer';
 import ChatWindow from '../../components/chat/chatwindow';
 import ChatInput from '../../components/chat/chatinput';
@@ -10,8 +10,18 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [githubToken, setGithubToken] = useState<string | null>(null);
 
+  const [streamingAnswer, setStreamingAnswer] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+
   // Extract owner and repoName from the repo full name
   const [owner, repoName] = repo.full_name.split('/');
+
+  useEffect(() => {
+    console.log('🎯 ChatWrap state:', {
+      isStreaming,
+      streamingAnswerLength: streamingAnswer.length,
+    });
+  }, [isStreaming, streamingAnswer]);
 
   // Get GitHub token
   useEffect(() => {
@@ -38,6 +48,44 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
 
     getGithubToken();
   }, []);
+
+  useMemo(() => {
+    // This code only runs when isStreaming OR streamingAnswer changes
+  }, [isStreaming, streamingAnswer]);
+
+  const streamingComponent = useMemo(() => {
+    // This function only runs when dependencies change
+    console.log('🔄 Recreating streaming component');
+
+    if (!isStreaming || !streamingAnswer) {
+      return null; // Return nothing if not streaming
+    }
+
+    return (
+      <div className='p-4 bg-[#181A2B] border border-[#39415a] rounded-lg mx-4 mb-4'>
+        <div className='flex items-center gap-2 mb-2'>
+          <div className='flex space-x-1'>
+            <div className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'></div>
+            <div
+              className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
+              style={{ animationDelay: '0.1s' }}
+            ></div>
+            <div
+              className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
+              style={{ animationDelay: '0.2s' }}
+            ></div>
+          </div>
+          <span className='text-[#5ea9ea] text-sm font-medium'>
+            AI is responding...
+          </span>
+        </div>
+        <div className='text-[#eaeaea] whitespace-pre-wrap leading-relaxed'>
+          {streamingAnswer}
+          <span className='inline-block w-2 h-5 bg-[#5ea9ea] animate-pulse ml-1'></span>
+        </div>
+      </div>
+    );
+  }, [isStreaming, streamingAnswer]);
 
   if (!githubToken) {
     return (
@@ -101,9 +149,41 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
           <div className='flex-1 w-full overflow-y-auto min-h-0'>
             <ChatWindow messages={messages} />
           </div>
+
+          {streamingComponent}
+          {/* {isStreaming && streamingAnswer && (
+            <div className='p-4 bg-[#181A2B] border border-[#39415a] rounded-lg mx-4 mb-4'>
+              <div className='flex items-center gap-2 mb-2'>
+                <div className='flex space-x-1'>
+                  <div className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'></div>
+                  <div
+                    className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
+                    style={{ animationDelay: '0.1s' }}
+                  ></div>
+                  <div
+                    className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
+                    style={{ animationDelay: '0.2s' }}
+                  ></div>
+                </div>
+                <span className='text-[#5ea9ea] text-sm font-medium'>
+                  AI is responding...
+                </span>
+              </div>
+              <div className='text-[#eaeaea] whitespace-pre-wrap leading-relaxed'>
+                {streamingAnswer}
+                <span className='inline-block w-2 h-5 bg-[#5ea9ea] animate-pulse ml-1'></span>
+              </div>
+            </div>
+          )} */}
+
           {/* Chat input area: fixed at bottom */}
           <div className='w-full mt-4'>
-            <ChatInput repoUrl={repo.html_url} setAnswer={handleSetAnswer} />
+            <ChatInput
+              repoUrl={repo.html_url}
+              setAnswer={handleSetAnswer}
+              setStreamingAnswer={setStreamingAnswer}
+              setIsStreaming={setIsStreaming}
+            />
           </div>
         </div>
       </div>

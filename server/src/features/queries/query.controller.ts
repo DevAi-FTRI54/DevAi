@@ -49,24 +49,29 @@ export const askController = async (
         question: question,
       })}\n\n`
     );
-    res.write(`{data: ${JSON.stringify({ type: 'complete' })}}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
     res.end();
     // res.status(200).json(response);
   } catch (err: any) {
     console.log('--- Error inside askController ------------');
     console.error(err);
 
-    if (err instanceof OpenAIError) {
-      res
-        .status(502)
-        .json({ message: 'askController: LLM failed', detail: err.message });
-    }
-    if (err.message === 'VECTOR_DB_DOWN') {
-      res.status(503).json({ msg: 'askController: Vector store unavailable' });
-    } else {
-      res
-        .status(500)
-        .json({ message: 'askController: Unexpected server error' });
-    }
+    res.write(
+      `data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`
+    );
+    res.end();
+
+    // if (err instanceof OpenAIError) {
+    //   res
+    //     .status(502)
+    //     .json({ message: 'askController: LLM failed', detail: err.message });
+    // }
+    // if (err.message === 'VECTOR_DB_DOWN') {
+    //   res.status(503).json({ msg: 'askController: Vector store unavailable' });
+    // } else {
+    //   res
+    //     .status(500)
+    //     .json({ message: 'askController: Unexpected server error' });
+    // }
   }
 };
