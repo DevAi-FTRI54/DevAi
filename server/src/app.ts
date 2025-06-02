@@ -10,6 +10,7 @@ import { allowedOrigins } from '../src/config/allowedOrigins.js';
 import repoRoutes from './features/indexing/index.routes.js';
 import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
+import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
 
 const app = express();
 
@@ -42,6 +43,9 @@ app.use('/api/query', queryRoutes);
 
 // Auth route
 app.use('/api/auth', authRoute);
+
+//ChatHistory route
+app.use('api', chatHistoryRoute);
 
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
