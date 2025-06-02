@@ -71,8 +71,13 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
     setError(null);
 
     try {
-      // Temporarily hard code our repo
-      // const repoUrl = 'https://github.com/Team-Taz-FTRI-54/AI-ML-Project.git';
+      console.log('📤 Making request to:', '/api/query/question');
+      console.log('📤 Request body:', {
+        url: repoUrl,
+        prompt: promptText,
+        type: promptType,
+        sessionId,
+      });
 
       const response = await fetch('/api/query/question', {
         method: 'POST',
@@ -86,7 +91,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
       });
       if (!response.ok) throw new Error('Failed to submit prompt');
       const data = await response.json();
-      console.log(data);
 
       const snippet = data.result.response.citations?.[0].snippet ?? '';
       const file =
@@ -101,6 +105,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
         startLine,
         endLine
       );
+
       setPromptText('');
     } catch (err) {
       if (err instanceof Error) setError(err.message || 'Something went wrong');

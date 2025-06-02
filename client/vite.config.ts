@@ -14,23 +14,9 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:4000', // Express
         changeOrigin: true,
-        timeout: 10000,
+        timeout: 30000,
       },
     },
     allowedHosts: ['a59d8fd60bb0.ngrok.app'],
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom', '@mui/material', '@emotion/react'],
-  },
-  build: {
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          mui: ['@mui/material', '@emotion/react', '@emotion/styled'],
-        },
-      },
-    },
   },
 });

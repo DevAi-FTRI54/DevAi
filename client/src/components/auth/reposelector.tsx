@@ -69,8 +69,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
       }
 
       const data = (await response.json()) as Repo[];
-      console.log('--- API Response ---');
-      console.log('Data:', data);
 
       // Auto-retry if no repos found (timing issue)
       if (data.length === 0 && autoRetryAttempts < 3) {
@@ -112,9 +110,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
 
   // Invoke fetchRepos with frontend delay
   useEffect(() => {
-    console.log('=== COMPONENT MOUNT DEBUG ===');
-    console.log('Current URL:', window.location.href);
-
     // Show loading immediately, then wait for cookies to settle
     setLoading(true);
     setInitializing(true);

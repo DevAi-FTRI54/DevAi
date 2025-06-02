@@ -12,17 +12,46 @@ export const askController = async (
   res: Response
 ): Promise<void> => {
   try {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
     const { url: repoUrl, prompt: question, type: type } = req.body;
-    // const { url: repoUrl, prompt: question } = req.body;
 
-    console.log('--- url ------');
-    console.log(repoUrl);
-
-    console.log('--- question ------');
-    console.log(question);
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'status',
+        message: 'Retrieving code...',
+      })}\n\n`
+    );
 
     const response = await answerQuestion(repoUrl, question, type);
-    res.status(200).json(response);
+
+    const answer = String(response.result.response.answer);
+    const citations = response.result.response.citations;
+
+    const chunkSize = 100;
+    const words = answer.split(' ');
+
+    for (let i = 0; i < words.length; i += chunkSize) {
+      const chunk = words.slice(i, i + chunkSize).join(' ');
+      res.write(
+        `data: ${JSON.stringify({ type: 'answer_chunk', content: chunk })}\n\n`
+      );
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'citations',
+        data: citations,
+        question: question,
+      })}\n\n`
+    );
+    res.write(`{data: ${JSON.stringify({ type: 'complete' })}}\n\n`);
+    res.end();
+    // res.status(200).json(response);
   } catch (err: any) {
     console.log('--- Error inside askController ------------');
     console.error(err);
@@ -41,27 +70,3 @@ export const askController = async (
     }
   }
 };
-
-// export const createQuery = async (req: Request, res: Response) => {
-//   try {
-//     const { question, tags } = req.body; // pull question from request body, also tag if we use it
-//     const userId = req.user._id; // needs authentication middleware;
-
-//     // Store the query to the MongoDB
-//     const newQuery = await Query.create({
-//       user: userId,
-//       question,
-//       tags,
-//     });
-
-//     // Adding the query ID to the user to trace chat history
-//     await User.findByIdAndUpdate(userId, {
-//       $push: { queries: newQuery._id }, // $push is a MongoDB operator that adds a value to an array.
-//     });
-
-//     res.status(201).json(newQuery);
-//   } catch (error) {
-//     console.error('Error creating query:', error);
-//     res.status(500).json({ error: 'Internal Server Error' });
-//   }
-// };

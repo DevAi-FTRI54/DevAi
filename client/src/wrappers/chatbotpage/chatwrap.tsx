@@ -23,8 +23,6 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('--- data ---------');
-          console.log(data);
           setGithubToken(data.token);
         } else {
           console.error(
