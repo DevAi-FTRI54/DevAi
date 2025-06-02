@@ -7,7 +7,11 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 
-const drawerWidth = 350;
+const drawerWidth = {
+  xs: '60%',
+  sm: 300,
+  md: 350,
+};
 
 const DrawerHeader = styled('div')(() => ({
   display: 'flex',
@@ -30,33 +34,29 @@ interface PermanentSidebarProps {
   token?: string; // Optional if you want to pass auth token
 }
 
-const PermanentSidebar: React.FC<PermanentSidebarProps> = ({
-  owner,
-  repo,
-  onFileSelect,
-  token,
-}) => {
+const PermanentSidebar: React.FC<PermanentSidebarProps> = ({ owner, repo, onFileSelect, token }) => {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
       <Drawer
         sx={{
           width: drawerWidth,
-          flexShrink: 0,
+          flexShrink: 1,
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
-            top: 75, // Matches AppBar height (adjust as needed)
+            top: 75,
             height: 'calc(100% - 64px)',
-            backgroundColor: '#232946', // <--- Set your dark color here!
-            color: '#C8D6E5', // <--- Optional: set font color to match!
+            backgroundColor: '#232946',
+            color: '#C8D6E5',
+            transition: 'width 0.3s ease',
           },
         }}
-        variant='permanent'
-        anchor='left'
+        variant="permanent"
+        anchor="left"
       >
         <DrawerHeader>
-          <Typography variant='subtitle1' fontWeight='bold' noWrap>
+          <Typography variant="subtitle1" fontWeight="bold" noWrap>
             {owner}/{repo}
           </Typography>
         </DrawerHeader>

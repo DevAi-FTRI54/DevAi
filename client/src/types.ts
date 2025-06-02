@@ -26,6 +26,14 @@ export interface ChatInputProps {
   ) => void;
 }
 
+export interface ChatHistoryEntry {
+  userPrompt: string;
+  answer: string;
+  file?: string;
+  startLine?: number;
+  endLine?: number;
+}
+
 //* This file handles recursive rendering & lazy loading of the file tree from GitHub
 export interface GitHubContentItem {
   name: string;
