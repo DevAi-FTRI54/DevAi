@@ -14,7 +14,6 @@ const DrawerHeader = styled('div')(() => ({
   alignItems: 'center',
   justifyContent: 'center',
   padding: '1rem',
-  // marginTop: '0.5rem',
 }));
 
 interface PermanentSidebarProps {
@@ -27,7 +26,7 @@ interface PermanentSidebarProps {
     sha: string;
   };
   onFileSelect: (filePath: string) => void;
-  token?: string; // Optional if you want to pass auth token
+  token: string;
 }
 
 const PermanentSidebar: React.FC<PermanentSidebarProps> = ({
@@ -46,10 +45,10 @@ const PermanentSidebar: React.FC<PermanentSidebarProps> = ({
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
-            top: 75, // Matches AppBar height (adjust as needed)
+            top: 75,
             height: 'calc(100% - 64px)',
-            backgroundColor: '#232946', // <--- Set your dark color here!
-            color: '#C8D6E5', // <--- Optional: set font color to match!
+            backgroundColor: '#232946',
+            color: '#C8D6E5',
           },
         }}
         variant='permanent'
@@ -66,7 +65,7 @@ const PermanentSidebar: React.FC<PermanentSidebarProps> = ({
             owner={owner}
             repo={repo}
             token={token}
-            onFileSelect={onFileSelect} // ✅ Pass file select handler
+            onFileSelect={onFileSelect}
           />
         </Box>
       </Drawer>

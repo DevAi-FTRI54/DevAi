@@ -8,6 +8,7 @@ import {
   handleGitHubCallback,
   completeAuth,
   listRepos,
+  getGithubToken,
 } from './controllers/auth.controller.js';
 
 console.log('Loading auth.routes.ts');
@@ -18,6 +19,7 @@ router.get('/github', getGitHubLoginURL);
 router.get('/callback', handleGitHubCallback);
 router.get('/complete', completeAuth);
 router.get('/repos', listRepos);
+router.get('/github-token', getGithubToken);
 
 // Redirect after Github App install:
 router.get('/app/install/callback', requireAuth, saveInstallationId);

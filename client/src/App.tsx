@@ -13,7 +13,7 @@ import NotFound from './components/settings/notfound';
 import { AppBarHomeLayout } from './wrappers/Layouts/AppBarLayout';
 import IngestionFlow from '../src/wrappers/RepoIngestion/IngestionFlow';
 import ChatPage from './components/chat/ChatPage';
-import ChatWrap from './wrappers/chatbotpage/chatwrap';
+// import ChatWrap from './wrappers/chatbotpage/chatwrap';
 
 function App() {
   return (
@@ -39,7 +39,10 @@ function App() {
         <Route path='/install-github-app' element={<InstallAppPrompt />} />
         <Route path='/ingest' element={<IngestionFlow />} />{' '}
         {/* Use the wrapper flow */}
-        <Route path='/select-repo' element={<Navigate to='/ingest' />} />{' '}
+        {/* <Route path='/select-repo' element={<Navigate to='/ingest' />} />{' '} */}
+        <Route path='/select-repo' element={<IngestionFlow />} />{' '}
+        {/* For processing */}
+        {/* For selecting repo */}
         {/* Optional redirect */}
         {/* Pages with NavBarLayout */}
         <Route element={<NavBarLayout />}>

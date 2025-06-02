@@ -62,7 +62,9 @@ export function checkIfAppInstalled(installations: InstallationsResponse): {
 
 // Get GitHub App installation URL
 export function getAppInstallationUrl(): string {
-  return `https://github.com/apps/${APP_SLUG}/installations/new?redirect_url=${encodeURIComponent(
-    REDIRECT_AFTER_INSTALL
-  )}`;
+  // return `https://github.com/apps/${APP_SLUG}/installations/new?redirect_url=${encodeURIComponent(
+  //   REDIRECT_AFTER_INSTALL
+  // )}`;
+  // ✅ Always force new installation flow, don't go to settings
+  return `https://github.com/apps/${APP_SLUG}/installations/new?state=force_new`;
 }
