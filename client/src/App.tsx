@@ -22,7 +22,10 @@ function App() {
         <Route path='/install-github-app' element={<InstallAppPrompt />} />
         <Route path='/ingest' element={<IngestionFlow />} />{' '}
         {/* Use the wrapper flow */}
-        <Route path='/select-repo' element={<Navigate to='/ingest' />} />{' '}
+        {/* <Route path='/select-repo' element={<Navigate to='/ingest' />} />{' '} */}
+        <Route path='/select-repo' element={<IngestionFlow />} />{' '}
+        {/* For processing */}
+        {/* For selecting repo */}
         {/* Optional redirect */}
         {/* Pages with NavBarLayout */}
         <Route element={<NavBarLayout />}>

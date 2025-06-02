@@ -36,20 +36,28 @@ const worker = new Worker(
   'index',
   async (job: Job<{ repoUrl: string; sha: string }>) => {
     const { repoUrl, sha } = job.data;
-    // console.log('\n--- job.data ------');
-    // console.log(job.data);
 
     const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
     await job.updateProgress(15);
 
     const loader = new TsmorphCodeLoader(localRepoPath, repoId);
     const bigDocs = await loader.load();
-    console.log('bigDocs', bigDocs);
     await job.updateProgress(30);
 
-    const chunkedDocs = (await chunkDocuments(bigDocs))
-      .filter((d) => d.pageContent && d.pageContent.trim().length > 0)
-      .filter((d) => d.pageContent.length < 4 * 1024 * 4); // ~16 kB ≈ 8 k tokens safety
+    const chunkedDocs = (await chunkDocuments(bigDocs)).map((doc) => {
+      // If the document is empty, write into the pageContent that it's empty
+      if (!doc.pageContent || doc.pageContent.trim().length === 0) {
+        return {
+          ...doc,
+          pageContent: 'Empty file',
+          metaData: {
+            ...doc.metadata,
+            isEmpty: true,
+          },
+        };
+      }
+      return doc;
+    });
 
     const total = chunkedDocs.length;
     console.log('total: ', total);
@@ -57,7 +65,7 @@ const worker = new Worker(
     for (let i = 0; i < total; i++) {
       await upsert([chunkedDocs[i]]);
       const percentage = 36 + Math.floor(((i + 1) / total) * 64);
-      console.log('--- chunkedDocs[0] ---------');
+      console.log('--- chunkedDoc[i] ---------');
       console.log(chunkedDocs[i]);
       await job.updateProgress(percentage);
     }

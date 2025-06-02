@@ -18,7 +18,6 @@ const DrawerHeader = styled('div')(() => ({
   alignItems: 'center',
   justifyContent: 'center',
   padding: '1rem',
-  // marginTop: '0.5rem',
 }));
 
 interface PermanentSidebarProps {
@@ -31,7 +30,7 @@ interface PermanentSidebarProps {
     sha: string;
   };
   onFileSelect: (filePath: string) => void;
-  token?: string; // Optional if you want to pass auth token
+  token: string;
 }
 
 const PermanentSidebar: React.FC<PermanentSidebarProps> = ({ owner, repo, onFileSelect, token }) => {
@@ -66,7 +65,7 @@ const PermanentSidebar: React.FC<PermanentSidebarProps> = ({ owner, repo, onFile
             owner={owner}
             repo={repo}
             token={token}
-            onFileSelect={onFileSelect} // ✅ Pass file select handler
+            onFileSelect={onFileSelect}
           />
         </Box>
       </Drawer>

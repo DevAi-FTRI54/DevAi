@@ -5,6 +5,7 @@ import { ServerError } from './types/types.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { allowedOrigins } from '../src/config/allowedOrigins.js';
+import mongoose from 'mongoose';
 // import taskController from './controllers/taskController';
 
 import repoRoutes from './features/indexing/index.routes.js';
@@ -31,6 +32,18 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../views/index.html'), {
     headers: { 'Content-Type': 'text/html' },
   });
+});
+
+app.get('/api/health', (req, res) => {
+  const health = {
+    mongodb: mongoose.connection.readyState === 1,
+    server: true,
+    timestamp: new Date().toISOString(),
+  };
+
+  const isHealthy = Object.values(health).every((status) => status === true);
+
+  res.status(isHealthy ? 200 : 503).json(health);
 });
 
 // --- Define routes ---------------------------------------------

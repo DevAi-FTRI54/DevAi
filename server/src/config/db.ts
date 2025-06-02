@@ -7,7 +7,7 @@ const URI = process.env.MONGO_URI || myURI;
 export const connectMongo = async (): Promise<typeof mongoose> => {
   try {
     await mongoose.connect(URI);
-    console.log('✅ Connected to MongoDB');
+    // console.log('✅ Connected to MongoDB');
     return mongoose;
   } catch (err: any) {
     console.error('Error while connecting to MongoDB:', err);

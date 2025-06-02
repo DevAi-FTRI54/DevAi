@@ -21,6 +21,12 @@ export function handleApiError(
 ): void {
   console.error(`❌ ${context}:`, error);
 
+  // Check if response was already sent
+  if (res.headersSent) {
+    return;
+  }
+
+  const status = error.status || error.statusCode || 500;
   if (error instanceof GitHubApiError) {
     res.status(502).json({
       error: 'GitHub API Error',
@@ -31,7 +37,7 @@ export function handleApiError(
     return;
   }
 
-  res.status(500).json({
+  res.status(status).json({
     error: 'Server Error',
     message: error.message || 'An unexpected error occurred',
   });

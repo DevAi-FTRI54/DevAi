@@ -21,18 +21,30 @@ const port = process.env.PORT || 4000;
 
 async function startServer() {
   try {
-    await Promise.all([connectMongo(), ensureQdrantIndexes()]);
+    console.log('🔄 Connecting to MongoDB...');
+    await connectMongo();
+    console.log('✅ MongoDB connected');
+
+    console.log('🔄 Setting up Qdrant indexes...');
+    await ensureQdrantIndexes();
+    console.log('✅ Qdrant indexes ready');
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     app
       .listen(port, () => {
         console.log(`✅ App listening on port ${port}`);
+        console.log(`🏥 Health check: http://localhost:${port}/api/health`);
       })
       .on('error', (err) => {
         console.error('❌ Failed to start server:', err);
         process.exit(1);
       });
   } catch (error) {
-    console.error('❌ Failed during initialization:', error instanceof Error ? error.message : error);
+    console.error(
+      '❌ Failed during initialization:',
+      error instanceof Error ? error.message : error
+    );
     process.exit(1);
   }
 }

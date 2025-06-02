@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PermanentSidebar from '../../components/bars/FileTree/sidebarDrawer';
 import ChatWindow from '../../components/chat/chatwindow';
 import ChatInput from '../../components/chat/chatinput';
@@ -8,17 +8,46 @@ import type { Message, ChatWrapProps } from '../../types';
 const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [githubToken, setGithubToken] = useState<string | null>(null);
 
   // Extract owner and repoName from the repo full name
   const [owner, repoName] = repo.full_name.split('/');
 
-  console.log('--- repo ------');
-  console.log(repo);
-  console.log(owner);
-  console.log(repoName);
+  // Get GitHub token
+  useEffect(() => {
+    const getGithubToken = async () => {
+      try {
+        const response = await fetch('/api/auth/github-token', {
+          credentials: 'include',
+        });
 
-  // const owner = 'Team-Taz-FTRI-54';
-  // const repoHardCoded = 'AI-ML-Project';
+        if (response.ok) {
+          const data = await response.json();
+          console.log('--- data ---------');
+          console.log(data);
+          setGithubToken(data.token);
+        } else {
+          console.error(
+            'Failed to get token:',
+            response.status,
+            response.statusText
+          );
+        }
+      } catch (error) {
+        console.error('Failed to get GitHub token:', error);
+      }
+    };
+
+    getGithubToken();
+  }, []);
+
+  if (!githubToken) {
+    return (
+      <div className='flex h-[calc(100vh-56px)] bg-[#121629] items-center justify-center'>
+        <div className='text-white'>Loading GitHub token...</div>
+      </div>
+    );
+  }
 
   const handleSetAnswer = (
     answer: string,
@@ -62,6 +91,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
           repo={repoName}
           repoData={repo}
           onFileSelect={handleFileSelect}
+          token={githubToken!}
         />
       </div>
 
