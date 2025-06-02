@@ -125,15 +125,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
     }, 2000);
   }, []);
 
-  // Let the user manually retry
-  const handleRetry = () => {
-    fetchRepos();
-  };
-
-  const handleLoginRedirect = () => {
-    window.location.href = '/api/auth/github';
-  };
-
   const handleSelect = async () => {
     if (!selectedRepo) return;
 
@@ -172,13 +163,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
         )} */}
 
         {/* Loading repos */}
-        {/* {loading && (
-          <div className='text-gray-300 flex items-center gap-2'>
-            <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
-            Loading repositories...
-            {retryCount > 0 && <span>(retry {retryCount}/3)</span>}
-          </div>
-        )} */}
         {loading && (
           <div className='text-gray-300 flex items-center gap-2'>
             <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
@@ -218,34 +202,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
         )}
 
         {/* No repos found */}
-        {/* {!loading && !error && repos.length === 0 && (
-          <div className='p-3 bg-yellow-100 text-yellow-800 rounded mb-4'>
-            <p className='font-semibold'>No repositories found</p>
-            <p className='text-sm mb-3'>
-              This might be a timing issue. Try refreshing first.
-            </p>
-            <div className='flex gap-2'>
-              <button
-                onClick={() => window.location.reload()}
-                className='px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm'
-              >
-                🔄 Refresh Page
-              </button>
-              <button
-                onClick={handleRetry}
-                className='px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm'
-              >
-                🔄 Retry
-              </button>
-              <button
-                onClick={() => (window.location.href = '/install-github-app')}
-                className='px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 text-sm'
-              >
-                ⚙️ Install App
-              </button>
-            </div>
-          </div>
-        )} */}
         {!loading && !error && repos.length === 0 && !initializing && (
           <div className='p-3 bg-yellow-100 text-yellow-800 rounded mb-4'>
             <p className='font-semibold'>No repositories found</p>
@@ -279,29 +235,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion }) => {
           </div>
         )}
 
-        {/* <select
-          className='w-full p-2 border rounded mb-4'
-          value={selectedRepo?.id ?? ''}
-          onChange={(e) => {
-            const repo = repos.find((r) => r.id === Number(e.target.value));
-            setRepo(repo ?? null);
-          }}
-        >
-          <option value=''>-- Choose a repo --</option>
-          {repos.map((repo: Repo) => (
-            <option key={repo.id} value={repo.id}>
-              {repo.full_name}
-            </option>
-          ))}
-        </select>
-
-        <button
-          onClick={handleSelect}
-          className='px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700'
-          disabled={!selectedRepo}
-        >
-          🚀 Ingest Repo
-        </button> */}
         {repos.length > 0 && (
           <>
             <select
