@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import NavBarLayout from './wrappers/Layouts/NavBarLayout';
 import MainContent from './wrappers/homepage/homepage';
 import GitHubLogin from './components/auth/githublogin';
@@ -32,7 +32,7 @@ function App() {
         {/* Pages with NavBarLayout */}
         <Route element={<NavBarLayout />}>
           <Route path='/chat' element={<ChatPage />} />
-          <Route path='/chathistory' element={<ChatHistory />} />
+          <Route path='/chat/history' element={<ChatHistory />} />
         </Route>
         {/* GLOBAL 404 CATCH-ALL */}
         <Route path='*' element={<NotFound />} />

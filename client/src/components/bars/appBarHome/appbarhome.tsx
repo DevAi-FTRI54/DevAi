@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 
 const pages = [
   { label: 'About', path: '/about' },
+  { label: 'FAQ', path: '/faq' },
   { label: 'Solutions', path: '/solutions' },
   { label: 'Pricing', path: '/pricing' },
 ];
@@ -111,7 +112,7 @@ function AppBarHome() {
           </Box>
 
           {/* Center - Navigation */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center', gap: 3 }}>
             {pages.map((page) => (
               <Button
                 key={page.label}

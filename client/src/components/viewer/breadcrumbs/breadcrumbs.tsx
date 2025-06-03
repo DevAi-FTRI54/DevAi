@@ -1,37 +1,36 @@
-import * as React from 'react';
+import React from 'react';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
-import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
+import Typography from '@mui/material/Typography';
 
-// interface HandleClickProps {
-//   event: React.MouseEvent<HTMLDivElement, MouseEvent>;
-// }
+interface Props {
+  path: string[];
+  onClick: (index: number) => void;
+}
 
-const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>): void => {
-  event.preventDefault();
-  console.info('You clicked a breadcrumb');
-};
-
-const CollopasedBreadcrumb: React.FC = () => {
+const DynamicBreadcrumbs: React.FC<Props> = ({ path, onClick }) => {
   return (
-    <div role="presentation" onClick={handleClick}>
-      <Breadcrumbs maxItems={2} aria-label="breadcrumb">
-        <Link underline="hover" color="inherit" href="#">
-          Home
-        </Link>
-        <Link underline="hover" color="inherit" href="#">
-          Catalog
-        </Link>
-        <Link underline="hover" color="inherit" href="#">
-          Accessories
-        </Link>
-        <Link underline="hover" color="inherit" href="#">
-          New Collection
-        </Link>
-        <Typography sx={{ color: 'text.primary' }}>Belts</Typography>
-      </Breadcrumbs>
-    </div>
+    <Breadcrumbs maxItems={6} aria-label="breadcrumb">
+      {path.map((segment, index) =>
+        index === path.length - 1 ? (
+          <Typography key={index} color="text.primary" fontSize={14}>
+            {segment}
+          </Typography>
+        ) : (
+          <Link
+            key={index}
+            underline="hover"
+            color="inherit"
+            fontSize={14}
+            onClick={() => onClick(index)}
+            sx={{ cursor: 'pointer' }}
+          >
+            {segment}
+          </Link>
+        )
+      )}
+    </Breadcrumbs>
   );
 };
 
-export default CollopasedBreadcrumb;
+export default DynamicBreadcrumbs;
