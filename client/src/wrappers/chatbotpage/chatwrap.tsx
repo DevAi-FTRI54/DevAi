@@ -151,30 +151,6 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
           </div>
 
           {streamingComponent}
-          {/* {isStreaming && streamingAnswer && (
-            <div className='p-4 bg-[#181A2B] border border-[#39415a] rounded-lg mx-4 mb-4'>
-              <div className='flex items-center gap-2 mb-2'>
-                <div className='flex space-x-1'>
-                  <div className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'></div>
-                  <div
-                    className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
-                    style={{ animationDelay: '0.1s' }}
-                  ></div>
-                  <div
-                    className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
-                    style={{ animationDelay: '0.2s' }}
-                  ></div>
-                </div>
-                <span className='text-[#5ea9ea] text-sm font-medium'>
-                  AI is responding...
-                </span>
-              </div>
-              <div className='text-[#eaeaea] whitespace-pre-wrap leading-relaxed'>
-                {streamingAnswer}
-                <span className='inline-block w-2 h-5 bg-[#5ea9ea] animate-pulse ml-1'></span>
-              </div>
-            </div>
-          )} */}
 
           {/* Chat input area: fixed at bottom */}
           <div className='w-full mt-4'>

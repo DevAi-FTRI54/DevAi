@@ -31,7 +31,7 @@ export const askController = async (
     const answer = String(response.result.response.answer);
     const citations = response.result.response.citations;
 
-    const chunkSize = 100;
+    const chunkSize = 5;
     const words = answer.split(' ');
 
     for (let i = 0; i < words.length; i += chunkSize) {

@@ -92,21 +92,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
       });
       if (!response.ok) throw new Error('Failed to submit prompt');
 
-      // const data = await response.json();
-      // const snippet = data.result.response.citations?.[0].snippet ?? '';
-      // const file =
-      //   data.result.response.citations?.[0].file.split('/').pop() ?? '';
-      // const startLine = data.result.response.citations?.[0].startLine ?? 0;
-      // const endLine = data.result.response.citations?.[0].endLine ?? 0;
-      // setAnswer(
-      //   data.result.response.answer,
-      //   data.result.question,
-      //   snippet,
-      //   file,
-      //   startLine,
-      //   endLine
-      // );
-
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
