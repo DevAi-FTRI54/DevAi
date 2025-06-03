@@ -20,10 +20,9 @@ const ChatHistory: React.FC = () => {
     fetchHistory();
   }, []);
   return (
-    <div className='tableWrapper'>
+    <div className="tableWrapper">
       <h1>Chat History</h1>
-      <h2>Results from Searching Repo</h2> //TODO rename with dynamic repo
-      repoName
+      <h2>Results from Searching Repo</h2> //TODO rename with dynamic repo repoName
       <table>
         <thead>
           <tr>
