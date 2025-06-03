@@ -33,12 +33,7 @@ interface PermanentSidebarProps {
   token: string;
 }
 
-const PermanentSidebar: React.FC<PermanentSidebarProps> = ({
-  owner,
-  repo,
-  onFileSelect,
-  token,
-}) => {
+const PermanentSidebar: React.FC<PermanentSidebarProps> = ({ owner, repo, onFileSelect, token }) => {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -56,11 +51,11 @@ const PermanentSidebar: React.FC<PermanentSidebarProps> = ({
             transition: 'width 0.3s ease',
           },
         }}
-        variant='permanent'
-        anchor='left'
+        variant="permanent"
+        anchor="left"
       >
         <DrawerHeader>
-          <Typography variant='subtitle1' fontWeight='bold' noWrap>
+          <Typography variant="subtitle1" fontWeight="bold" noWrap>
             {owner}/{repo}
           </Typography>
         </DrawerHeader>

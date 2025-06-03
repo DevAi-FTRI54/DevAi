@@ -8,7 +8,9 @@ const ChatHistory: React.FC = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch('http://'); //? where are we storing the data
+        // const url = 'http://localhost:4000/api/chat/history?userId=USER_ID&limit=10&offset=0'; //static values for limit and offsey
+        // const res = await fetch(url); //static values for limit and offset
+        const res = await fetch('http://localhost:4000/api/chat/history'); //? where are we storing the data, //added the url
         const data = await res.json();
         setLogs(data);
       } catch (err) {

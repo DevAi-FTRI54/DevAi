@@ -1,9 +1,4 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import NavBarLayout from './wrappers/Layouts/NavBarLayout';
 import MainContent from './wrappers/homepage/homepage';
 import GitHubLogin from './components/auth/githublogin';
@@ -14,6 +9,7 @@ import { AppBarHomeLayout } from './wrappers/Layouts/AppBarLayout';
 import IngestionFlow from '../src/wrappers/RepoIngestion/IngestionFlow';
 import ChatPage from './components/chat/ChatPage';
 // import ChatWrap from './wrappers/chatbotpage/chatwrap';
+import ChatHistory from './components/chat/chathistory';
 
 import ChatHistory from './components/chat/chathistory';
 
