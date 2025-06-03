@@ -83,13 +83,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
       {/* Sidebar */}
       {/* <div className='w-1/5 h-full bg-[#232946] border-r border-[#39415a] overflow-y-auto min-h-0'> */}
       <div className="flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#232946] border-r border-[#39415a] overflow-y-auto">
-        <PermanentSidebar
-          owner={owner}
-          repo={repoName}
-          repoData={repo}
-          onFileSelect={handleFileSelect}
-          token={githubToken!}
-        />
+        <PermanentSidebar owner={owner} repo={repoName} onFileSelect={handleFileSelect} token={githubToken!} />
       </div>
 
       {/* Chat Area */}
@@ -98,7 +92,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
         <div className="flex flex-col items-center w-full h-full max-w-2xl mx-auto">
           {/* Chat messages area: scrollable and grows */}
           <div className="flex-1 w-full overflow-y-auto min-h-0">
-            <ChatWindow messages={messages} />
+            <ChatWindow messages={messages} onSelectFile={handleFileSelect} />
           </div>
           {/* Chat input area: fixed at bottom */}
           <div className="w-full mt-4">
@@ -110,7 +104,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
       {/* File Viewer */}
       <div className="w-2/5 h-full overflow-y-auto bg-[#232946] border-l border-[#39415a] p-6 min-h-0">
         {selectedFilePath ? (
-          <RepoViewer repoUrl={`${owner}/${repoName}`} selectedPath={selectedFilePath} />
+          <RepoViewer repoUrl={`${owner}/${repoName}`} selectedPath={selectedFilePath} token={githubToken!} />
         ) : (
           <div className="text-gray-400 italic">Select a file to view its contents</div>
         )}

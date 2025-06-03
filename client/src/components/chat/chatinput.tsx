@@ -1,42 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import type { ChatInputProps } from '../../types';
 
-type PromptType =
-  | 'default'
-  | 'Find'
-  | 'Bugs'
-  | 'Debug'
-  | 'WalkThrough'
-  | 'Services';
+type PromptType = 'default' | 'Find' | 'Bugs' | 'Debug' | 'WalkThrough' | 'Services';
 
-const QUICK_PROMPTS: Array<{ label: string; text: string; type: PromptType }> =
-  [
-    {
-      label: 'Find & Explain',
-      text: 'Find and explain the logic for the following: ',
-      type: 'Find',
-    },
-    {
-      label: 'Common Bugs',
-      text: 'What are the most common bugs or pitfalls in this repo?',
-      type: 'Bugs',
-    },
-    {
-      label: 'Debug',
-      text: 'Where do I start to debug this type of problem?',
-      type: 'Debug',
-    },
-    {
-      label: 'Walkthrough',
-      text: 'Walk me through the data flow for ...',
-      type: 'WalkThrough',
-    },
-    {
-      label: 'Services',
-      text: 'List all the third-party services used in this repo',
-      type: 'Services',
-    },
-  ];
+const QUICK_PROMPTS: Array<{ label: string; text: string; type: PromptType }> = [
+  {
+    label: 'Find & Explain',
+    text: 'Find and explain the logic for the following: ',
+    type: 'Find',
+  },
+  {
+    label: 'Common Bugs',
+    text: 'What are the most common bugs or pitfalls in this repo?',
+    type: 'Bugs',
+  },
+  {
+    label: 'Debug',
+    text: 'Where do I start to debug this type of problem?',
+    type: 'Debug',
+  },
+  {
+    label: 'Walkthrough',
+    text: 'Walk me through the data flow for ...',
+    type: 'WalkThrough',
+  },
+  {
+    label: 'Services',
+    text: 'List all the third-party services used in this repo',
+    type: 'Services',
+  },
+];
 
 const autoGrow = (event: React.FormEvent<HTMLTextAreaElement>) => {
   const textarea = event.currentTarget;
@@ -89,18 +82,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
       console.log(data);
 
       const snippet = data.result.response.citations?.[0].snippet ?? '';
-      const file =
-        data.result.response.citations?.[0].file.split('/').pop() ?? '';
+      // const file = data.result.response.citations?.[0].file.split('/').pop() ?? ''; //! discuss with Marek
+      const file = data.result.response.citations?.[0].file ?? ''; //! added this to test
       const startLine = data.result.response.citations?.[0].startLine ?? 0;
       const endLine = data.result.response.citations?.[0].endLine ?? 0;
-      setAnswer(
-        data.result.response.answer,
-        data.result.question,
-        snippet,
-        file,
-        startLine,
-        endLine
-      );
+      setAnswer(data.result.response.answer, data.result.question, snippet, file, startLine, endLine);
       setPromptText('');
     } catch (err) {
       if (err instanceof Error) setError(err.message || 'Something went wrong');
@@ -110,13 +96,13 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
   };
 
   return (
-    <div className='w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-[#232946] rounded-xl shadow-lg'>
-      <div className='w-full max-w-3xl mx-auto flex justify-center space-x-2'>
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-[#232946] rounded-xl shadow-lg">
+      <div className="w-full max-w-3xl mx-auto flex justify-center space-x-2">
         {QUICK_PROMPTS.map(({ label, text, type }) => (
           <button
             key={type}
-            type='button'
-            className='px-2 py-1 rounded bg-[#5ea9ea] text-[#121629] font-bold hover:bg-[#31677a] hover:text-white transition disabled:opacity-50'
+            type="button"
+            className="px-2 py-1 rounded bg-[#5ea9ea] text-[#121629] font-bold hover:bg-[#31677a] hover:text-white transition disabled:opacity-50"
             onClick={() => handleQuickPrompt(text, type)}
             disabled={loading}
           >
@@ -124,11 +110,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
           </button>
         ))}
       </div>
-      <div className='relative w-full'>
+      <div className="relative w-full">
         <textarea
-          id='user-prompt'
-          className='w-full min-h-[48px] resize-none overflow-hidden text-base p-2 pr-20 border border-[#39415a] rounded focus:outline-none focus:ring-2 focus:ring-[#5ea9ea] bg-[#181A2B] text-[#eaeaea] transition'
-          placeholder='Please type your prompt here'
+          id="user-prompt"
+          className="w-full min-h-[48px] resize-none overflow-hidden text-base p-2 pr-20 border border-[#39415a] rounded focus:outline-none focus:ring-2 focus:ring-[#5ea9ea] bg-[#181A2B] text-[#eaeaea] transition"
+          placeholder="Please type your prompt here"
           value={promptText}
           onChange={handleChange}
           onInput={autoGrow}
@@ -136,15 +122,15 @@ const ChatInput: React.FC<ChatInputProps> = ({ repoUrl, setAnswer }) => {
           disabled={loading}
         />
         <button
-          type='button'
-          className='absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded bg-[#5ea9ea] text-white font-semibold hover:bg-[#31677a] hover:text-[#181A2B] transition disabled:opacity-50'
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded bg-[#5ea9ea] text-white font-semibold hover:bg-[#31677a] hover:text-[#181A2B] transition disabled:opacity-50"
           onClick={handleSubmit}
           disabled={loading || !promptText.trim()}
         >
           {loading ? '...' : 'Submit'}
         </button>
       </div>
-      {error && <p className='text-red-400'>{error}</p>}
+      {error && <p className="text-red-400">{error}</p>}
     </div>
   );
 };

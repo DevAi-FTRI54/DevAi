@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { coy } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import DynamicBreadcrumbs from '../../components/viewer/breadcrumbs/breadcrumbs';
 import type { GithubFile, RepoViewerProps } from '../../types';
 
-const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath }) => {
+const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath, setSelectedPath }) => {
   const [fileData, setFileData] = useState<GithubFile[] | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
 
@@ -26,7 +27,10 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath }) => {
         console.error('Error fetching repo data:', error);
       }
     }
-    fetchRepoData();
+
+    if (selectedPath) {
+      fetchRepoData();
+    }
   }, [repoUrl, selectedPath]);
 
   async function fetchFileContent(fileUrl: string) {
@@ -72,24 +76,32 @@ const RepoViewer: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath }) => {
     return 'text';
   }
 
+  function getBreadcrumbParts(path: string): string[] {
+    const segments = path.split('/');
+    const hashIndex = segments.findIndex((s) => /^[a-f0-9]{40}$/.test(s));
+    return hashIndex >= 0 ? segments.slice(hashIndex + 1) : segments;
+  }
+
+  function handleBreadcrumbClick(index: number) {
+    const parts = getBreadcrumbParts(selectedPath);
+    const newPath = parts.slice(0, index + 1).join('/');
+    setSelectedPath(newPath);
+    setFileContent(null);
+  }
+
   return (
     <div className="w-full">
-      {/* Repo and Path in one line, file path smaller */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        <span className="text-lg font-semibold text-gray-400">Repo:</span>
-        {selectedPath && (
-          <span className="text-lg text-gray-400 break-all truncate max-w-xs" title={selectedPath}>
-            /{selectedPath}
-          </span>
-        )}
-      </div>
+      {selectedPath && (
+        <div className="mb-3">
+          <div className="text-xs font-bold text-gray-400 mb-1">Path:</div>
+          <DynamicBreadcrumbs path={getBreadcrumbParts(selectedPath)} onClick={handleBreadcrumbClick} />
+        </div>
+      )}
 
-      {/* Directory or file view */}
       {fileData && renderDirectory(fileData)}
 
       {fileContent && (
         <div className="mt-4">
-          {/* Syntax-highlighted code block */}
           <div className="rounded-lg overflow-hidden border border-[#39415a] bg-[#161b2a]">
             <SyntaxHighlighter
               language={getLanguage(selectedPath)}

@@ -21,11 +21,7 @@ const ChatMessage: React.FC<{ message: Message }> = ({ message }) => {
           code({ inline, className, children, ...props }: CodeProps) {
             const match = /language-(\w+)/.exec(className || '');
             const codeString =
-              typeof children === 'string'
-                ? children
-                : Array.isArray(children)
-                ? children.join('')
-                : '';
+              typeof children === 'string' ? children : Array.isArray(children) ? children.join('') : '';
 
             return !inline && match ? (
               <SyntaxHighlighter
@@ -43,7 +39,7 @@ const ChatMessage: React.FC<{ message: Message }> = ({ message }) => {
               </SyntaxHighlighter>
             ) : (
               <code
-                className='bg-gray-100 px-1 py-0.5 rounded text-sm'
+                className="bg-gray-100 px-1 py-0.5 rounded text-sm"
                 style={{
                   fontFamily: `'Fira Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace`,
                 }}
@@ -59,15 +55,19 @@ const ChatMessage: React.FC<{ message: Message }> = ({ message }) => {
       </ReactMarkdown>
 
       {message.role !== 'user' && message.file && (
-        <div className='mt-4 mb-4 text-xs text-gray-600'>
-          File: <strong>{message.file}</strong> ({message.startLine}-
-          {message.endLine})
+        <div className="mt-4 mb-4 text-xs text-gray-600">
+          File: <span className="text-blue-500 font-mono">{message.file.split('/').pop()}</span>
+          {message.startLine > 0 && (
+            <span className="ml-1 text-gray-500">
+              ({message.startLine}-{message.endLine})
+            </span>
+          )}
         </div>
       )}
 
       {message.role !== 'user' && message.snippet && message.snippet.trim() && (
         <pre
-          className='mt-2 bg-gray-100 text-sm p-2 rounded overflow-x-auto'
+          className="mt-2 bg-gray-100 text-sm p-2 rounded overflow-x-auto"
           style={{
             fontFamily: `'Fira Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace`,
           }}

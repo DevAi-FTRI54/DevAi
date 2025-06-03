@@ -1,12 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import ChatMessage from './chatmessages';
-import type { Message } from '../../types';
+import type { ChatWindowProps } from '../../types';
 
-type ChatWindowProps = {
-  messages: Message[];
-};
-
-const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSelectFile }) => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -14,17 +10,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
   }, [messages]);
 
   return (
-    <div className='w-full max-w-2xl flex flex-col mx-auto bg-[#181A2B] rounded-xl shadow-inner h-full'>
-      {/* <div className="flex-1 overflow-y-auto px-4 py-6 min-h-[200px]">
-        {messages.length === 0 && (
-          // <div className="text-center text-gray-400 italic">Start a conversation to get help with your codebase</div>
-        )} */}
-      <div className='flex flex-col items-center w-full'></div>
+    <div className="w-full max-w-2xl flex flex-col mx-auto bg-[#181A2B] rounded-xl shadow-inner h-full px-4 py-6 overflow-y-auto">
       {messages.map((msg, idx) => (
-        <ChatMessage key={idx} message={msg} />
+        <div key={idx} className="mb-4">
+          <ChatMessage message={msg} />
+
+          {/* Render clickable file link if it's from the assistant */}
+          {msg.role === 'assistant' && msg.file && (
+            <p className="mt-2 text-sm text-blue-400">
+              View file:{' '}
+              <button onClick={() => onSelectFile(msg.file)} className="underline hover:text-blue-300 font-mono">
+                {msg.file.split('/').pop()} {/* display only the file name */}
+              </button>
+            </p>
+          )}
+        </div>
       ))}
       <div ref={messagesEndRef} />
-      {/* </div> */}
     </div>
   );
 };
