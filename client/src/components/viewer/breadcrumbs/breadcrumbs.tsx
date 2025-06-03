@@ -10,20 +10,24 @@ interface Props {
 
 const DynamicBreadcrumbs: React.FC<Props> = ({ path, onClick }) => {
   return (
-    <Breadcrumbs maxItems={6} aria-label="breadcrumb">
+    <Breadcrumbs
+      maxItems={6}
+      aria-label="breadcrumb"
+      sx={{ color: 'white' }} // ⬅️ Set default breadcrumb text to white
+    >
       {path.map((segment, index) =>
         index === path.length - 1 ? (
-          <Typography key={index} color="text.primary" fontSize={14}>
+          <Typography key={index} sx={{ color: 'white', fontSize: 14 }}>
             {segment}
           </Typography>
         ) : (
           <Link
             key={index}
             underline="hover"
-            color="inherit"
+            color="inherit" // uses parent color, i.e. white
             fontSize={14}
             onClick={() => onClick(index)}
-            sx={{ cursor: 'pointer' }}
+            sx={{ cursor: 'pointer', color: 'white' }} // ⬅️ Set link text to white
           >
             {segment}
           </Link>

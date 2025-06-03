@@ -11,8 +11,6 @@ import ChatPage from './components/chat/ChatPage';
 // import ChatWrap from './wrappers/chatbotpage/chatwrap';
 import ChatHistory from './components/chat/chathistory';
 
-import ChatHistory from './components/chat/chathistory';
-
 function App() {
   return (
     <Router>
