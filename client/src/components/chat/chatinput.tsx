@@ -47,8 +47,10 @@ const autoGrow = (event: React.FormEvent<HTMLTextAreaElement>) => {
 const ChatInput: React.FC<ChatInputProps> = ({
   repoUrl,
   setAnswer,
+  addUserMessage,
   setStreamingAnswer,
   setIsStreaming,
+  setIsLoadingResponse,
 }) => {
   const [promptText, setPromptText] = useState('');
   const [promptType, setPromptType] = useState<PromptType>('default');
@@ -72,8 +74,19 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleSubmit = async () => {
     if (!promptText.trim()) return;
+
+    const userMessage = promptText;
+    setPromptText('');
     setLoading(true);
     setError(null);
+
+    console.log('🤔 AI is thinking...');
+
+    // Add user message immediately
+    addUserMessage?.(userMessage);
+
+    // Start "thinking" state
+    setIsLoadingResponse?.(true);
 
     console.log('🚀 Starting streaming...');
     setIsStreaming?.(true);
@@ -85,7 +98,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: repoUrl,
-          prompt: promptText,
+          prompt: userMessage,
           type: promptType,
           sessionId,
         }),
@@ -94,6 +107,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
+
+      // Switch from "thinking" to "streaming"
+      setIsStreaming?.(true);
+      setStreamingAnswer?.('');
+      setIsLoadingResponse?.(false);
 
       let accumulatedAnswer = '';
       let finalCitations = [];
@@ -136,7 +154,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
                 setAnswer(
                   accumulatedAnswer.trim(),
-                  finalQuestion,
                   snippet,
                   file,
                   startLine,

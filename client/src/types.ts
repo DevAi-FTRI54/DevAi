@@ -18,16 +18,16 @@ export interface ChatInputProps {
   repoUrl: string;
   setAnswer: (
     answer: string,
-    userPrompt: string,
+    // userPrompt: string,
     snippet: string,
     file: string,
     startLine: number,
     endLine: number
   ) => void;
-  // streamingAnswer?: string;
-  // isStreaming?: boolean;
+  addUserMessage: (userPrompt: string) => void;
   setStreamingAnswer?: (answer: string) => void;
   setIsStreaming?: (streaming: boolean) => void;
+  setIsLoadingResponse?: (loading: boolean) => void;
 }
 
 export interface ChatHistoryEntry {

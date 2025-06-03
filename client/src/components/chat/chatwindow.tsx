@@ -15,23 +15,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
 
   console.log('🎯 ChatWindow rendering:', messages.length, 'messages');
 
-  // return (
-  //   <div className='w-full max-w-2xl flex flex-col mx-auto bg-[#181A2B] rounded-xl shadow-inner h-full'>
-  //     {/* <div className="flex-1 overflow-y-auto px-4 py-6 min-h-[200px]">
-  //       {messages.length === 0 && (
-  //         // <div className="text-center text-gray-400 italic">Start a conversation to get help with your codebase</div>
-  //       )} */}
-  //     <div className='flex flex-col items-center w-full'></div>
-  //     {messages.map((msg, idx) => (
-  //       <ChatMessage key={idx} message={msg} />
-  //     ))}
-  //     <div ref={messagesEndRef} />
-  //     {/* </div> */}
-  //   </div>
-  // );
-
   return (
-    // ❌ Remove the problematic wrapper and simplify
     <div>
       {messages.length === 0 && (
         <div className='text-center text-[#7d8590] py-8'>

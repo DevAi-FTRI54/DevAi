@@ -9,6 +9,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [githubToken, setGithubToken] = useState<string | null>(null);
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false);
 
   const [streamingAnswer, setStreamingAnswer] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -55,13 +56,13 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
   }, []);
 
   const streamingComponent = useMemo(() => {
-    if (!isStreaming || !streamingAnswer) return null;
+    // Show nothing if not loading or streaming
+    if (!isLoadingResponse && !isStreaming) return null;
 
     return (
       <div className='mb-6'>
         <div className='flex justify-start mb-4'>
           <div className='max-w-[90%] bg-[#181A2B] border border-[#39415a] p-4 rounded-2xl rounded-bl-md'>
-            {/* ✅ Typing indicator */}
             <div className='flex items-center gap-2 mb-3'>
               <div className='flex space-x-1'>
                 <div className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'></div>
@@ -74,21 +75,26 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
                   style={{ animationDelay: '0.2s' }}
                 ></div>
               </div>
+              {/* ✅ Different messages for different states */}
               <span className='text-[#5ea9ea] text-xs font-medium'>
-                AI is responding...
+                {isLoadingResponse
+                  ? 'AI is thinking...'
+                  : 'AI is responding...'}
               </span>
             </div>
 
-            {/* ✅ Streaming text with same styling as final message */}
-            <div className='text-[#eaeaea] text-sm leading-relaxed whitespace-pre-wrap'>
-              {streamingAnswer}
-              <span className='inline-block w-2 h-5 bg-[#5ea9ea] animate-pulse ml-1'></span>
-            </div>
+            {/* ✅ Only show streaming text when actually streaming */}
+            {isStreaming && streamingAnswer && (
+              <div className='text-[#eaeaea] text-sm leading-relaxed whitespace-pre-wrap'>
+                {streamingAnswer}
+                <span className='inline-block w-2 h-5 bg-[#5ea9ea] animate-pulse ml-1'></span>
+              </div>
+            )}
           </div>
         </div>
       </div>
     );
-  }, [isStreaming, streamingAnswer]);
+  }, [isLoadingResponse, isStreaming, streamingAnswer]);
 
   if (!githubToken) {
     return (
@@ -98,63 +104,44 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
     );
   }
 
+  const handleAddUserMessage = (userPrompt: string) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'user' as const,
+        content: userPrompt,
+        snippet: '',
+        file: '',
+        startLine: 0,
+        endLine: 0,
+      },
+    ]);
+  };
+
   const handleSetAnswer = (
     answer: string,
-    userPrompt: string,
+    // userPrompt: string,
     snippet: string,
     file: string,
     startLine: number,
     endLine: number
   ) => {
-    // setMessages((prev) => [
-    //   ...prev,
-    //   {
-    //     role: 'user',
-    //     content: userPrompt,
-    //     snippet: '',
-    //     file: '',
-    //     startLine: 0,
-    //     endLine: 0,
-    //   },
-    //   {
-    //     role: 'assistant',
-    //     content: answer,
-    //     snippet: snippet || '',
-    //     file: file,
-    //     startLine: startLine,
-    //     endLine: endLine,
-    //   },
-    // ]);
     console.log('🎯 handleSetAnswer called:', {
       answer: answer.substring(0, 50) + '...',
-      userPrompt,
       messagesBefore: messages.length,
     });
 
-    setMessages((prev) => {
-      const newMessages = [
-        ...prev,
-        {
-          role: 'user' as const,
-          content: userPrompt,
-          snippet: '',
-          file: '',
-          startLine: 0,
-          endLine: 0,
-        },
-        {
-          role: 'assistant' as const,
-          content: answer,
-          snippet: snippet || '',
-          file: file,
-          startLine: startLine,
-          endLine: endLine,
-        },
-      ];
-
-      console.log('🎯 Messages updated:', newMessages.length, 'total messages');
-      return newMessages;
-    });
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant' as const,
+        content: answer,
+        snippet: snippet || '',
+        file: file,
+        startLine: startLine,
+        endLine: endLine,
+      },
+    ]);
   };
 
   const handleFileSelect = (filePath: string) => {
@@ -190,8 +177,10 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
             <ChatInput
               repoUrl={repo.html_url}
               setAnswer={handleSetAnswer}
+              addUserMessage={handleAddUserMessage}
               setStreamingAnswer={setStreamingAnswer}
               setIsStreaming={setIsStreaming}
+              setIsLoadingResponse={setIsLoadingResponse}
             />
           </div>
         </div>
