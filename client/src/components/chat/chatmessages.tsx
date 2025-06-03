@@ -7,7 +7,7 @@ import type { Message } from '../../types';
 interface CodeProps {
   inline?: boolean;
   className?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const getLanguageFromFilename = (filename: string): string => {

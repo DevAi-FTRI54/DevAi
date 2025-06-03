@@ -38,14 +38,6 @@ export interface ChatHistoryEntry {
   endLine?: number;
 }
 
-export interface ChatHistoryEntry {
-  userPrompt: string;
-  answer: string;
-  file?: string;
-  startLine?: number;
-  endLine?: number;
-}
-
 //* This file handles recursive rendering & lazy loading of the file tree from GitHub
 export interface GitHubContentItem {
   name: string;
@@ -79,6 +71,7 @@ export interface GithubFile {
 export interface RepoViewerProps {
   repoUrl: string; // Should be in the format "owner/repo"
   selectedPath: string;
+  setSelectedPath: (path: string) => void;
   token: string;
 }
 
