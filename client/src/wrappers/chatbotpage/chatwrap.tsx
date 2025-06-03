@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import PermanentSidebar from '../../components/bars/FileTree/sidebarDrawer';
 import ChatWindow from '../../components/chat/chatwindow';
 import ChatInput from '../../components/chat/chatinput';
@@ -15,6 +15,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
 
   // Extract owner and repoName from the repo full name
   const [owner, repoName] = repo.full_name.split('/');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     console.log('🎯 ChatWrap state:', {
@@ -22,6 +23,10 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
       streamingAnswerLength: streamingAnswer.length,
     });
   }, [isStreaming, streamingAnswer]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamingAnswer]);
 
   // Get GitHub token
   useEffect(() => {
@@ -49,39 +54,37 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
     getGithubToken();
   }, []);
 
-  useMemo(() => {
-    // This code only runs when isStreaming OR streamingAnswer changes
-  }, [isStreaming, streamingAnswer]);
-
   const streamingComponent = useMemo(() => {
-    // This function only runs when dependencies change
-    console.log('🔄 Recreating streaming component');
-
-    if (!isStreaming || !streamingAnswer) {
-      return null; // Return nothing if not streaming
-    }
+    if (!isStreaming || !streamingAnswer) return null;
 
     return (
-      <div className='p-4 bg-[#181A2B] border border-[#39415a] rounded-lg mx-4 mb-4'>
-        <div className='flex items-center gap-2 mb-2'>
-          <div className='flex space-x-1'>
-            <div className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'></div>
-            <div
-              className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
-              style={{ animationDelay: '0.1s' }}
-            ></div>
-            <div
-              className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
-              style={{ animationDelay: '0.2s' }}
-            ></div>
+      <div className='mb-6'>
+        <div className='flex justify-start mb-4'>
+          <div className='max-w-[90%] bg-[#181A2B] border border-[#39415a] p-4 rounded-2xl rounded-bl-md'>
+            {/* ✅ Typing indicator */}
+            <div className='flex items-center gap-2 mb-3'>
+              <div className='flex space-x-1'>
+                <div className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'></div>
+                <div
+                  className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
+                  style={{ animationDelay: '0.1s' }}
+                ></div>
+                <div
+                  className='w-2 h-2 bg-[#5ea9ea] rounded-full animate-bounce'
+                  style={{ animationDelay: '0.2s' }}
+                ></div>
+              </div>
+              <span className='text-[#5ea9ea] text-xs font-medium'>
+                AI is responding...
+              </span>
+            </div>
+
+            {/* ✅ Streaming text with same styling as final message */}
+            <div className='text-[#eaeaea] text-sm leading-relaxed whitespace-pre-wrap'>
+              {streamingAnswer}
+              <span className='inline-block w-2 h-5 bg-[#5ea9ea] animate-pulse ml-1'></span>
+            </div>
           </div>
-          <span className='text-[#5ea9ea] text-sm font-medium'>
-            AI is responding...
-          </span>
-        </div>
-        <div className='text-[#eaeaea] whitespace-pre-wrap leading-relaxed'>
-          {streamingAnswer}
-          <span className='inline-block w-2 h-5 bg-[#5ea9ea] animate-pulse ml-1'></span>
         </div>
       </div>
     );
@@ -103,25 +106,55 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
     startLine: number,
     endLine: number
   ) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: 'user',
-        content: userPrompt,
-        snippet: '',
-        file: '',
-        startLine: 0,
-        endLine: 0,
-      },
-      {
-        role: 'assistant',
-        content: answer,
-        snippet: snippet || '',
-        file: file,
-        startLine: startLine,
-        endLine: endLine,
-      },
-    ]);
+    // setMessages((prev) => [
+    //   ...prev,
+    //   {
+    //     role: 'user',
+    //     content: userPrompt,
+    //     snippet: '',
+    //     file: '',
+    //     startLine: 0,
+    //     endLine: 0,
+    //   },
+    //   {
+    //     role: 'assistant',
+    //     content: answer,
+    //     snippet: snippet || '',
+    //     file: file,
+    //     startLine: startLine,
+    //     endLine: endLine,
+    //   },
+    // ]);
+    console.log('🎯 handleSetAnswer called:', {
+      answer: answer.substring(0, 50) + '...',
+      userPrompt,
+      messagesBefore: messages.length,
+    });
+
+    setMessages((prev) => {
+      const newMessages = [
+        ...prev,
+        {
+          role: 'user' as const,
+          content: userPrompt,
+          snippet: '',
+          file: '',
+          startLine: 0,
+          endLine: 0,
+        },
+        {
+          role: 'assistant' as const,
+          content: answer,
+          snippet: snippet || '',
+          file: file,
+          startLine: startLine,
+          endLine: endLine,
+        },
+      ];
+
+      console.log('🎯 Messages updated:', newMessages.length, 'total messages');
+      return newMessages;
+    });
   };
 
   const handleFileSelect = (filePath: string) => {
@@ -146,11 +179,11 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
         {/* Centered wrapper, full height column */}
         <div className='flex flex-col items-center w-full h-full max-w-2xl mx-auto'>
           {/* Chat messages area: scrollable and grows */}
-          <div className='flex-1 w-full overflow-y-auto min-h-0'>
+          <div className='flex-1 w-full overflow-y-auto min-h-0 p-4'>
             <ChatWindow messages={messages} />
+            {streamingComponent}
+            <div ref={messagesEndRef} />
           </div>
-
-          {streamingComponent}
 
           {/* Chat input area: fixed at bottom */}
           <div className='w-full mt-4'>
