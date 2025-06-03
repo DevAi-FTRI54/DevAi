@@ -115,8 +115,6 @@ export async function answerQuestion(
 
       const retrievedDocs = await retriever.invoke(state.question);
 
-      // console.log('--- retrievedDocs ------------');
-      // console.log(retrievedDocs);
       return { context: retrievedDocs }; // merges into  WorkingState, thus the WorkingState has now access to both question + context
     } catch (err) {
       throw new Error('VECTOR_DB_DOWN');
@@ -126,8 +124,8 @@ export async function answerQuestion(
   // --- STEP 4: Rerank the retrievedDocs for increase accuracy --------------
   // cohere rerank: https://js.langchain.com/docs/integrations/document_compressors/cohere_rerank/
   const rerank = async (state: typeof WorkingState.State) => {
-    console.log('--- state ---------');
-    console.log(state);
+    // console.log('--- state ---------');
+    // console.log(state);
     if (!state.context || state.context.length === 0) {
       console.log('No documents to rerank - skipping reranking step');
       return { context: [] };

@@ -182,8 +182,5 @@ export const getGithubToken = async (
     return;
   }
 
-  // console.log('--- getGithubToken ---------');
-  // console.log(githubToken);
-
   res.json({ token: githubToken });
 };
