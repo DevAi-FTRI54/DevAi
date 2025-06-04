@@ -125,6 +125,8 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
       messagesBefore: messages.length,
     });
 
+    console.log('handleSetAnswer file:', file);
+
     setMessages((prev) => [
       ...prev,
       {
@@ -156,7 +158,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
         <div className="flex flex-col items-center w-full h-full max-w-2xl mx-auto">
           {/* Chat messages area: scrollable and grows */}
           <div className="flex-1 w-full overflow-y-auto min-h-0 p-4">
-            <ChatWindow messages={messages} />
+            <ChatWindow messages={messages} onSelectFile={handleFileSelect} />
             {streamingComponent}
             <div ref={messagesEndRef} />
           </div>

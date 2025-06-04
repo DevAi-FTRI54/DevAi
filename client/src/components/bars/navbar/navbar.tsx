@@ -5,17 +5,29 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
+import useLogout from '../../settings/logout';
 
-const settings = ['Account', 'Settings', 'Logout'];
+const settings = ['Account', 'Profile', 'Logout'];
 
 const UserAvatarMenu: React.FC = () => {
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
+  const logout = useLogout(); // <--- Use the hook
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
   };
+
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
+  };
+
+  // New handler for menu item clicks
+  const handleMenuItemClick = (setting: string) => {
+    handleCloseUserMenu();
+    if (setting === 'Logout') {
+      logout();
+    }
+    // else you can handle Account/Profile navigation here if you want
   };
 
   return (
@@ -42,7 +54,7 @@ const UserAvatarMenu: React.FC = () => {
         onClose={handleCloseUserMenu}
       >
         {settings.map((setting) => (
-          <MenuItem key={setting} onClick={handleCloseUserMenu}>
+          <MenuItem key={setting} onClick={() => handleMenuItemClick(setting)}>
             <Typography sx={{ textAlign: 'center' }}>{setting}</Typography>
           </MenuItem>
         ))}
