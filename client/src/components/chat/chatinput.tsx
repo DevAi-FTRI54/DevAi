@@ -141,7 +141,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 setStreamingAnswer?.('');
 
                 const snippet = finalCitations?.[0]?.snippet ?? '';
-                const file = finalCitations?.[0]?.file?.split('/').pop() ?? '';
+                // const file = finalCitations?.[0]?.file?.split('/').pop() ?? '';
+                const file = finalCitations?.[0]?.file ?? '';
                 const startLine = finalCitations?.[0]?.startLine ?? 0;
                 const endLine = finalCitations?.[0]?.endLine ?? 0;
 

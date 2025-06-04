@@ -9,6 +9,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSelectFile }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  console.log('☠️In ChatWindow, onSelectFile is:', onSelectFile);
   console.log('🎯 ChatWindow rendering:', messages.length, 'messages');
 
   return (
@@ -17,17 +18,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSelectFile }) => {
 
       {messages.map((msg, idx) => (
         <div key={idx} className="mb-4">
-          <ChatMessage message={msg} />
+          <ChatMessage message={msg} onSelectFile={onSelectFile} />
 
           {/* Render clickable file link if it's from the assistant */}
-          {msg.role === 'assistant' && msg.file && (
+          {/* {msg.role === 'assistant' && msg.file && (
             <p className="mt-2 text-sm text-blue-400">
               View file:{' '}
               <button onClick={() => onSelectFile(msg.file)} className="underline hover:text-blue-300 font-mono">
-                {msg.file.split('/').pop()} {/* display only the file name */}
+                {msg.file.split('/').pop()}
               </button>
             </p>
-          )}
+          )} */}
         </div>
       ))}
       <div ref={messagesEndRef} />

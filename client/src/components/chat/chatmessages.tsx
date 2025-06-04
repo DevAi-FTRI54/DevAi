@@ -10,6 +10,7 @@ interface CodeProps {
   children?: React.ReactNode;
 }
 
+// Helper to get language for syntax highlighting
 const getLanguageFromFilename = (filename: string): string => {
   const ext = filename.split('.').pop()?.toLowerCase();
   const langMap: { [key: string]: string } = {
@@ -39,7 +40,14 @@ const getLanguageFromFilename = (filename: string): string => {
   return langMap[ext || ''] || 'text';
 };
 
-const ChatMessage: React.FC<{ message: Message }> = ({ message }) => {
+// Add onSelectFile as an optional prop
+const ChatMessage: React.FC<{ message: Message; onSelectFile?: (filePath: string) => void }> = ({
+  message,
+  onSelectFile,
+}) => {
+  console.log('👎🏻>>> ChatMessage component file loaded!');
+  console.log('🥊In ChatMessage, onSelectFile:', onSelectFile, 'file:', message.file);
+
   return (
     <div className="mb-6">
       {message.role === 'user' ? (
@@ -115,14 +123,22 @@ const ChatMessage: React.FC<{ message: Message }> = ({ message }) => {
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
                   </svg>
-                  <span className="font-medium">{message.file}</span>
+                  {onSelectFile ? (
+                    <button
+                      onClick={() => onSelectFile(message.file!)}
+                      className="font-medium text-blue-400 underline hover:text-blue-300"
+                    >
+                      {message.file}
+                    </button>
+                  ) : (
+                    <span className="font-medium">{message.file}</span>
+                  )}
                   {message.startLine && message.endLine && message.startLine > 0 && (
                     <span className="text-[#5ea9ea]">
                       Lines {message.startLine}-{message.endLine}
                     </span>
                   )}
                 </div>
-
                 {message.snippet && message.snippet.trim() && (
                   <SyntaxHighlighter
                     style={vscDarkPlus}

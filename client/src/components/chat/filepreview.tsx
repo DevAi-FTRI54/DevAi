@@ -124,7 +124,7 @@
 import React, { useState, useEffect } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import DynamicBreadcrumbs from '../../components/viewer/breadcrumbs/breadcrumbs';
+import DynamicBreadcrumbs from '../breadcrumbs/breadcrumbs';
 import ChatMarkdown from '../../components/chat/chatmarkdown';
 
 import type { GithubFile, RepoViewerProps } from '../../types';

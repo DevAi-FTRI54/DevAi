@@ -1,87 +1,16 @@
-// import * as React from 'react';
-// import GitHubLazyFileTree from './GitHubLazyFileTree';
-// import { styled } from '@mui/material/styles';
-// import Box from '@mui/material/Box';
-// import Drawer from '@mui/material/Drawer';
-// import CssBaseline from '@mui/material/CssBaseline';
-// import Divider from '@mui/material/Divider';
-// import Typography from '@mui/material/Typography';
-
-// const drawerWidth = {
-//   xs: '60%',
-//   sm: 300,
-//   md: 350,
-// };
-
-// const DrawerHeader = styled('div')(() => ({
-//   display: 'flex',
-//   alignItems: 'center',
-//   justifyContent: 'center',
-//   padding: '1rem',
-// }));
-
-// interface PermanentSidebarProps {
-//   owner: string;
-//   repo: string;
-//   repoData: {
-//     id: number;
-//     full_name: string;
-//     html_url: string;
-//     sha: string;
-//   };
-//   onFileSelect: (filePath: string) => void;
-//   token: string;
-// }
-
-// const PermanentSidebar: React.FC<PermanentSidebarProps> = ({ owner, repo, onFileSelect, token }) => {
-//   return (
-//     <Box sx={{ display: 'flex' }}>
-//       <CssBaseline />
-//       <Drawer
-//         sx={{
-//           width: drawerWidth,
-//           flexShrink: 1,
-//           '& .MuiDrawer-paper': {
-//             width: drawerWidth,
-//             boxSizing: 'border-box',
-//             top: 75,
-//             height: 'calc(100% - 64px)',
-//             backgroundColor: '#232946',
-//             color: '#C8D6E5',
-//             transition: 'width 0.3s ease',
-//           },
-//         }}
-//         variant="permanent"
-//         anchor="left"
-//       >
-//         <DrawerHeader>
-//           <Typography variant="subtitle1" fontWeight="bold" noWrap>
-//             {owner}/{repo}
-//           </Typography>
-//         </DrawerHeader>
-//         <Divider />
-//         <Box sx={{ paddingLeft: 2, paddingTop: 1 }}>
-//           <GitHubLazyFileTree
-//             owner={owner}
-//             repo={repo}
-//             token={token}
-//             onFileSelect={onFileSelect}
-//           />
-//         </Box>
-//       </Drawer>
-//     </Box>
-//   );
-// };
-
-// export default PermanentSidebar;
-
 import React, { useEffect, useState } from 'react';
+// import { useNavigate } from 'react-router-dom';
 import type { GitHubContentItem, SidebarProps } from '../../../types';
+// import { IngestionContext } from '../../ingestion/ingestioncontext';
+import IngestionExperience from '../../ingestion/ingestionexperience';
 
 const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect }) => {
   const [rootItems, setRootItems] = useState<GitHubContentItem[]>([]);
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const [childrenMap, setChildrenMap] = useState<Record<string, GitHubContentItem[]>>({});
+  // const ctx = useContext(IngestionContext);
+
+  // const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRoot = async () => {
@@ -134,11 +63,14 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect }) =
   };
 
   return (
-    <div className="flex flex-col w-full h-full overflow-y-auto p-3 bg-[#232946] text-white border-r border-[#39415a]">
-      <div className="font-bold text-xs mb-2">
+    <div className="flex flex-col w-full h-full bg-[#232946] text-black border-r border-[#39415a]">
+      <div className="mb-2 text-xs p-2">
+        <IngestionExperience compact />
+      </div>
+      <div className="font-bold text-xs mb-2 px-2">
         {owner}/{repo}
       </div>
-      {renderTree(rootItems)}
+      <div className="flex-1 overflow-y-auto p-2">{renderTree(rootItems)}</div>
     </div>
   );
 };
