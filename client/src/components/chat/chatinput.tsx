@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ChatInputProps } from '../../types';
+import { v4 as uuidv4 } from 'uuid';
 
 type PromptType =
   | 'default'
@@ -60,7 +61,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   useEffect(() => {
     const storedSessionID = localStorage.getItem('documentSessionId');
-    if (storedSessionID) setSessionId(storedSessionID);
+
+    if (storedSessionID) {
+      console.log('📋 Found existing sessionId:', storedSessionID);
+      setSessionId(storedSessionID);
+    } else {
+      const newSessionId = `session_${uuidv4()}`;
+      console.log('🆕 Generated new sessionId:', newSessionId);
+
+      localStorage.setItem('documentSessionId', newSessionId);
+      setSessionId(newSessionId);
+    }
   }, []);
 
   const handleQuickPrompt = (prompt: string, type: PromptType) => {
@@ -139,6 +150,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   endLine
                 );
 
+                break;
+
               case 'error':
                 throw new Error(data.message);
             }
@@ -154,7 +167,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // Store user's message into our DB
   const storeUserMessage = async (userMessage: string) => {
     try {
-      const response = await fetch('/query/store', {
+      const response = await fetch('/api/query/store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

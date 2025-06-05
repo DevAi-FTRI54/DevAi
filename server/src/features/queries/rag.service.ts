@@ -71,12 +71,21 @@ export async function answerQuestion(
   type: string,
   sessionId: string
 ) {
+  console.log('--- RAG SERVICE STARTED ---------------');
+  console.log('📝 Question:', question);
+  console.log('🆔 SessionId:', sessionId);
+  console.log('🔗 RepoUrl:', repoUrl);
+
   const repoId = generateUniqueRepoId(repoUrl);
   const retriever = await createCodeRetriever(repoId, 8);
 
   // --- STEP 1: Define Prompt -----------------------------------------------
   // --- PROVIDE PAST CONVERSATIONS AS CONTEXT ---------
   const sessionHistory = await Conversation.findOne({ sessionId }); // Search for n number of the most recent interactions based on the sessionId
+
+  console.log('📚 Session history found:', !!sessionHistory);
+  console.log('💬 Number of messages:', sessionHistory?.messages?.length || 0);
+
   const previousContext = formatConversationHistory(
     sessionHistory?.messages || []
   );
