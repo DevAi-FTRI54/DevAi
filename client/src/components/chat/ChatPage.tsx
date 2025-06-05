@@ -4,8 +4,12 @@ import ChatWrap from '../../wrappers/chatbotpage/chatwrap';
 
 const ChatPage: React.FC = () => {
   const location = useLocation();
+  console.log('--- (ChatPage) Full location.state ---------');
+  console.log(location.state);
+  console.log('Available keys:', Object.keys(location.state || {}));
+
   const repo = location.state?.repo;
-  console.log('--- repo ---------');
+  console.log('--- (ChatPage) repo ---------');
   console.log(repo);
 
   if (!repo) {

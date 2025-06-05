@@ -41,13 +41,14 @@ export type Message = {
 
 export interface IConversation {
   sessionId: string;
-  userId: string;
+  userId?: string;
   repoUrl: string;
   messages: Message[];
 }
 
 const conversationSchema = new Schema<IConversation>(
   {
+    userId: { type: String },
     sessionId: { type: String, required: true },
     repoUrl: { type: String, required: true },
     messages: [
