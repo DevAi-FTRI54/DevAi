@@ -8,7 +8,9 @@ interface IngestionExperienceProps {
   compact?: boolean;
 }
 
-const IngestionExperience: React.FC<IngestionExperienceProps> = ({ compact }) => {
+const IngestionExperience: React.FC<IngestionExperienceProps> = ({
+  compact,
+}) => {
   const [jobId, setJobId] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
   const [completed, setCompleted] = useState(false);
@@ -22,10 +24,12 @@ const IngestionExperience: React.FC<IngestionExperienceProps> = ({ compact }) =>
 
   if (completed) {
     return (
-      <div className="flex flex-col items-start">
-        <div className="mb-2 text-green-500 font-semibold text-xs">Ingestion complete!</div>
+      <div className='flex flex-col items-start'>
+        <div className='mb-2 text-green-500 font-semibold text-xs'>
+          Ingestion complete!
+        </div>
         <button
-          className="mt-1 px-2 py-1 bg-blue-600 text-white rounded text-xs"
+          className='mt-1 px-2 py-1 bg-blue-600 text-white rounded text-xs'
           onClick={() => {
             setJobId(null);
             setSelectedRepo(null);
@@ -39,11 +43,18 @@ const IngestionExperience: React.FC<IngestionExperienceProps> = ({ compact }) =>
   }
 
   if (!jobId) {
-    return <RepoSelector onStartIngestion={handleStartIngestion} compact={compact} />;
+    return (
+      <RepoSelector onStartIngestion={handleStartIngestion} compact={compact} />
+    );
   }
 
   // return <ProgressBar jobId={jobId} onComplete={() => setCompleted(true)} />;
-  return <ProgressBar jobId={jobId} onComplete={() => navigate('/chat', { state: { selectedRepo } })} />;
+  return (
+    <ProgressBar
+      jobId={jobId}
+      onComplete={() => navigate('/chat', { state: { repo: selectedRepo } })}
+    />
+  );
 };
 
 export default IngestionExperience;
