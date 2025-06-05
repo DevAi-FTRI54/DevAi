@@ -11,6 +11,8 @@ import { generateUniqueRepoId } from '../indexing/git.service.js';
 import { CohereRerank } from '@langchain/cohere';
 import { RUN_KEY } from '@langchain/core/outputs';
 import { SYSTEM_PROMPTS } from './prompts.js';
+import Conversation from '../../models/conversation.model.js';
+import { Message } from '../../models/conversation.model.js';
 
 // --- Structured Output for ChatOpenAI --------------------------------------
 // https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html
@@ -51,29 +53,48 @@ function roughTokens(txt: string) {
 const formatDoc = (d: Document) =>
   `FILE NAME: ${d.metadata.declarationName} \nFILE: ${d.metadata.filePath} (lines ${d.metadata.startLine}-${d.metadata.endLine})\n---\n${d.pageContent}\n====`;
 
-// --- Simulation ------------------------------------------------------------
-// const repoUrl = '';
-// const question = 'Where do I find MongoDB?';
+const formatConversationHistory = (messages: Message[]) => {
+  if (!messages?.length) {
+    return 'No previous context. ,This is the start of the conversation.';
+  }
+
+  return messages
+    .slice(-30)
+    .map((msg) => `${msg.role.toUpperCase()}: ${msg.content}`)
+    .join('\n\n');
+};
 
 // --- answerQuestion function -----------------------------------------------
 export async function answerQuestion(
   repoUrl: string,
   question: string,
-  type: string
+  type: string,
+  sessionId: string
 ) {
   const repoId = generateUniqueRepoId(repoUrl);
-
-  // const repoExists = await checkRepositoryExists(repoId); // You need to implement this function
-  // if (!repoExists) {
-  //   throw new Error('REPOSITORY_NOT_INDEXED');
-  // }
-
   const retriever = await createCodeRetriever(repoId, 8);
 
   // --- STEP 1: Define Prompt -----------------------------------------------
-  const SYSTEMPROMPT =
-    "You are an expert code assistant that answers user's questions about their codebase.";
+  // --- PROVIDE PAST CONVERSATIONS AS CONTEXT ---------
+  const sessionHistory = await Conversation.findOne({ sessionId }); // Search for n number of the most recent interactions based on the sessionId
+  const previousContext = formatConversationHistory(
+    sessionHistory?.messages || []
+  );
 
+  // --- SYSTEM PROMPT ---------
+  const prompts = SYSTEM_PROMPTS as Record<string, { content: string }>;
+  const systemPromptType = type in prompts ? type : 'Find';
+  const selectedSystemPrompt = prompts[systemPromptType].content;
+  const finalSystemPrompt = `
+  Your system prompt: 
+  
+  ${selectedSystemPrompt}\n\n 
+  
+  Previous conversation context: 
+  
+  ${previousContext}`;
+
+  // --- USER PROMPT ---------
   const USERPROMPT = `Use the following pieces of context to answer the question at the end.
 
     Context: {context}\n\n
@@ -82,15 +103,13 @@ export async function answerQuestion(
     
     Helpful answer:`;
 
-  // const SYSTEM_PROMPT_ERIC = SYSTEM_PROMPTS.Find.content;
-  const prompts = SYSTEM_PROMPTS as Record<string, { content: string }>;
-  const systemPromptType = type in prompts ? type : 'Find';
-  const selectedSystemPrompt = prompts[systemPromptType].content;
-
   const promptTemplate = ChatPromptTemplate.fromMessages([
-    ['system', selectedSystemPrompt],
+    ['system', finalSystemPrompt],
     ['user', USERPROMPT],
   ]);
+
+  console.log('--- systemPrompt ---------');
+  console.log(finalSystemPrompt);
 
   // --- STEP 2: Define States -----------------------------------------------
   // https://langchain-ai.github.io/langgraphjs/concepts/low_level/#multiple-schemas
@@ -204,10 +223,29 @@ export async function answerQuestion(
     console.log('--- response ------------');
     console.log(response);
 
+    // --- STEP 5: Store the Result in MongoDB ---------------------------------
+    // Store the assistant's message:
+    await Conversation.updateOne(
+      {
+        sessionId,
+      },
+      {
+        $push: {
+          messages: [
+            {
+              role: 'assistant',
+              content: response.answer,
+              citations: response.citations,
+            },
+          ],
+        },
+      }
+    );
+
     return { response };
   };
 
-  // --- STEP 5: Compile & Test the Application ------------------------------
+  // --- STEP 6: Compile & Test the Application ------------------------------
   /* How Data Moves
   
         A((InputState)) --> |retrieve| B((WorkingState));
@@ -240,8 +278,6 @@ export async function answerQuestion(
   const tokens = (result as any)[RUN_KEY]?.totalTokens ?? undefined;
   const latency = (result as any)[RUN_KEY]?.durationMs ?? undefined;
 
-  // --- STEP 6: Store the Result in MongoDB ---------------------------------
-
   return {
     result,
     traceUrl,
@@ -249,5 +285,3 @@ export async function answerQuestion(
     latency,
   };
 }
-
-// console.log(answerQuestion(repoUrl, question));

@@ -17,7 +17,7 @@ function App() {
       <Router>
         <Routes>
           <Route
-            path="/"
+            path='/'
             element={
               <AppBarHomeLayout>
                 <MainContent />
@@ -25,22 +25,22 @@ function App() {
             }
           />
           <Route
-            path="/faq"
+            path='/faq'
             element={
               <AppBarHomeLayout>
                 <FAQ />
               </AppBarHomeLayout>
             }
           />
-          <Route path="/login" element={<GitHubLogin />} />
-          <Route path="/install-github-app" element={<InstallAppPrompt />} />
-          <Route path="/ingest" element={<IngestionFlow />} />
-          <Route path="/select-repo" element={<IngestionFlow />} />
+          <Route path='/login' element={<GitHubLogin />} />
+          <Route path='/install-github-app' element={<InstallAppPrompt />} />
+          <Route path='/ingest' element={<IngestionFlow />} />
+          <Route path='/select-repo' element={<IngestionFlow />} />
           <Route element={<NavBarLayout />}>
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/chat/history" element={<ChatHistory />} />
+            <Route path='/chat' element={<ChatPage />} />
+            <Route path='/chat/history' element={<ChatHistory />} />
           </Route>
-          <Route path="*" element={<NotFound />} />
+          <Route path='*' element={<NotFound />} />
         </Routes>
       </Router>
     </IngestionProvider>

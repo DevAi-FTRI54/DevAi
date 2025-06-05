@@ -12,7 +12,10 @@ interface RepoSelectorProps {
   compact?: boolean;
 }
 
-const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact = false }) => {
+const RepoSelector: React.FC<RepoSelectorProps> = ({
+  onStartIngestion,
+  compact = false,
+}) => {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setRepo] = useState<Repo | null>(null);
   const [installationId, setInstallationId] = useState<string>('');
@@ -58,7 +61,9 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
         }
         // Error: App installation
         if (response.status === 400) {
-          throw new Error('Github App installation not found. Please install the app first.');
+          throw new Error(
+            'Github App installation not found. Please install the app first.'
+          );
         }
         // Error: Backend (typically, DBs are not ready yet)
         if (response.status === 503) {
@@ -87,12 +92,17 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
       setInitializing(false);
     } catch (err: unknown) {
       console.error('Fetch repos error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
 
       // Retry Attempt: General case
       if (attempt < 3) {
-        console.log(`Retrying in ${(attempt + 1) * 1000}ms... (attempt ${attempt + 1} / 3)`);
+        console.log(
+          `Retrying in ${(attempt + 1) * 1000}ms... (attempt ${
+            attempt + 1
+          } / 3)`
+        );
         setTimeout(() => {
           setRetryCount(attempt + 1);
           fetchRepos(attempt + 1);
@@ -152,7 +162,12 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
       style={compact ? { minHeight: 0, height: 'auto' } : {}}
     >
       <div className={compact ? 'w-full p-0' : 'p-6 max-w-xl mx-auto'}>
-        <h2 className={compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'} style={{ color: '#fff' }}>
+        <h2
+          className={
+            compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'
+          }
+          style={{ color: '#fff' }}
+        >
           Select a repository to index
         </h2>
 
@@ -160,12 +175,16 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
         {loading && (
           <div
             className={
-              compact ? 'text-xs text-gray-300 flex items-center gap-2 mb-1' : 'text-gray-300 flex items-center gap-2'
+              compact
+                ? 'text-xs text-gray-300 flex items-center gap-2 mb-1'
+                : 'text-gray-300 flex items-center gap-2'
             }
           >
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
             {initializing ? 'Initializing...' : 'Loading repositories...'}
-            {autoRetryAttempts > 0 && <span>(auto-retry {autoRetryAttempts}/3)</span>}
+            {autoRetryAttempts > 0 && (
+              <span>(auto-retry {autoRetryAttempts}/3)</span>
+            )}
             {retryCount > 0 && <span>(retry {retryCount}/3)</span>}
           </div>
         )}
@@ -173,10 +192,12 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
         {error && (
           <div
             className={
-              compact ? 'p-2 bg-red-100 text-red-800 rounded mb-2 text-xs' : 'p-3 bg-red-100 text-red-800 rounded mb-4'
+              compact
+                ? 'p-2 bg-red-100 text-red-800 rounded mb-2 text-xs'
+                : 'p-3 bg-red-100 text-red-800 rounded mb-4'
             }
           >
-            <p className="font-semibold">Error: {error}</p>
+            <p className='font-semibold'>Error: {error}</p>
             {/* ...buttons unchanged... */}
           </div>
         )}
@@ -196,14 +217,18 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
         {repos.length > 0 && (
           <>
             <select
-              className={compact ? 'w-full text-xs p-1 border rounded mb-1' : 'w-full p-2 border rounded mb-4'}
+              className={
+                compact
+                  ? 'w-full text-xs p-1 border rounded mb-1'
+                  : 'w-full p-2 border rounded mb-4'
+              }
               value={selectedRepo?.id ?? ''}
               onChange={(e) => {
                 const repo = repos.find((r) => r.id === Number(e.target.value));
                 setRepo(repo ?? null);
               }}
             >
-              <option value="">-- Choose a repo --</option>
+              <option value=''>-- Choose a repo --</option>
               {repos.map((repo: Repo) => (
                 <option key={repo.id} value={repo.id}>
                   {repo.full_name}
