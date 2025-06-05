@@ -77,7 +77,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
               </span>
             </div>
 
-            {/* ✅ Only show streaming text when actually streaming */}
+            {/* Only show streaming text when actually streaming */}
             {isStreaming && streamingAnswer && (
               <div className="text-[#eaeaea] text-sm leading-relaxed whitespace-pre-wrap">
                 {streamingAnswer}
