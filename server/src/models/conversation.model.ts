@@ -63,8 +63,8 @@ const conversationSchema = new Schema<IConversation>(
               snippet: { type: String },
             },
           ],
+          default: undefined,
         },
-        default: undefined,
         timestamp: { type: Date, default: Date.now },
       },
     ],
@@ -74,8 +74,5 @@ const conversationSchema = new Schema<IConversation>(
   }
 );
 
-const Conversation = mongoose.model<IConversation>(
-  'Conversation',
-  conversationSchema
-);
+const Conversation = mongoose.model<IConversation>('Conversation', conversationSchema);
 export default Conversation;
