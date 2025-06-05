@@ -180,7 +180,12 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
       {/* File Viewer */}
       <div className="w-2/5 h-full overflow-y-auto bg-[#232946] border-l border-[#39415a] p-6 min-h-0">
         {selectedFilePath ? (
-          <RepoViewer repoUrl={`${owner}/${repoName}`} selectedPath={selectedFilePath} token={githubToken!} />
+          <RepoViewer
+            repoUrl={`${owner}/${repoName}`}
+            selectedPath={selectedFilePath}
+            setSelectedPath={setSelectedFilePath}
+            token={githubToken!}
+          />
         ) : (
           <div className="text-gray-400 italic">Select a file to view its contents</div>
         )}

@@ -71,8 +71,8 @@ export interface GithubFile {
 export interface RepoViewerProps {
   repoUrl: string; // Should be in the format "owner/repo"
   selectedPath: string;
-  setSelectedPath: (path: string) => void;
   token: string;
+  setSelectedPath: (path: string) => void;
 }
 
 export interface Props {

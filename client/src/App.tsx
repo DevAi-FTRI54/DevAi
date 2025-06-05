@@ -10,28 +10,18 @@ import { AppBarHomeLayout } from './wrappers/Layouts/AppBarLayout';
 import IngestionFlow from './components/ingestion/IngestionFlow';
 import ChatPage from './components/chat/ChatPage';
 import ChatHistory from './components/chat/chathistory';
+import AboutUs from './components/about/aboutus';
 
 function App() {
   return (
     <IngestionProvider>
+      <div className="bg-red-500 text-white p-4">Tailwind test</div>
       <Router>
+        {/* prettier-ignore */}
         <Routes>
-          <Route
-            path="/"
-            element={
-              <AppBarHomeLayout>
-                <MainContent />
-              </AppBarHomeLayout>
-            }
-          />
-          <Route
-            path="/faq"
-            element={
-              <AppBarHomeLayout>
-                <FAQ />
-              </AppBarHomeLayout>
-            }
-          />
+          <Route path="/" element={<AppBarHomeLayout> <MainContent /> </AppBarHomeLayout> } />
+          <Route path="/faq"  element={<AppBarHomeLayout> <FAQ /> </AppBarHomeLayout> } />
+          <Route path="/about" element={ <AppBarHomeLayout> <AboutUs /> </AppBarHomeLayout> } />
           <Route path="/login" element={<GitHubLogin />} />
           <Route path="/install-github-app" element={<InstallAppPrompt />} />
           <Route path="/ingest" element={<IngestionFlow />} />
