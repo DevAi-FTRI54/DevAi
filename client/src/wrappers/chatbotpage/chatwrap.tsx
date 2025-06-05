@@ -75,7 +75,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
                   style={{ animationDelay: '0.2s' }}
                 ></div>
               </div>
-              {/* ✅ Different messages for different states */}
+              {/* Different messages for different states */}
               <span className='text-[#5ea9ea] text-xs font-medium'>
                 {isLoadingResponse
                   ? 'AI is thinking...'
@@ -83,7 +83,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
               </span>
             </div>
 
-            {/* ✅ Only show streaming text when actually streaming */}
+            {/* Only show streaming text when actually streaming */}
             {isStreaming && streamingAnswer && (
               <div className='text-[#eaeaea] text-sm leading-relaxed whitespace-pre-wrap'>
                 {streamingAnswer}

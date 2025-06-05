@@ -72,80 +72,58 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setPromptText(event.target.value);
   };
 
-  const handleSubmit = async () => {
-    if (!promptText.trim()) return;
+  const resetLoadingStates = () => {
+    setIsStreaming?.(false);
+    setStreamingAnswer?.('');
+    setIsLoadingResponse?.(false);
+    setLoading(false);
+  };
 
-    const userMessage = promptText;
-    setPromptText('');
-    setLoading(true);
-    setError(null);
+  // Streaming: process the response live
+  const processStreamingResponse = async (response: Response) => {
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
 
-    console.log('🤔 AI is thinking...');
-
-    // Add user message immediately
-    addUserMessage?.(userMessage);
-
-    // Start "thinking" state
-    setIsLoadingResponse?.(true);
-
-    console.log('🚀 Starting streaming...');
+    // Switch from "thinking" to "streaming"
+    setIsLoadingResponse?.(false);
     setIsStreaming?.(true);
     setStreamingAnswer?.('');
 
-    try {
-      const response = await fetch('/api/query/question', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: repoUrl,
-          prompt: userMessage,
-          type: promptType,
-          sessionId,
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to submit prompt');
+    let accumulatedAnswer = '';
+    let finalCitations = [];
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = (await reader?.read()) ?? {
+        done: true,
+        value: undefined,
+      };
+      if (done) break;
 
-      // Switch from "thinking" to "streaming"
-      setIsStreaming?.(true);
-      setStreamingAnswer?.('');
-      setIsLoadingResponse?.(false);
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
 
-      let accumulatedAnswer = '';
-      let finalCitations = [];
-      let finalQuestion = '';
+      for (const line of lines) {
+        try {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
 
-      while (true) {
-        const { done, value } = (await reader?.read()) ?? {
-          done: true,
-          value: undefined,
-        };
-        if (done) break;
+            switch (data.type) {
+              case 'status':
+                console.log('Status:', data.message);
+                break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          try {
-            if (line.startsWith('data: ')) {
-              const data = JSON.parse(line.slice(6));
-
-              if (data.type === 'status') {
-                console.log('Status: ', data.message);
-              } else if (data.type === 'answer_chunk') {
+              case 'answer_chunk':
                 accumulatedAnswer += data.content + ' ';
-
                 setStreamingAnswer?.(accumulatedAnswer);
-              } else if (data.type === 'citations') {
-                finalCitations = data.data;
-                finalQuestion = data.question;
-              } else if (data.type === 'complete') {
-                console.log('✅ Received complete signal');
+                break;
 
-                setIsStreaming?.(false);
-                setStreamingAnswer?.('');
+              case 'citations':
+                finalCitations = data.data;
+                break;
+
+              case 'complete':
+                console.log('✅ Complete signal received');
+                resetLoadingStates();
 
                 const snippet = finalCitations?.[0]?.snippet ?? '';
                 const file = finalCitations?.[0]?.file?.split('/').pop() ?? '';
@@ -159,25 +137,78 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   startLine,
                   endLine
                 );
+                return;
 
-                setLoading(false);
-              } else if (data.type === 'error') {
+              case 'error':
                 throw new Error(data.message);
-              }
             }
-          } catch (parseError) {
-            console.error('❌ Parse error:', parseError, 'Line:', line);
-            setIsStreaming?.(false);
-            setStreamingAnswer?.('');
-            console.warn('Failed to parse SSE data:', line);
           }
+        } catch (parseError) {
+          console.error('❌ Parse error:', parseError);
+          throw parseError;
         }
       }
-      setPromptText('');
+    }
+  };
+
+  // Store user's message into our DB
+  const storeUserMessage = async (userMessage: string) => {
+    try {
+      const response = await fetch('/api/conversation/add-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          role: 'user',
+          content: userMessage,
+          repoUrl,
+          timestamp: new Date(),
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to store user message');
+      return true;
+    } catch (err) {
+      console.error('❌ Failed to store user message:', err);
+      return false;
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!promptText.trim()) return;
+
+    const userMessage = promptText;
+    setPromptText('');
+    setLoading(true);
+    setError(null);
+
+    try {
+      await storeUserMessage(userMessage);
+
+      console.log('🤔 AI is thinking...');
+      addUserMessage?.(userMessage); // Add user message immediately
+      setIsLoadingResponse?.(true); // Start "thinking" state
+
+      console.log('🚀 Starting streaming...');
+      setIsStreaming?.(true);
+      setStreamingAnswer?.('');
+
+      const response = await fetch('/api/query/question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: repoUrl,
+          prompt: userMessage,
+          type: promptType,
+          sessionId,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to submit prompt');
+
+      await processStreamingResponse(response);
     } catch (err) {
       console.error('❌ Submit error:', err);
-      setIsStreaming?.(false);
-      setStreamingAnswer?.('');
+      resetLoadingStates();
       if (err instanceof Error) setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);

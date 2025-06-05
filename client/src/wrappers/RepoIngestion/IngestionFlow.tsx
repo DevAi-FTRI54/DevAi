@@ -15,19 +15,24 @@ const IngestionFlow: React.FC = () => {
   };
 
   return (
-    <div className=" text-gray min-h-screen">
+    <div className=' text-gray min-h-screen'>
       {!jobId ? (
         <RepoSelector onStartIngestion={handleStartIngestion} />
       ) : (
-        <ProgressBar jobId={jobId} onComplete={() => navigate('/chat', { state: { repo: selectedRepo } })} />
-        // <ProgressBar
-        //   jobId={jobId}
-        //   onComplete={() => {
-        //     // Add repo id or other info as a query param if needed
-        //     const repoParam = selectedRepo ? `?repoId=${selectedRepo.id}` : '';
-        //     window.location.href = `https://a59d8fd60bb0.ngrok.app/chat${repoParam}`;
-        //   }}
-        // />
+        <ProgressBar
+          jobId={jobId}
+          onComplete={() =>
+            /** Using useLocation():
+             *
+             * - By wrapping { repo: selectedRepo } in a state object...
+             * - Inside ChatPage we can use useLocation:
+             * const location = useLocation();
+             * const repo = location.state?.repo;
+             */
+
+            navigate('/chat', { state: { repo: selectedRepo } })
+          }
+        />
       )}
     </div>
   );

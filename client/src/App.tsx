@@ -2,7 +2,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
+  // Navigate,
 } from 'react-router-dom';
 import NavBarLayout from './wrappers/Layouts/NavBarLayout';
 import MainContent from './wrappers/homepage/homepage';
