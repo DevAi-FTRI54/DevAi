@@ -154,11 +154,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // Store user's message into our DB
   const storeUserMessage = async (userMessage: string) => {
     try {
-      const response = await fetch('/api/conversation/add-message', {
+      const response = await fetch('/query/store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
+          // userId, // We must get this from somewhere
           role: 'user',
           content: userMessage,
           repoUrl,
