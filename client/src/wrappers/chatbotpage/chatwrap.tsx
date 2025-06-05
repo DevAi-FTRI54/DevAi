@@ -75,7 +75,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
                   style={{ animationDelay: '0.2s' }}
                 ></div>
               </div>
-              {/* Different messages for different states */}
+              {/* ✅ Different messages for different states */}
               <span className='text-[#5ea9ea] text-xs font-medium'>
                 {isLoadingResponse
                   ? 'AI is thinking...'
@@ -131,6 +131,8 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
       messagesBefore: messages.length,
     });
 
+    console.log('handleSetAnswer file:', file);
+
     setMessages((prev) => [
       ...prev,
       {
@@ -151,11 +153,11 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
   return (
     <div className='flex h-[calc(100vh-56px)] bg-[#121629]'>
       {/* Sidebar */}
-      <div className='w-1/5 h-full bg-[#232946] border-r border-[#39415a] overflow-y-auto min-h-0'>
+      {/* <div className='w-1/5 h-full bg-[#232946] border-r border-[#39415a] overflow-y-auto min-h-0'> */}
+      <div className='flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#232946] border-r border-[#39415a] overflow-y-auto'>
         <PermanentSidebar
           owner={owner}
           repo={repoName}
-          repoData={repo}
           onFileSelect={handleFileSelect}
           token={githubToken!}
         />
@@ -167,7 +169,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
         <div className='flex flex-col items-center w-full h-full max-w-2xl mx-auto'>
           {/* Chat messages area: scrollable and grows */}
           <div className='flex-1 w-full overflow-y-auto min-h-0 p-4'>
-            <ChatWindow messages={messages} />
+            <ChatWindow messages={messages} onSelectFile={handleFileSelect} />
             {streamingComponent}
             <div ref={messagesEndRef} />
           </div>
@@ -192,6 +194,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
           <RepoViewer
             repoUrl={`${owner}/${repoName}`}
             selectedPath={selectedFilePath}
+            token={githubToken!}
           />
         ) : (
           <div className='text-gray-400 italic'>

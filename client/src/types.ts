@@ -71,6 +71,8 @@ export interface GithubFile {
 export interface RepoViewerProps {
   repoUrl: string; // Should be in the format "owner/repo"
   selectedPath: string;
+  setSelectedPath: (path: string) => void;
+  token: string;
 }
 
 export interface Props {
@@ -101,4 +103,16 @@ export interface Repo {
   full_name: string;
   html_url: string;
   sha: string;
+}
+
+export interface ChatWindowProps {
+  messages: Message[];
+  onSelectFile: (filePath: string) => void;
+}
+
+export interface SidebarProps {
+  owner: string;
+  repo: string;
+  token: string;
+  onFileSelect: (filePath: string) => void;
 }

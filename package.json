@@ -31,6 +31,7 @@
     "@langchain/openai": "^0.5.11",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
+    "docker": "^1.0.0",
     "langchain": "^0.3.27",
     "nodemon": "^3.1.10",
     "react-markdown": "^10.1.0",
