@@ -18,7 +18,9 @@ export const askController = async (
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    const { url: repoUrl, prompt: question, type, sessionId, role } = req.body;
+    const { url: repoUrl, prompt: question, type, sessionId } = req.body;
+
+    const userId = (req as any).user?.userId;
 
     res.write(
       `data: ${JSON.stringify({
@@ -51,8 +53,34 @@ export const askController = async (
       })}\n\n`
     );
     res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
+    await Conversation.updateOne(
+      {
+        sessionId,
+        repoUrl,
+        userId,
+      },
+      {
+        $push: {
+          messages: [
+            { role: 'user', content: question, timestamp: new Date() },
+            {
+              role: 'assistant',
+              content: answer,
+              citations,
+              timestamp: new Date(),
+            },
+          ],
+        },
+        $setOnInsert: {
+          repoUrl,
+          userId,
+          sessionId,
+        },
+      },
+      { upsert: true }
+    );
+
     res.end();
-    // res.status(200).json(response);
   } catch (err: any) {
     console.log('--- Error inside askController ------------');
     console.error(err);
@@ -61,53 +89,53 @@ export const askController = async (
       `data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`
     );
     res.end();
-
-    // if (err instanceof OpenAIError) {
-    //   res
-    //     .status(502)
-    //     .json({ message: 'askController: LLM failed', detail: err.message });
-    // }
-    // if (err.message === 'VECTOR_DB_DOWN') {
-    //   res.status(503).json({ msg: 'askController: Vector store unavailable' });
-    // } else {
-    //   res
-    //     .status(500)
-    //     .json({ message: 'askController: Unexpected server error' });
-    // }
   }
 };
+
+// if (err instanceof OpenAIError) {
+//   res
+//     .status(502)
+//     .json({ message: 'askController: LLM failed', detail: err.message });
+// }
+// if (err.message === 'VECTOR_DB_DOWN') {
+//   res.status(503).json({ msg: 'askController: Vector store unavailable' });
+// } else {
+//   res
+//     .status(500)
+//     .json({ message: 'askController: Unexpected server error' });
+// }
 
 export const addMessage = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   const { sessionId, role, content, repoUrl } = req.body;
+  const userId = (req as any).user?.userId;
 
   try {
-    // Store the users's message & create a document:
     await Conversation.updateOne(
       {
         sessionId,
+        repoUrl,
+        userId,
       },
       {
         $push: {
           messages: [
             {
-              role: role,
-              content: content,
+              role,
+              content,
               timestamp: new Date(),
             },
           ],
         },
-
         $setOnInsert: {
-          repoUrl: repoUrl,
-          userId: 'anonymous',
+          repoUrl,
+          userId,
+          sessionId,
         },
       },
-      {
-        upsert: true,
-      }
+      { upsert: true }
     );
 
     res.json({ success: true });

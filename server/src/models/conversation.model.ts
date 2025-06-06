@@ -48,12 +48,12 @@ export interface IConversation {
 
 const conversationSchema = new Schema<IConversation>(
   {
-    userId: { type: String },
     sessionId: { type: String, required: true },
+    userId: { type: String, required: true },
     repoUrl: { type: String, required: true },
     messages: [
       {
-        role: { type: String, required: true },
+        role: { type: String, enum: ['user', 'assistant'], required: true },
         content: { type: String, required: true },
         citations: {
           type: [
@@ -75,5 +75,8 @@ const conversationSchema = new Schema<IConversation>(
   }
 );
 
-const Conversation = mongoose.model<IConversation>('Conversation', conversationSchema);
+const Conversation = mongoose.model<IConversation>(
+  'Conversation',
+  conversationSchema
+);
 export default Conversation;
