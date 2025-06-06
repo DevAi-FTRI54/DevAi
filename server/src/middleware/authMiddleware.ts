@@ -25,27 +25,25 @@ interface AuthenticatedRequest extends Request {
   user: jwt.JwtPayload | string;
 }
 
-export const requireAuth: RequestHandler = (req: Request, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers.authorization; //create variable for authorization header
-  if (!authHeader) {
-    res.status(401).json({ message: 'Missing auth header' });
+export const requireAuth: RequestHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Get token from cookie instead of header!
+  const token = req.cookies.token;
+  if (!token) {
+    res.status(401).json({ message: 'Missing auth token' });
     return;
   }
-  //if not present then return 401 status(unathaurized) and missing message;
-  const token = authHeader.split(' ')[1];
-  //authHeader is in format   Bearer <token>
-  //split string into array using a space as the unit indicator, each unit is an index
-  //grab second index which is the token
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    // 1) jwt.verify built in verification method, takes the token, the key and
-    // 2) checks if token is signed with the key (secret)
-    // 3) extracts the original data (decodes), username/pw etc
+    console.log('Decoded JWT in requireAuth:', decoded);
 
-    (req as AuthenticatedRequest).user = decoded; //needs added type, or .user won't be recognized as a request method
-    //req.user = decoded is the JS version
-    // Attach user info to the request
+    (req as AuthenticatedRequest).user = decoded;
+    console.log('Decoded JWT in requireAuth:', decoded);
+
     next();
   } catch (err) {
     res.status(403).json({ message: 'Invalid or expired token' });

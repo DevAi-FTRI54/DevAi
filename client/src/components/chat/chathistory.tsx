@@ -11,13 +11,15 @@ const ChatHistory: React.FC = () => {
         // const url = 'http://localhost:4000/api/chat/history?userId=USER_ID&limit=10&offset=0'; //static values for limit and offsey
         // const res = await fetch(url); //static values for limit and offset
         //const res = await fetch('http://localhost:4000/api/chat/history'); //? where are we storing the data, //added the url
-        const token = localStorage.getItem('jwt');
+        //const token = localStorage.getItem('jwt');
 
-        const res = await fetch('http://localhost:4000/api/chat/history/flat', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await fetch(
+          'https://a59d8fd60bb0.ngrok.app/api/chat/history/flat',
+          {
+            method: 'GET',
+            credentials: 'include',
+          }
+        );
 
         const data = await res.json();
         setLogs(data);
@@ -38,8 +40,8 @@ const ChatHistory: React.FC = () => {
             <th>User Question</th>
             <th>Answer</th>
             <th>File Name</th>
-            <tr>Start Line</tr>
-            <tr>End line</tr>
+            <th>Start Line</th>
+            <th>End Line</th>
           </tr>
         </thead>
         <tbody>

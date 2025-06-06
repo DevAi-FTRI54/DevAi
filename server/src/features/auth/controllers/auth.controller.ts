@@ -98,10 +98,11 @@ export const completeAuth = async (
 
     // Store the installation id for front-end to access the repos
     if (installationId) {
-      res.cookie('installation_id', installationId, {
+      res.cookie('token', token, {
         httpOnly: true,
-        sameSite: 'lax',
-        secure: false, // dev only
+        sameSite: 'none', // <- must be 'none' for cross-origin cookies!
+        secure: true, // <- required for 'none'
+        domain: '.ngrok.app', // (optional, can be omitted, usually works w/o)
       });
     }
 

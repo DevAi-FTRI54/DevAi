@@ -19,10 +19,24 @@ const app = express();
 
 app.use(
   cors({
-    origin: allowedOrigins, // your React dev host
-    credentials: true, // allow cookies
+    origin: ['http://localhost:5173', 'https://a59d8fd60bb0.ngrok.app'],
+    credentials: true,
   })
 );
+
+// app.use(
+//   cors({
+//     origin: allowedOrigins, // your React dev host
+//     credentials: true, // allow cookies
+//   })
+// );
+
+// app.use(
+//   cors({
+//     origin: 'http://localhost:5173', // or your React dev server domain
+//     credentials: true,
+//   })
+// );
 
 app.use(express.json());
 app.use(cookieParser());
