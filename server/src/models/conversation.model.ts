@@ -41,13 +41,14 @@ export type Message = {
 
 export interface IConversation {
   sessionId: string;
-  userId: string;
+  userId?: string;
   repoUrl: string;
   messages: Message[];
 }
 
 const conversationSchema = new Schema<IConversation>(
   {
+    userId: { type: String },
     sessionId: { type: String, required: true },
     userId: { type: String, required: true },
     repoUrl: { type: String, required: true },
@@ -64,8 +65,8 @@ const conversationSchema = new Schema<IConversation>(
               snippet: { type: String },
             },
           ],
+          default: undefined,
         },
-        default: undefined,
         timestamp: { type: Date, default: Date.now },
       },
     ],
@@ -75,8 +76,5 @@ const conversationSchema = new Schema<IConversation>(
   }
 );
 
-const Conversation = mongoose.model<IConversation>(
-  'Conversation',
-  conversationSchema
-);
+const Conversation = mongoose.model<IConversation>('Conversation', conversationSchema);
 export default Conversation;
