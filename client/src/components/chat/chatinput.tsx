@@ -132,7 +132,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 finalCitations = data.data;
                 break;
 
-              case 'complete':
+              case 'complete': {
                 console.log('✅ Complete signal received');
                 resetLoadingStates();
 
@@ -151,6 +151,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 );
 
                 break;
+              }
 
               case 'error':
                 throw new Error(data.message);

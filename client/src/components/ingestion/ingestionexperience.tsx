@@ -48,11 +48,13 @@ const IngestionExperience: React.FC<IngestionExperienceProps> = ({
     );
   }
 
-  // return <ProgressBar jobId={jobId} onComplete={() => setCompleted(true)} />;
   return (
     <ProgressBar
       jobId={jobId}
-      onComplete={() => navigate('/chat', { state: { repo: selectedRepo } })}
+      onComplete={() => {
+        setCompleted(true);
+        navigate('/chat', { state: { repo: selectedRepo } });
+      }}
     />
   );
 };
