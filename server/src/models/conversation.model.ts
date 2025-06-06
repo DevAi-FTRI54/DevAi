@@ -49,10 +49,11 @@ export interface IConversation {
 const conversationSchema = new Schema<IConversation>(
   {
     sessionId: { type: String, required: true },
+    userId: { type: String, required: true },
     repoUrl: { type: String, required: true },
     messages: [
       {
-        role: { type: String, required: true },
+        role: { type: String, enum: ['user', 'assistant'], required: true },
         content: { type: String, required: true },
         citations: {
           type: [

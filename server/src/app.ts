@@ -58,7 +58,7 @@ app.use('/api/query', queryRoutes);
 app.use('/api/auth', authRoute);
 
 //ChatHistory route
-app.use('api', chatHistoryRoute);
+app.use('/api/chat', chatHistoryRoute);
 
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
