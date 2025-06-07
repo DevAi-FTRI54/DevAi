@@ -119,6 +119,45 @@ export const completeAuth = async (
   }
 };
 
+// Add this to your auth.controller.ts
+
+export const getGitHubUserOrgs = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const githubToken = req.cookies.github_access_token;
+    if (!githubToken) {
+      res.status(401).json({ error: 'Missing GitHub token' });
+      return;
+    }
+
+    // Fetch orgs from GitHub API
+    const response = await fetch('https://api.github.com/user/orgs', {
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+        'User-Agent': 'YourAppName',
+        Accept: 'application/vnd.github+json',
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch orgs');
+    const orgs = (await response.json()) as {
+      id: number;
+      login: string;
+      avatar_url: string;
+    }[];
+
+    // Return to frontend (maybe only send id, login, avatar_url, etc)
+    res.json(
+      orgs.map(({ id, login, avatar_url }) => ({ id, login, avatar_url }))
+    );
+  } catch (err: Error | any) {
+    res
+      .status(500)
+      .json({ error: 'Failed to fetch orgs', detail: err.message });
+  }
+};
+
 // 3. List repos
 export const listRepos = async (req: Request, res: Response): Promise<void> => {
   if (failureCount >= MAX_FAILURES) {

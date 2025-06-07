@@ -1,6 +1,7 @@
 // Defines API routes for user authentication (login, signup, etc).
 import express, { Router } from 'express';
 import { requireAuth } from '../../middleware/authMiddleware.js';
+import { getGitHubUserOrgs } from './controllers/auth.controller.js';
 import { saveInstallationId } from '../githubApp/githubApp.controller.js';
 import Project from '../../models/project.model.js';
 import {
@@ -20,6 +21,7 @@ router.get('/callback', handleGitHubCallback);
 router.get('/complete', completeAuth);
 router.get('/repos', listRepos);
 router.get('/github-token', getGithubToken);
+router.get('/orgs', requireAuth, getGitHubUserOrgs);
 
 // Redirect after Github App install:
 router.get('/app/install/callback', requireAuth, saveInstallationId);
