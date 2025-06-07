@@ -19,14 +19,22 @@ const AuthCallback: React.FC = () => {
       });
 
       if (res.ok) {
-        navigate('/install-github-app');
+        const data = await res.json();
+        if (data.token) localStorage.setItem('jwt', data.token);
+        if (data.githubToken) localStorage.setItem('githubToken', data.githubToken);
+
+        if (data.installed === false || data.needsInstall === true) {
+          navigate('/install-github-app');
+        } else {
+          navigate('/orgselector');
+        }
       }
     };
 
     completeAuth();
   }, [navigate]);
 
-  return <div className='font-tt-hoves p-4'>Authenticating with GitHub...</div>;
+  return <div className="font-tt-hoves p-4">Authenticating with GitHub...</div>;
 };
 
 export default AuthCallback;

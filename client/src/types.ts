@@ -116,3 +116,8 @@ export interface SidebarProps {
   token: string;
   onFileSelect: (filePath: string) => void;
 }
+
+export type OrgSelectorProps = {
+  token: string;
+  onSelect: () => void;
+};
