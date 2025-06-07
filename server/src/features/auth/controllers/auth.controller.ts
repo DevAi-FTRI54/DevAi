@@ -4,16 +4,8 @@ import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 import User from '../../../models/user.model.js';
 import mongoose from 'mongoose';
-import {
-  exchangeCodeForToken,
-  getGitHubUserProfile,
-  getRepositoriesWithMeta,
-} from '../services/github.service.js';
-import {
-  getAppInstallationUrl,
-  checkIfAppInstalled,
-  getAppInstallations,
-} from '../services/installation.service.js';
+import { exchangeCodeForToken, getGitHubUserProfile, getRepositoriesWithMeta } from '../services/github.service.js';
+import { getAppInstallationUrl, checkIfAppInstalled, getAppInstallations } from '../services/installation.service.js';
 import { findOrCreateUser } from '../services/user.service.js';
 import { generateUserJWTToken } from '../services/jwt.service.js';
 import { handleApiError } from '../utils/error.utils.js';
@@ -24,8 +16,7 @@ console.log('Loading auth.controller.ts');
 //Github OAuth credentials for the app NOT FOR THE USER!!!!
 //Github code and access token are for users and are dynamic (Different Thing)
 const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID!;
-const FRONTEND_BASE_URL =
-  process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
 
 // Circuit breaker pattern
 let failureCount = 0;
@@ -43,10 +34,7 @@ export const getGitHubLoginURL = (req: Request, res: Response) => {
 };
 
 // Process Github callback with auth code
-export const handleGitHubCallback = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const handleGitHubCallback = async (req: Request, res: Response): Promise<any> => {
   try {
     const code = req.query.code as string;
     if (!code) return res.status(400).send('Missing code');
@@ -68,10 +56,7 @@ export const handleGitHubCallback = async (
 };
 
 // 2. Get GitHub response
-export const completeAuth = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const completeAuth = async (req: Request, res: Response): Promise<any> => {
   try {
     const githubToken = req.cookies.github_access_token;
     if (!githubToken) return res.status(401).send('Missing GitHub token');
@@ -98,7 +83,7 @@ export const completeAuth = async (
 
     // Store the installation id for front-end to access the repos
     if (installationId) {
-      res.cookie('token', token, {
+      res.cookie('installation_id', installationId, {
         httpOnly: true,
         sameSite: 'none', // <- must be 'none' for cross-origin cookies!
         secure: true, // <- required for 'none'
@@ -170,9 +155,7 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
       res.status(503).json({
         error: 'Service temporarily unavailable',
         retry: true,
-        retryAfter: Math.ceil(
-          (CIRCUIT_RESET_TIME - (now - lastFailureTime)) / 1000
-        ),
+        retryAfter: Math.ceil((CIRCUIT_RESET_TIME - (now - lastFailureTime)) / 1000),
       });
       return;
     }
@@ -207,10 +190,7 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
 };
 
 // 4. Get githubToken and pass to chatwrap.tsx
-export const getGithubToken = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getGithubToken = async (req: Request, res: Response): Promise<void> => {
   if (!mongoose.connection.readyState) {
     res.status(503).json({ error: 'Database not ready', ready: true });
     return;

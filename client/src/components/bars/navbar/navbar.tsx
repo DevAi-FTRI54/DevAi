@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
@@ -7,7 +8,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import useLogout from '../../settings/logout';
 
-const settings = ['Account', 'Profile', 'Logout'];
+const settings = ['Account', 'Chat History', 'Logout'];
 
 const UserAvatarMenu: React.FC = () => {
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
@@ -21,13 +22,18 @@ const UserAvatarMenu: React.FC = () => {
     setAnchorElUser(null);
   };
 
+  const navigate = useNavigate();
+
   // New handler for menu item clicks
   const handleMenuItemClick = (setting: string) => {
     handleCloseUserMenu();
     if (setting === 'Logout') {
       logout();
+    } else if (setting === 'Chat History') {
+      navigate('/chat/history'); // Navigate to the chat history route
+    } else {
+      console.log(`Clicked on ${setting}`);
     }
-    // else you can handle Account/Profile navigation here if you want
   };
 
   return (
