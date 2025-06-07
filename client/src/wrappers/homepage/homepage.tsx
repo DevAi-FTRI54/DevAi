@@ -4,57 +4,98 @@ const MainContent = () => {
   const navigate = useNavigate();
 
   return (
-    <div
-      className="relative h-screen w-full flex flex-col items-center overflow-hidden"
-      style={
-        {
-          // background: 'linear-gradient(120deg, #18181b 0%, #473e63 60%, #9e6c39 100%)',
-          // background: 'linear-gradient(120deg, #18181b 0%, #473e63 60%, #121629)',
-        }
-      }
-    >
-      {/* Gradient Overlay */}
+    <div className="relative h-screen w-full flex flex-col items-center overflow-hidden bg-[#18181b]">
+      {/* Blurred Purple Glow as background */}
       <div
-        className="absolute inset-0 z-0 pointer-events-none"
-        style={{
-          //   background: `
-          //   radial-gradient(circle at 25% 75%, #66339988 0%, transparent 50%),
-          //   radial-gradient(circle at 85% 85%, #ff9f4380 0%, transparent 65%),
-          //   radial-gradient(ellipse at 50% 0%, #18181b 60%, transparent 100%)
-          // `,
-          background: `
-          radial-gradient(circle at 25% 75%, #39415a 0%, transparent 50%),
-          radial-gradient(circle at 85% 85%, #121629 0%, transparent 65%),
-          radial-gradient(ellipse at 50% 0%, #18181b 60%, transparent 100%)
-        `,
-        }}
+        className="
+    absolute
+    left-1/2
+    top-[322px]    // Use figma's top coordinate if you want
+    -translate-x-1/2
+    w-[800px]
+    h-[800px]
+    rounded-full
+    bg-[#7730B5]
+    blur-[350px]
+    z-0
+    pointer-events-none
+  "
       />
 
-      {/* Main Content */}
+      {/* Main Content sits above the glow */}
       <div className="relative z-10 w-full flex flex-col items-center justify-center flex-1 px-4 mt-14">
-        {/* Hero Section */}
-        <section className="flex flex-col items-center justify-center text-center mt-14 mb-6 max-w-3xl">
-          <h1 className="font-tt-hoves text-3xl md:text-5xl  mb-4 leading-tight">
-            <span className="text-white">A </span>
-            <span style={{ color: '#bb9af7' }}>Code </span>
-            <span style={{ color: '#869ed7' }}>Reader </span>
-            <span className="text-white">Built for</span>
+        {/* HERO SECTION */}
+        <section className="flex flex-col items-center justify-center text-center mt-14 mb-10 max-w-3xl">
+          <h1
+            className="
+    text-center
+    font-['TT Hoves Pro Trial']
+    font-normal
+    text-[64px]
+    leading-[74px]
+    tracking-[-1.28px]
+    text-[#FAFAFA]
+  "
+          >
+            <span>A </span>
+            <span
+              className="
+      bg-gradient-to-r
+      from-[#B866FF]
+      to-[#4BB1ED]
+      bg-clip-text
+      text-transparent
+    "
+            >
+              Code Reader
+            </span>
+            <span> Built for</span>
             <br />
-            <span className="text-white">Developers</span>
+            <span>Developers</span>
           </h1>
-          <p className="font-tt-hoves text-base text-gray-300 mb-6 max-w-lg mx-auto">
-            An AI assistant that instantly reads, understands, and explains your codebase - so you can spend less time
-            digging and more time building.
+
+          <p
+            className="
+              font-['TT Hoves Pro Trial']
+              text-[18px]
+              font-normal
+              leading-[26px]
+              text-[#C7C8C3]
+              text-center
+              w-full
+              mb-6
+              max-w-[676px]
+              mx-auto
+            "
+          >
+            An AI assistant that instantly reads, understands, and explains your codebase
+            <br /> – so you can spend less time digging and more time building.
           </p>
+
           <button
             onClick={() => navigate('/install-github-app')}
-            className="px-6 py-2 rounded-full bg-white/90 text-[#22212b] font-semibold shadow hover:bg-white transition"
+            className="
+                flex
+                h-10
+                py-2
+                px-6
+                justify-center
+                items-center
+                gap-4
+                rounded-full
+                bg-[#DEE1FC]
+                text-[#22212b]
+                font-semibold
+                shadow
+                hover:bg-[#E2E5FF]
+                transition
+              "
           >
             Install GitHub App
           </button>
         </section>
 
-        {/* Code Preview / Screenshot Area */}
+        {/* CODE PREVIEW SECTION */}
         <div className="flex justify-center w-full overflow-auto max-h-[55vh]">
           <div className="rounded-lg overflow-hidden shadow-lg bg-gradient-to-br from-[#232136] to-[#292940] p-4 w-full max-w-4xl">
             <div className="flex">
@@ -68,7 +109,6 @@ const MainContent = () => {
                   <li className="ml-4 text-[#a6accd]">node_modules</li>
                 </ul>
               </div>
-
               {/* Main Code Area */}
               <div className="flex-1 bg-[#22212b] rounded-r-lg p-4 text-left text-[#cdd6f4] overflow-auto">
                 <div className="mb-2 text-sm">
@@ -90,7 +130,6 @@ const MainContent = () => {
                     <li>JSX syntax sugar for expressive UI definitions</li>
                   </ul>
                 </div>
-
                 {/* Code Box */}
                 <div className="bg-[#181828] rounded-lg p-3 text-xs font-mono text-[#cdd6f4]">
                   <span className="text-[#7f849c]">// pages/index.tsx</span>
