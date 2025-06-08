@@ -32,7 +32,7 @@ const OrgSelector: React.FC<{
   }
   return (
     <select onChange={(e) => onSelect(e.target.value)}>
-      <option value=''>Select Organization</option>
+      <option value="">Select Organization</option>
       {orgs.map((org) => (
         <option key={org.id} value={org.login}>
           {org.login}
