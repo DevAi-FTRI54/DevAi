@@ -18,7 +18,8 @@ const router: Router = express.Router();
 // /api/auth/
 router.get('/github', getGitHubLoginURL);
 router.get('/callback', handleGitHubCallback);
-router.get('/complete', completeAuth);
+router.post('/complete', completeAuth);
+//router.get('/complete', completeAuth);
 router.get('/repos', listRepos);
 router.get('/github-token', getGithubToken);
 router.get('/orgs', requireAuth, getGitHubUserOrgs);

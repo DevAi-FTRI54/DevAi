@@ -12,6 +12,7 @@ import ChatPage from './components/chat/ChatPage';
 import ChatHistory from './components/chat/chathistory';
 import AboutUs from './components/about/aboutus';
 import OrgSelectorWrapper from './wrappers/orgselectorwrapper/orgselectorwrapper';
+import AuthCallback from './components/auth/authcallback'; // adjust if needed
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/faq"  element={<AppBarHomeLayout> <FAQ /> </AppBarHomeLayout> } />
           <Route path="/about" element={ <AppBarHomeLayout> <AboutUs /> </AppBarHomeLayout> } />
           <Route path="/login" element={<GitHubLogin />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/orgselector" element={<OrgSelectorWrapper /> } />
           <Route path="/install-github-app" element={<InstallAppPrompt />} />
           <Route path="/ingest" element={<IngestionFlow />} />
