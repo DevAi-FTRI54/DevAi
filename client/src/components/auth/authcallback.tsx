@@ -11,17 +11,21 @@ const AuthCallback: React.FC = () => {
 
       if (!code) return;
 
-      const res = await fetch('http://localhost:4000/api/auth/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-        credentials: 'include',
-      });
+      const res = await fetch(
+        'https://a59d8fd60bb0.ngrok.app/api/auth/complete',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+          credentials: 'include',
+        }
+      );
 
       if (res.ok) {
         const data = await res.json();
         if (data.token) localStorage.setItem('jwt', data.token);
-        if (data.githubToken) localStorage.setItem('githubToken', data.githubToken);
+        if (data.githubToken)
+          localStorage.setItem('githubToken', data.githubToken);
 
         if (data.installed === false || data.needsInstall === true) {
           navigate('/install-github-app');
@@ -34,7 +38,7 @@ const AuthCallback: React.FC = () => {
     completeAuth();
   }, [navigate]);
 
-  return <div className="font-tt-hoves p-4">Authenticating with GitHub...</div>;
+  return <div className='font-tt-hoves p-4'>Authenticating with GitHub...</div>;
 };
 
 export default AuthCallback;
