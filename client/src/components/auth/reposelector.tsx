@@ -12,10 +12,13 @@ interface RepoSelectorProps {
   compact?: boolean;
 }
 
-const RepoSelector: React.FC<RepoSelectorProps> = ({
-  onStartIngestion,
-  compact = false,
-}) => {
+// Helper: Parse query params
+function getQueryParam(name: string) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name) || '';
+}
+
+const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact = false }) => {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setRepo] = useState<Repo | null>(null);
   const [installationId, setInstallationId] = useState<string>('');
@@ -25,6 +28,9 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
   const [autoRetryAttempts, setAutoRetryAttempts] = useState(0);
   const [initializing, setInitializing] = useState(true);
 
+  // Get selected org from URL
+  const selectedOrg = getQueryParam('org');
+
   useEffect(() => {
     console.log('Loading state:', loading);
     console.log('Repos length:', repos.length);
@@ -32,7 +38,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
     console.log('Auto retry attempts:', autoRetryAttempts);
   }, [loading, repos.length, error, autoRetryAttempts]);
 
-  // Helper: Parse query params
   function getInstallationId() {
     const params = new URLSearchParams(window.location.search);
     return params.get('installation_id') || '';
@@ -50,7 +55,9 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
     }
 
     try {
-      const response = await fetch('/api/auth/repos', {
+      // Pass org as query param if set
+      const orgQuery = selectedOrg ? `?org=${encodeURIComponent(selectedOrg)}` : '';
+      const response = await fetch(`/api/auth/repos${orgQuery}`, {
         credentials: 'include',
       });
 
@@ -61,9 +68,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
         }
         // Error: App installation
         if (response.status === 400) {
-          throw new Error(
-            'Github App installation not found. Please install the app first.'
-          );
+          throw new Error('Github App installation not found. Please install the app first.');
         }
         // Error: Backend (typically, DBs are not ready yet)
         if (response.status === 503) {
@@ -92,17 +97,12 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
       setInitializing(false);
     } catch (err: unknown) {
       console.error('Fetch repos error:', err);
-      const errorMessage =
-        err instanceof Error ? err.message : 'An unknown error occurred';
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
 
       // Retry Attempt: General case
       if (attempt < 3) {
-        console.log(
-          `Retrying in ${(attempt + 1) * 1000}ms... (attempt ${
-            attempt + 1
-          } / 3)`
-        );
+        console.log(`Retrying in ${(attempt + 1) * 1000}ms... (attempt ${attempt + 1} / 3)`);
         setTimeout(() => {
           setRetryCount(attempt + 1);
           fetchRepos(attempt + 1);
@@ -116,15 +116,14 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
 
   // Invoke fetchRepos with frontend delay
   useEffect(() => {
-    // Show loading immediately, then wait for cookies to settle
     setLoading(true);
     setInitializing(true);
-
-    // Wait 2 seconds for cookies to settle, then fetch
     setTimeout(() => {
       fetchRepos();
     }, 2000);
-  }, []);
+    // Refetch when org changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOrg]);
 
   const handleSelect = async () => {
     if (!selectedRepo) return;
@@ -162,12 +161,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
       style={compact ? { minHeight: 0, height: 'auto' } : {}}
     >
       <div className={compact ? 'w-full p-0' : 'p-6 max-w-xl mx-auto'}>
-        <h2
-          className={
-            compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'
-          }
-          style={{ color: '#fff' }}
-        >
+        <h2 className={compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'} style={{ color: '#fff' }}>
           Select a repository to index
         </h2>
 
@@ -175,16 +169,12 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
         {loading && (
           <div
             className={
-              compact
-                ? 'text-xs text-gray-300 flex items-center gap-2 mb-1'
-                : 'text-gray-300 flex items-center gap-2'
+              compact ? 'text-xs text-gray-300 flex items-center gap-2 mb-1' : 'text-gray-300 flex items-center gap-2'
             }
           >
-            <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
             {initializing ? 'Initializing...' : 'Loading repositories...'}
-            {autoRetryAttempts > 0 && (
-              <span>(auto-retry {autoRetryAttempts}/3)</span>
-            )}
+            {autoRetryAttempts > 0 && <span>(auto-retry {autoRetryAttempts}/3)</span>}
             {retryCount > 0 && <span>(retry {retryCount}/3)</span>}
           </div>
         )}
@@ -192,13 +182,10 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
         {error && (
           <div
             className={
-              compact
-                ? 'p-2 bg-red-100 text-red-800 rounded mb-2 text-xs'
-                : 'p-3 bg-red-100 text-red-800 rounded mb-4'
+              compact ? 'p-2 bg-red-100 text-red-800 rounded mb-2 text-xs' : 'p-3 bg-red-100 text-red-800 rounded mb-4'
             }
           >
-            <p className='font-semibold'>Error: {error}</p>
-            {/* ...buttons unchanged... */}
+            <p className="font-semibold">Error: {error}</p>
           </div>
         )}
 
@@ -217,18 +204,14 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
         {repos.length > 0 && (
           <>
             <select
-              className={
-                compact
-                  ? 'w-full text-xs p-1 border rounded mb-1'
-                  : 'w-full p-2 border rounded mb-4'
-              }
+              className={compact ? 'w-full text-xs p-1 border rounded mb-1' : 'w-full p-2 border rounded mb-4'}
               value={selectedRepo?.id ?? ''}
               onChange={(e) => {
                 const repo = repos.find((r) => r.id === Number(e.target.value));
                 setRepo(repo ?? null);
               }}
             >
-              <option value=''>-- Choose a repo --</option>
+              <option value="">-- Choose a repo --</option>
               {repos.map((repo: Repo) => (
                 <option key={repo.id} value={repo.id}>
                   {repo.full_name}
@@ -253,115 +236,5 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
     </div>
   );
 };
-//     <div className="min-h-screen w-full bg-[#23262f] flex items-center justify-center">
-//       <div className="p-6 max-w-xl mx-auto">
-//         <h2 className="text-xl font-bold mb-4">Select a repository to index</h2>
-//         {/* {loading && <p className='text-gray-500'>Loading repositories...</p>}
-//         {error && (
-//           <div className='p-3 bg-red-100 text-red-800 rounded mb-4'>
-//             Error: {error}
-//           </div>
-//         )} */}
-
-//         {/* Loading repos */}
-//         {loading && (
-//           <div className="text-gray-300 flex items-center gap-2">
-//             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-//             {initializing ? 'Initializing...' : 'Loading repositories...'}
-//             {autoRetryAttempts > 0 && <span>(auto-retry {autoRetryAttempts}/3)</span>}
-//             {retryCount > 0 && <span>(retry {retryCount}/3)</span>}
-//           </div>
-//         )}
-
-//         {/* Error (likely due to cookies not being set yet) */}
-//         {error && (
-//           <div className="p-3 bg-red-100 text-red-800 rounded mb-4">
-//             <p className="font-semibold">Error: {error}</p>
-//             <div className="mt-2 flex gap-2">
-//               <button
-//                 onClick={() => {
-//                   setAutoRetryAttempts(0);
-//                   setRetryCount(0);
-//                   fetchRepos();
-//                 }}
-//                 className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-//               >
-//                 Try Again
-//               </button>
-//               {error.includes('Authentication') && (
-//                 <button
-//                   onClick={() => (window.location.href = '/api/auth/github')}
-//                   className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-//                 >
-//                   Re-authenticate
-//                 </button>
-//               )}
-//             </div>
-//           </div>
-//         )}
-
-//         {/* No repos found */}
-//         {!loading && !error && repos.length === 0 && !initializing && (
-//           <div className="p-3 bg-yellow-100 text-yellow-800 rounded mb-4">
-//             <p className="font-semibold">No repositories found</p>
-//             <p className="text-sm mb-3">Please try refreshing or check your GitHub App installation.</p>
-//             <div className="flex gap-2">
-//               <button
-//                 onClick={() => window.location.reload()}
-//                 className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-//               >
-//                 🔄 Refresh Page
-//               </button>
-//               <button
-//                 onClick={() => {
-//                   setAutoRetryAttempts(0);
-//                   setRetryCount(0);
-//                   fetchRepos();
-//                 }}
-//                 className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-//               >
-//                 🔄 Retry
-//               </button>
-//               <button
-//                 onClick={() => (window.location.href = '/install-github-app')}
-//                 className="px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 text-sm"
-//               >
-//                 ⚙️ Install App
-//               </button>
-//             </div>
-//           </div>
-//         )}
-
-//         {repos.length > 0 && (
-//           <>
-//             <select
-//               className="w-full p-2 border rounded mb-4"
-//               value={selectedRepo?.id ?? ''}
-//               onChange={(e) => {
-//                 const repo = repos.find((r) => r.id === Number(e.target.value));
-//                 setRepo(repo ?? null);
-//               }}
-//             >
-//               <option value="">-- Choose a repo --</option>
-//               {repos.map((repo: Repo) => (
-//                 <option key={repo.id} value={repo.id}>
-//                   {repo.full_name}
-//                 </option>
-//               ))}
-//             </select>
-
-//             <button
-//               onClick={handleSelect}
-//               className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-//               disabled={!selectedRepo}
-//             >
-//               🚀 Ingest Repo
-//             </button>
-//           </>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
 
 export default RepoSelector;
