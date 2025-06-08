@@ -8,13 +8,15 @@ import { GITHUB_APP_PRIVATE_KEY } from '../../../config/auth.js';
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID!;
 const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID!;
 const GITHUB_APP_CLIENT_SECRET = process.env.GITHUB_APP_CLIENT_SECRET!;
+const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI!;
+const REDIRECT_URI = 'https://a59d8fd60bb0.ngrok.app/api/auth/callback';
 // const GITHUB_APP_PRIVATE_KEY = process.env.GITHUB_APP_PRIVATE_KEY!.replace(
 //   /\\n/g,
 //   '\n'
 // );
 
-const REDIRECT_URI =
-  process.env.REDIRECT_URI || 'http://localhost:4000/api/auth/callback';
+// const REDIRECT_URI =
+//   process.env.REDIRECT_URI || 'http://localhost:4000/api/auth/callback';
 
 // Add specific types for repository objects:
 interface Repository {
@@ -33,6 +35,21 @@ interface RepositoryWithMeta {
 }
 
 // Exchange OAuth code for access token
+// export async function exchangeCodeForToken(code: string): Promise<string> {
+//   const response = await fetch('https://github.com/login/oauth/access_token', {
+//     method: 'POST',
+//     headers: {
+//       Accept: 'application/json',
+//       'Content-Type': 'application/x-www-form-urlencoded',
+//     },
+//     body: new URLSearchParams({
+//       client_id: GITHUB_APP_CLIENT_ID,
+//       client_secret: GITHUB_APP_CLIENT_SECRET,
+//       code,
+//       redirect_uri: GITHUB_REDIRECT_URI,
+//     }),
+//   });
+
 export async function exchangeCodeForToken(code: string): Promise<string> {
   const response = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
@@ -41,15 +58,23 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
-      client_id: GITHUB_APP_CLIENT_ID,
-      client_secret: GITHUB_APP_CLIENT_SECRET,
+      client_id: process.env.GITHUB_APP_CLIENT_ID!,
+      client_secret: process.env.GITHUB_APP_CLIENT_SECRET!,
       code,
+      redirect_uri: REDIRECT_URI, // ✅ if you're using this in GitHub settings
     }),
   });
 
   const data = await response.json();
+
+  // ✅ LOG FULL RESPONSE FROM GITHUB
+  console.log('[GitHub Token Exchange] Full response:', data);
+
   if (!data.access_token) {
-    throw new GitHubApiError('Failed to obtain access token', response.status);
+    throw new Error(
+      'GitHub API Error: ' +
+        (data.error_description || 'Failed to obtain access token')
+    );
   }
 
   return data.access_token;

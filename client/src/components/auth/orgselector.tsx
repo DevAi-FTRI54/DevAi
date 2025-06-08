@@ -15,10 +15,20 @@ const OrgSelector: React.FC<{
   useEffect(() => {
     const fetchOrgs = async () => {
       if (!token) return;
-      const res = await fetch('http://localhost:4000/api/auth/orgs', {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch('https://a59d8fd60bb0.ngrok.app/api/auth/orgs', {
+        method: 'GET',
+        credentials: 'include', // 🔥 This sends the cookies
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
       });
       const data = await res.json();
+      console.log('👉 orgs from server:', data); // ✅ Inspect here
+      if (!Array.isArray(data)) {
+        console.error('Expected array of orgs but got:', data);
+        setOrgs([]);
+        return;
+      }
       setOrgs(data);
       setLoading(false);
     };

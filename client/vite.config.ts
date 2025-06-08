@@ -1,22 +1,28 @@
+// vite.config.ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0', // so Vite listens on the LAN interface too
+    host: '0.0.0.0',
     port: 5173,
+    strictPort: true,
     hmr: {
       overlay: false,
     },
+    allowedHosts: ['.ngrok.app'], // ✅ wildcard support
+    cors: {
+      origin: ['https://a59d8fd60bb0.ngrok.app'],
+      credentials: true,
+    },
     proxy: {
       '/api': {
-        target: 'http://localhost:4000', // Express
+        target: 'http://localhost:4000',
+
         changeOrigin: true,
-        timeout: 30000,
+        secure: false,
       },
     },
-    allowedHosts: ['a59d8fd60bb0.ngrok.app'],
   },
 });
