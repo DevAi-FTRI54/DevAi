@@ -127,11 +127,14 @@ const ChatMessage: React.FC<{ message: Message; onSelectFile?: (filePath: string
                     <button
                       onClick={() => onSelectFile(message.file!)}
                       className="font-medium text-blue-400 underline hover:text-blue-300"
+                      title={message.file} // show full path on hover
                     >
-                      {message.file}
+                      {message.file.split('/').pop()}
                     </button>
                   ) : (
-                    <span className="font-medium">{message.file}</span>
+                    <span className="font-medium" title={message.file}>
+                      {message.file.split('/').pop()}
+                    </span>
                   )}
                   {message.startLine && message.endLine && message.startLine > 0 && (
                     <span className="text-[#5ea9ea]">

@@ -5,6 +5,12 @@ import ChatInput from '../../components/chat/chatinput';
 import RepoViewer from '../../components/chat/filepreview';
 import type { Message, ChatWrapProps } from '../../types';
 
+// Helper to convert absolute to repo-relative path
+function toRepoRelative(absolutePath: string) {
+  const match = absolutePath.match(/AI_ML_Project\/[^/]+\/(.+)/);
+  return match ? match[1] : absolutePath;
+}
+
 const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
@@ -120,20 +126,15 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
     startLine: number,
     endLine: number
   ) => {
-    console.log('🎯 handleSetAnswer called:', {
-      answer: answer.substring(0, 50) + '...',
-      messagesBefore: messages.length,
-    });
-
-    console.log('handleSetAnswer file:', file);
-
+    // Convert the file path to repo-relative before storing
+    const relativeFile = file ? toRepoRelative(file) : '';
     setMessages((prev) => [
       ...prev,
       {
         role: 'assistant' as const,
         content: answer,
         snippet: snippet || '',
-        file: file,
+        file: relativeFile,
         startLine: startLine,
         endLine: endLine,
       },
@@ -144,10 +145,14 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
     setSelectedFilePath(filePath);
   };
 
+  // Always pass repo-relative paths to the chat window
+  const fixedMessages = messages.map((msg) =>
+    msg && typeof msg === 'object' ? { ...msg, file: msg.file ? toRepoRelative(msg.file) : msg.file } : msg
+  );
+
   return (
     <div className="flex h-[calc(100vh-56px)] bg-[#121629]">
       {/* Sidebar */}
-      {/* <div className='w-1/5 h-full bg-[#232946] border-r border-[#39415a] overflow-y-auto min-h-0'> */}
       <div className="flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#232946] border-r border-[#39415a] overflow-y-auto">
         <PermanentSidebar
           owner={owner}
@@ -161,16 +166,12 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
 
       {/* Chat Area */}
       <div className="w-2/5 flex flex-col h-full px-6 py-0 min-h-0 items-center">
-        {/* Centered wrapper, full height column */}
         <div className="flex flex-col items-center w-full h-full max-w-2xl mx-auto">
-          {/* Chat messages area: scrollable and grows */}
           <div className="flex-1 w-full overflow-y-auto min-h-0 p-4">
-            <ChatWindow messages={messages} onSelectFile={handleFileSelect} />
+            <ChatWindow messages={fixedMessages} onSelectFile={handleFileSelect} />
             {streamingComponent}
             <div ref={messagesEndRef} />
           </div>
-
-          {/* Chat input area: fixed at bottom */}
           <div className="w-full mt-4">
             <ChatInput
               repoUrl={repo.html_url}
