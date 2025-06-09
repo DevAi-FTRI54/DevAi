@@ -19,10 +19,7 @@ interface UserDocument extends mongoose.Document {
   accessToken: string;
 }
 
-export const findOrCreateUser = async (
-  githubData: GitHubUserProfile,
-  accessToken: string
-): Promise<UserDocument> => {
+export const findOrCreateUser = async (githubData: GitHubUserProfile, accessToken: string): Promise<UserDocument> => {
   // Check if user exists
   let user = await User.findOne({ githubId: githubData.id.toString() });
 
