@@ -144,12 +144,12 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
     <div
       className={
         compact
-          ? 'w-full flex flex-col items-start bg-[#232946] p-0 m-0'
+          ? 'w-full h-full flex flex-col items-start bg-[#232946] p-0 m-0'
           : 'min-h-screen w-full bg-[#23262f] flex items-center justify-center'
       }
-      style={compact ? { minHeight: 0, height: 'auto' } : {}}
+      style={compact ? { minHeight: 0, height: '100%', overflow: 'hidden' } : {}}
     >
-      <div className={compact ? 'w-full p-0' : 'p-6 max-w-xl mx-auto'}>
+      <div className={compact ? 'w-full h-full p-0 m-0 flex-1' : 'p-6 max-w-xl mx-auto'}>
         <h2 className={compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'} style={{ color: '#fff' }}>
           Select a repository to index
         </h2>

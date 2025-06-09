@@ -57,6 +57,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
     getGithubToken();
   }, []);
 
+  // Show streaming state while waiting for/receiving AI response
   const streamingComponent = useMemo(() => {
     // Show nothing if not loading or streaming
     if (!isLoadingResponse && !isStreaming) return null;
@@ -82,7 +83,6 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
                 {isLoadingResponse ? 'AI is thinking...' : 'AI is responding...'}
               </span>
             </div>
-
             {/* Only show streaming text when actually streaming */}
             {isStreaming && streamingAnswer && (
               <div className="text-[#eaeaea] text-sm leading-relaxed whitespace-pre-wrap">
@@ -98,12 +98,13 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
 
   if (!githubToken) {
     return (
-      <div className="flex h-[calc(100vh-56px)] bg-[#121629] items-center justify-center">
+      <div className="flex h-screen bg-[#121629] items-center justify-center">
         <div className="text-white">Loading GitHub token...</div>
       </div>
     );
   }
 
+  // Add user's message to message list
   const handleAddUserMessage = (userPrompt: string) => {
     setMessages((prev) => [
       ...prev,
@@ -118,6 +119,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
     ]);
   };
 
+  // Add AI's answer to message list
   const handleSetAnswer = (
     answer: string,
     // userPrompt: string,
@@ -141,6 +143,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
     ]);
   };
 
+  // Handle file click from sidebar or chat message
   const handleFileSelect = (filePath: string) => {
     setSelectedFilePath(filePath);
   };
@@ -151,9 +154,15 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
   );
 
   return (
-    <div className="flex h-[calc(100vh-56px)] bg-[#121629]">
+    <div className="flex h-screen bg-[#121629]">
       {/* Sidebar */}
-      <div className="flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#232946] border-r border-[#39415a] overflow-y-auto">
+      <div className="h-full flex flex-col flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#232946] border-r border-[#39415a]">
+        {/* Pass org/installId as needed */}
+        {/* 
+          The PermanentSidebar component should itself use a flex column layout, with:
+          - header/top area (e.g. repo selector/ingestion)
+          - scrollable content area for file tree (flex-1 overflow-y-auto)
+        */}
         <PermanentSidebar
           owner={owner}
           repo={repoName}
@@ -165,14 +174,16 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
       </div>
 
       {/* Chat Area */}
-      <div className="w-2/5 flex flex-col h-full px-6 py-0 min-h-0 items-center">
+      <div className="w-2/5 flex flex-col h-full items-center">
         <div className="flex flex-col items-center w-full h-full max-w-2xl mx-auto">
+          {/* Message list */}
           <div className="flex-1 w-full overflow-y-auto min-h-0 p-4">
             <ChatWindow messages={fixedMessages} onSelectFile={handleFileSelect} />
             {streamingComponent}
             <div ref={messagesEndRef} />
           </div>
-          <div className="w-full mt-4">
+          {/* Input */}
+          <div className="w-full">
             <ChatInput
               repoUrl={repo.html_url}
               setAnswer={handleSetAnswer}
@@ -187,6 +198,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
 
       {/* File Viewer */}
       <div className="w-2/5 h-full overflow-y-auto bg-[#232946] border-l border-[#39415a] p-6 min-h-0">
+        {/* Show file preview if selected, else placeholder */}
         {selectedFilePath ? (
           <RepoViewer
             repoUrl={`${owner}/${repoName}`}
