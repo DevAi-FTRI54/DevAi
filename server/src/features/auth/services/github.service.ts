@@ -83,10 +83,14 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
 // Get GitHub user profile
 export async function getGitHubUserProfile(accessToken: string): Promise<any> {
   const response = await fetch('https://api.github.com/user', {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: {
+      Authorization: `token ${accessToken}`, // 👈 fix is here
+      Accept: 'application/vnd.github+json', // optional but good practice
+    },
   });
-
+  console.log('📥 GitHub user response status:', response.status);
   const data = await response.json();
+  console.log('📄 GitHub user profile data:', data);
   if (!response.ok) {
     throw new GitHubApiError(
       'Failed to fetch user profile',
