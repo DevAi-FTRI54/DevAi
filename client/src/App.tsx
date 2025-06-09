@@ -13,6 +13,7 @@ import ChatHistory from './components/chat/chathistory';
 import AboutUs from './components/about/aboutus';
 import OrgSelectorWrapper from './wrappers/orgselectorwrapper/orgselectorwrapper';
 import AuthCallback from './components/auth/authcallback'; // adjust if needed
+import UserSettings from './components/settings/settings';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route element={<NavBarLayout />}>
             <Route path='/chat' element={<ChatPage />} />
             <Route path='/chat/history' element={<ChatHistory repoUrl={''} />} />
+            <Route path='/settings/account' element={<UserSettings />} />
           </Route>
           <Route path='*' element={<NotFound />} />
         </Routes>

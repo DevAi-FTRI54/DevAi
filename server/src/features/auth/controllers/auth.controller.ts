@@ -48,7 +48,7 @@ export const handleGitHubCallback = async (req: Request, res: Response): Promise
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      domain: '.ngrok.app', // important
+      // domain: '.ngrok.app', // important
     });
 
     return res.redirect(`${FRONTEND_BASE_URL}/auth/callback?code=${code}`);
@@ -145,7 +145,7 @@ export const completeAuth = async (req: Request, res: Response): Promise<any> =>
         httpOnly: true,
         sameSite: 'none',
         secure: true,
-        domain: '.ngrok.app',
+        // domain: '.ngrok.app', //! es removed 6/8
       });
     }
 
