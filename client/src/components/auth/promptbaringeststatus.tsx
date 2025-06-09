@@ -54,24 +54,26 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ jobId, onComplete }) => {
   };
 
   return (
-    <div className="p-4 border rounded shadow max-w-lg mx-auto mt-4">
-      <h2 className="text-lg font-semibold mb-2">Progress Status</h2>
-      <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-        <div
-          className="bg-blue-600 h-4 rounded-full transition-all duration-300"
-          style={{ width: `${status.progress}%` }}
-        />
+    <div className="w-screen h-screen dark:bg-gray-900 bg-white">
+      <div className="p-4 border rounded shadow max-w-lg mx-auto mt-4 bg-white dark:bg-gray-900 border-gray-400 dark:border-gray-800">
+        <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Progress Status</h2>
+        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 mb-4">
+          <div
+            className="bg-blue-600 h-4 rounded-full transition-all duration-300"
+            style={{ width: `${status.progress}%` }}
+          />
+        </div>
+        <div className="mb-2 text-gray-900 dark:text-gray-100">{status.progress}%</div>
+        <p className="text-gray-900 dark:text-gray-100">
+          <strong>RepoURL:</strong> {status.data.repoUrl}
+        </p>
+        <p className={getStatusColor(status.status) + ' dark:text-gray-200'}>
+          <strong>Status:</strong> {status.status.toUpperCase()}
+        </p>
+        {/* <p>
+      <strong>Chunks:</strong> {status.chunkCount}
+    </p> */}
       </div>
-      <div className="mb-2">{status.progress}%</div>
-      <p>
-        <strong>RepoURL:</strong> {status.data.repoUrl}
-      </p>
-      <p className={getStatusColor(status.status)}>
-        <strong>Status:</strong> {status.status.toUpperCase()}
-      </p>
-      {/* <p>
-        <strong>Chunks:</strong> {status.chunkCount}
-      </p> */}
     </div>
   );
 };
