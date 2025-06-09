@@ -135,13 +135,20 @@ export const completeAuth = async (
   try {
     let githubToken = req.cookies.github_access_token;
 
+    console.log('🍪 GitHub token from cookie:', githubToken);
+
     // ❌ Don't re-use code to get another token
     if (!githubToken) {
       return res.status(401).send('Missing GitHub token');
     }
-
+    console.log('📤 Calling getGitHubUserProfile() with token:', githubToken);
     const githubData = await getGitHubUserProfile(githubToken);
+    console.log(
+      '✅ GitHub user profile fetched:',
+      githubData.login || githubData
+    );
     const user = await findOrCreateUser(githubData, githubToken);
+    console.log('👤 DB user record:', user?.username);
 
     const token = generateUserJWTToken({
       _id: user._id!.toString(),
@@ -156,7 +163,12 @@ export const completeAuth = async (
 
     const installations = await getAppInstallations(githubToken);
     const { isInstalled, installationId } = checkIfAppInstalled(installations);
-
+    console.log(
+      '🔧 GitHub App installed:',
+      isInstalled,
+      'Installation ID:',
+      installationId
+    );
     if (installationId) {
       res.cookie('installation_id', installationId, {
         httpOnly: true,
@@ -174,6 +186,7 @@ export const completeAuth = async (
       needsInstall: !isInstalled,
     });
   } catch (err: any) {
+    console.error('❌ Error in completeAuth:', err);
     handleApiError(err, res, 'Authentication completion failed');
   }
 };
