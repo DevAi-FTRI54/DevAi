@@ -1,16 +1,7 @@
-import React, { useEffect, useState } from 'react';
-
-type Repo = {
-  id: number;
-  full_name: string;
-  html_url: string;
-  sha: string;
-};
-
-interface RepoSelectorProps {
-  onStartIngestion: (jobId: string, repo: Repo) => void;
-  compact?: boolean;
-}
+import React, { useContext, useEffect, useState } from 'react';
+import { IngestionContext } from '../../components/ingestion/ingestioncontext';
+import type { Repo } from '../../types';
+import type { RepoSelectorProps } from '../../types';
 
 // Helper: Parse query params
 function getQueryParam(name: string) {
@@ -18,35 +9,32 @@ function getQueryParam(name: string) {
   return params.get(name) || '';
 }
 
-const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact = false }) => {
+const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact = false, org, installationId }) => {
+  // Context (optional, may be undefined)
+  const context = useContext(IngestionContext);
+  const setSelectedOrg = context?.setSelectedOrg;
+  const setInstallationId = context?.setInstallationId;
+  const contextOrg = context?.selectedOrg;
+  const contextInstallationId = context?.installationId;
+
+  // Org/installationId: prop > context > URL param
+  const selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
+  const effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
+
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setRepo] = useState<Repo | null>(null);
-  const [installationId, setInstallationId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [autoRetryAttempts, setAutoRetryAttempts] = useState(0);
   const [initializing, setInitializing] = useState(true);
 
-  // Get selected org from URL
-  const selectedOrg = getQueryParam('org');
-
   useEffect(() => {
-    console.log('Loading state:', loading);
+    // For debugging
     console.log('Repos length:', repos.length);
     console.log('Error:', error);
     console.log('Auto retry attempts:', autoRetryAttempts);
   }, [loading, repos.length, error, autoRetryAttempts]);
-
-  function getInstallationId() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('installation_id') || '';
-  }
-
-  useEffect(() => {
-    const id = getInstallationId();
-    setInstallationId(id);
-  }, []);
 
   const fetchRepos = async (attempt = 0, isRetry = false) => {
     if (!isRetry) {
@@ -55,34 +43,26 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
     }
 
     try {
-      // Pass org as query param if set
-      const orgQuery = selectedOrg ? `?org=${encodeURIComponent(selectedOrg)}` : '';
-      const response = await fetch(`/api/auth/repos${orgQuery}`, {
-        credentials: 'include',
-      });
+      // Compose query string
+      const orgQuery = selectedOrgToUse ? `org=${encodeURIComponent(selectedOrgToUse)}` : '';
+      const installQuery = effectiveInstallationId
+        ? `installation_id=${encodeURIComponent(effectiveInstallationId)}`
+        : '';
+      const query = [orgQuery, installQuery].filter(Boolean).join('&');
+      const response = await fetch(`/api/auth/repos${query ? '?' + query : ''}`, { credentials: 'include' });
 
       if (!response.ok) {
-        // Error: Auth
-        if (response.status === 401) {
-          throw new Error('Authentication required. Please log in again.');
-        }
-        // Error: App installation
-        if (response.status === 400) {
+        if (response.status === 401) throw new Error('Authentication required. Please log in again.');
+        if (response.status === 400)
           throw new Error('Github App installation not found. Please install the app first.');
-        }
-        // Error: Backend (typically, DBs are not ready yet)
-        if (response.status === 503) {
-          throw new Error('Service temporarily unavailable. Retrying...');
-        }
+        if (response.status === 503) throw new Error('Service temporarily unavailable. Retrying...');
         throw new Error(`Failed to load repositories (${response.status})`);
       }
 
       const data = (await response.json()) as Repo[];
 
-      // Auto-retry if no repos found (timing issue)
       if (data.length === 0 && autoRetryAttempts < 3) {
         console.log(`Auto-retrying... (${autoRetryAttempts + 1}/3)`);
-
         setTimeout(() => {
           setAutoRetryAttempts((prev) => prev + 1);
           fetchRepos(0, true);
@@ -100,7 +80,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
 
-      // Retry Attempt: General case
       if (attempt < 3) {
         console.log(`Retrying in ${(attempt + 1) * 1000}ms... (attempt ${attempt + 1} / 3)`);
         setTimeout(() => {
@@ -114,16 +93,19 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
     }
   };
 
-  // Invoke fetchRepos with frontend delay
+  // Fetch repos whenever selectedOrgToUse changes
   useEffect(() => {
     setLoading(true);
     setInitializing(true);
     setTimeout(() => {
       fetchRepos();
     }, 2000);
-    // Refetch when org changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedOrg]);
+  }, [selectedOrgToUse, effectiveInstallationId]);
+
+  useEffect(() => {
+    console.log('RepoSelector using org:', selectedOrgToUse, 'installationId:', effectiveInstallationId);
+  }, [selectedOrgToUse, effectiveInstallationId]);
 
   const handleSelect = async () => {
     if (!selectedRepo) return;
@@ -135,7 +117,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
         body: JSON.stringify({
           repoUrl: selectedRepo.html_url,
           sha: selectedRepo.sha,
-          installation_id: installationId,
+          installation_id: effectiveInstallationId,
         }),
       });
 
@@ -149,6 +131,13 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
       console.error('Error indexing repo:', error);
       alert(`Failed to start ingestion. Please try again.`);
     }
+  };
+
+  // If you have org selection UI, update context
+  const handleSelectOrg = (orgObj: { login: string; installation_id: string | number }) => {
+    if (setSelectedOrg) setSelectedOrg(orgObj.login);
+    if (setInstallationId) setInstallationId(String(orgObj.installation_id));
+    // If you want to do more, do it here.
   };
 
   return (
@@ -165,7 +154,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
           Select a repository to index
         </h2>
 
-        {/* Loading and error sections are unchanged, or you can use smaller font for compact */}
         {loading && (
           <div
             className={

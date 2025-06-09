@@ -4,13 +4,10 @@ import type { GitHubContentItem, SidebarProps } from '../../../types';
 // import { IngestionContext } from '../../ingestion/ingestioncontext';
 import IngestionExperience from '../../ingestion/ingestionexperience';
 
-const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect }) => {
+const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect, org, installationId }) => {
   const [rootItems, setRootItems] = useState<GitHubContentItem[]>([]);
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const [childrenMap, setChildrenMap] = useState<Record<string, GitHubContentItem[]>>({});
-  // const ctx = useContext(IngestionContext);
-
-  // const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRoot = async () => {
@@ -65,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect }) =
   return (
     <div className="flex flex-col w-full h-full bg-[#232946] text-black border-r border-[#39415a]">
       <div className="mb-2 text-xs p-2">
-        <IngestionExperience compact />
+        <IngestionExperience compact org={org} installationId={installationId} />
       </div>
       <div className="font-bold text-xs mb-2 px-2">
         {owner}/{repo}
