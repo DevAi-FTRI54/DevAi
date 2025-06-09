@@ -83,8 +83,11 @@
 //   }
 
 //   function handleBreadcrumbClick(index: number) {
+//     // Get the breadcrumb parts from the current selectedPath
 //     const parts = getBreadcrumbParts(selectedPath);
+//     // Reconstruct the path from the root up to the clicked breadcrumb
 //     const newPath = parts.slice(0, index + 1).join('/');
+//     // If your repoUrl includes a subdirectory, prepend it here if needed
 //     setSelectedPath(newPath);
 //     setFileContent(null);
 //   }
@@ -225,8 +228,11 @@ const FilePreview: React.FC<RepoViewerProps> = ({ repoUrl, selectedPath, setSele
   }
 
   function handleBreadcrumbClick(index: number) {
+    // Get the breadcrumb parts from the current selectedPath
     const parts = getBreadcrumbParts(selectedPath);
+    // Reconstruct the path from the root up to the clicked breadcrumb
     const newPath = parts.slice(0, index + 1).join('/');
+    // If your repoUrl includes a subdirectory, prepend it here if needed
     setSelectedPath(newPath);
     setFileContent(null);
   }

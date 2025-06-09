@@ -8,7 +8,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import useLogout from '../../settings/logout';
 
-const settings = ['Account', 'Chat History', 'Logout'];
+const settings = ['Chat History', 'Logout']; //! add back in after OSP 'Account'
 
 const UserAvatarMenu: React.FC = () => {
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
@@ -31,8 +31,8 @@ const UserAvatarMenu: React.FC = () => {
       logout();
     } else if (setting === 'Chat History') {
       navigate('/chat/history'); // Navigate to the chat history route
-    } else if (setting === 'Account') {
-      navigate('/settings/account');
+      // } else if (setting === 'Account') {
+      //   navigate('/settings/account');
     } else {
       console.log(`Clicked on ${setting}`);
     }

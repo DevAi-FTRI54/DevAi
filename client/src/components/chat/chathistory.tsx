@@ -1,41 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import type { ChatHistoryEntry } from '../../types';
-import type { ChatInputProps } from '../../types';
+import type { ChatInputProps, Repo } from '../../types';
+
+const REPO_KEY = 'devai_repo';
 
 const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({ repoUrl }) => {
   const [logs, setLogs] = useState<ChatHistoryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  //! find out where our api/path will be for fetch request
+  // Try to find the full repo object by repoUrl from localStorage
+  const repo: Repo | null = useMemo(() => {
+    try {
+      const str = localStorage.getItem(REPO_KEY);
+      if (!str) return null;
+      const obj = JSON.parse(str);
+      // extra safety: verify html_url matches
+      if (obj && obj.html_url === repoUrl) return obj;
+    } catch (err) {
+      console.error('Error', err);
+    }
+    return null;
+  }, [repoUrl]);
+
   useEffect(() => {
     let didCancel = false;
-
     const fetchHistory = async () => {
       try {
-        // const url = 'http://localhost:4000/api/chat/history?userId=USER_ID&limit=10&offset=0'; //static values for limit and offset
-        // const res = await fetch(url); //static values for limit and offset
-        // const res = await fetch('http://localhost:4000/api/chat/history'); //? where are we storing the data
-        // const token = localStorage.getItem('jwt');
-
         const res = await fetch('https://a59d8fd60bb0.ngrok.app/api/chat/history/flat', {
           method: 'GET',
           credentials: 'include',
         });
-
-        if (!res.ok) {
-          throw new Error(`Request failed with status ${res.status}`);
-        }
-
+        if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
         const data = await res.json();
-
-        // ✅ Validate that the response is an array
-        if (!Array.isArray(data)) {
-          throw new Error('Invalid response format: expected an array');
-        }
-
-        if (!didCancel) {
-          setLogs(data);
-        }
+        if (!Array.isArray(data)) throw new Error('Invalid response format: expected an array');
+        if (!didCancel) setLogs(data);
       } catch (err: any) {
         console.error('❌ Error fetching history:', err);
         if (!didCancel) {
@@ -44,33 +43,31 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({ repoUrl }) => 
         }
       }
     };
-
     fetchHistory();
-
     return () => {
-      didCancel = true; // cleanup to avoid double-setting state
+      didCancel = true;
     };
   }, []);
 
   return (
-    // ✅ Page-level scroll container
     <div className="min-h-screen overflow-y-auto bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-3xl font-bold text-gray-800">Chat History</h1>
-          <a href="/chat" className="text-blue-600 hover:underline text-sm font-medium">
-            ← Back to Chat
-          </a>
+          {repo ? (
+            <Link to="/chat" state={{ repo }} className="text-blue-600 hover:underline text-sm font-medium">
+              ← Back to Chat
+            </Link>
+          ) : (
+            <Link to="/chat" className="text-blue-600 hover:underline text-sm font-medium">
+              ← Back to Chat
+            </Link>
+          )}
         </div>
-
         <h2 className="text-lg text-gray-600 mb-6">
-          Results from Searching Repo:<span className="font-semibold">{repoUrl}</span>
+          Results from Searching Repo: <span className="font-semibold">{repoUrl}</span>
         </h2>
-
-        {/* ✅ Display error here */}
         {error && <div className="text-red-500 mb-4">⚠️ {error}</div>}
-
-        {/* ✅ Scrollable table container */}
         <div className="overflow-x-auto max-h-[650px] overflow-y-auto bg-white shadow rounded-lg">
           <table className="min-w-full table-auto divide-y divide-gray-200">
             <thead className="bg-gray-100 sticky top-0 z-10">

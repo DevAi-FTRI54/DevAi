@@ -5,7 +5,7 @@ import ChatInput from '../../components/chat/chatinput';
 import RepoViewer from '../../components/chat/filepreview';
 import type { Message, ChatWrapProps } from '../../types';
 
-const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
+const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [githubToken, setGithubToken] = useState<string | null>(null);
@@ -149,7 +149,14 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
       {/* Sidebar */}
       {/* <div className='w-1/5 h-full bg-[#232946] border-r border-[#39415a] overflow-y-auto min-h-0'> */}
       <div className="flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#232946] border-r border-[#39415a] overflow-y-auto">
-        <PermanentSidebar owner={owner} repo={repoName} onFileSelect={handleFileSelect} token={githubToken!} />
+        <PermanentSidebar
+          owner={owner}
+          repo={repoName}
+          token={githubToken!}
+          onFileSelect={handleFileSelect}
+          org={org || repo.org}
+          installationId={installationId || repo.installationId}
+        />
       </div>
 
       {/* Chat Area */}
@@ -180,19 +187,12 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
       {/* File Viewer */}
       <div className="w-2/5 h-full overflow-y-auto bg-[#232946] border-l border-[#39415a] p-6 min-h-0">
         {selectedFilePath ? (
-          <>
-            {/* ✅ Show full path */}
-            <div className="text-sm text-white font-mono mb-2">
-              <span className="text-gray-400">Path:</span> /{selectedFilePath}
-            </div>
-
-            <RepoViewer
-              repoUrl={`${owner}/${repoName}`}
-              selectedPath={selectedFilePath}
-              setSelectedPath={setSelectedFilePath}
-              token={githubToken!}
-            />
-          </>
+          <RepoViewer
+            repoUrl={`${owner}/${repoName}`}
+            selectedPath={selectedFilePath}
+            setSelectedPath={setSelectedFilePath}
+            token={githubToken!}
+          />
         ) : (
           <div className="text-gray-400 italic">Select a file to view its contents</div>
         )}
