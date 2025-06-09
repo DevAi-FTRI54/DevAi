@@ -1,0 +1,49 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --exec node --loader ts-node/esm src/server.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@langchain/cohere": "^0.3.3",
+    "@langchain/community": "^0.3.44",
+    "@langchain/core": "^0.3.57",
+    "@langchain/langgraph": "^0.2.73",
+    "@langchain/openai": "^0.5.11",
+    "@langchain/qdrant": "^0.1.2",
+    "@langchain/textsplitters": "^0.1.0",
+    "@octokit/auth-app": "^8.0.1",
+    "@octokit/rest": "^21.1.1",
+    "bullmq": "^5.52.3",
+    "cookie-parser": "^1.4.7",
+    "cookieparser": "^0.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "glob": "^11.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "langchain": "^0.3.26",
+    "mongoose": "^8.15.0",
+    "nodemon": "^3.1.10",
+    "simple-git": "^3.27.0",
+    "tsx": "^4.19.4"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.15.18",
+    "concurrently": "^9.1.2",
+    "ngrok": "^5.0.0-beta.2",
+    "ts-morph": "^25.0.1",
+    "ts-node": "^10.9.2"
+  }
+}

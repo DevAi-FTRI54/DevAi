@@ -1,0 +1,30 @@
+# RunPod Fine-tuning Requirements
+# Core ML libraries
+torch==2.0.1
+transformers==4.31.0
+datasets==2.14.0
+
+# QLoRA and efficient training
+peft==0.13.2
+accelerate==1.1.1
+trl==0.12.1
+bitsandbytes==0.43.1
+
+# Data processing
+numpy==1.26.4
+pandas==2.2.2
+
+# Utilities
+python-dotenv==1.0.0
+tensorboard
+
+# HTTP requests and model management
+requests==2.31.0
+huggingface-hub==0.26.2
+safetensors==0.4.5
+
+# RunPod integration
+runpod==1.6.0
+
+# Scheduling and automation
+schedule==1.2.0
