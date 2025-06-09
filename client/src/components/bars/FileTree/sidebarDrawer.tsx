@@ -8,9 +8,6 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect, org
   const [rootItems, setRootItems] = useState<GitHubContentItem[]>([]);
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const [childrenMap, setChildrenMap] = useState<Record<string, GitHubContentItem[]>>({});
-  // const ctx = useContext(IngestionContext);
-
-  // const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRoot = async () => {

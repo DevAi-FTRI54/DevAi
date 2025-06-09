@@ -128,6 +128,8 @@ export interface SidebarProps {
   repo: string;
   token: string;
   onFileSelect: (filePath: string) => void;
+  org?: string;
+  installationId?: string | null;
 }
 
 export interface TreeNodeProps {
