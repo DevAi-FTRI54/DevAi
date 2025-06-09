@@ -41,14 +41,19 @@ const OrgSelector: React.FC<{
     return null;
   }
   return (
-    <select onChange={(e) => onSelect(e.target.value)}>
-      <option value=''>Select Organization</option>
-      {orgs.map((org) => (
-        <option key={org.id} value={org.login}>
-          {org.login}
-        </option>
-      ))}
-    </select>
+    <div className="flex items-center justify-center min-h-screen bg-black">
+      <select
+        onChange={(e) => onSelect(e.target.value)}
+        className="text-black bg-white px-4 py-2 rounded-md border border-gray-300 text-base"
+      >
+        <option value="">Select Organization</option>
+        {orgs.map((org) => (
+          <option key={org.id} value={org.login}>
+            {org.login}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 };
 
