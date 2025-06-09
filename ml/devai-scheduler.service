@@ -8,10 +8,8 @@ Type=simple
 User=devai
 Group=devai
 WorkingDirectory=/opt/devai/ml
+EnvironmentFile=/opt/devai/server/src/config/.env
 Environment=PATH=/opt/devai/ml/venv/bin:/usr/local/bin:/usr/bin:/bin
-Environment=FINE_TUNING_TOKEN=your_token_here
-Environment=RUNPOD_API_KEY=your_runpod_key_here
-Environment=MONGO_URI=your_mongo_uri_here
 ExecStart=/opt/devai/ml/venv/bin/python3 /opt/devai/ml/scripts/training_scheduler.py --min-pairs 200 --time 02:00
 Restart=always
 RestartSec=10
