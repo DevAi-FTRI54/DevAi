@@ -80,12 +80,12 @@ app.use('/api/auth', authRoute);
 app.use('/api/chat', chatHistoryRoute);
 
 // Serve static files from the React build folder
-app.use(express.static(path.join(__dirname, '../../client/dist')));
+// app.use(express.static(path.join(__dirname, '../../client/dist')));
 
-// Fallback: serve index.html for all unmatched routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
-});
+// // Fallback: serve index.html for all unmatched routes
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
+// });
 
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
