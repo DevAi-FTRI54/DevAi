@@ -79,10 +79,12 @@ app.use('/api/auth', authRoute);
 //ChatHistory route
 app.use('/api/chat', chatHistoryRoute);
 
+// Serve static files from the React build folder
+app.use(express.static(path.join(__dirname, '../../client/dist')));
+
+// Fallback: serve index.html for all unmatched routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../client/dist/index.html'), {
-    headers: { 'Content-Type': 'text/html' },
-  });
+  res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
 
 // --- Tasks route -----------------------------------------------
@@ -127,9 +129,12 @@ const errorHandler: ErrorRequestHandler = (
     message: { err: 'An error occurred' },
   };
 
-  const errorObj: ServerError = { ...defaultError, ...err };
+  const errorObj: ServerError = {
+    ...defaultError,
+    ...err,
+    message: err.message ? { err: String(err.message) } : defaultError.message,
+  };
 
-  // Enhanced error logging
   console.error('❌ Global Error Handler Triggered:');
   console.error({
     log: errorObj.log,
