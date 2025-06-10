@@ -3,7 +3,7 @@ import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
 import 'dotenv/config';
 
-import './features/indexing/index.job.js';
+//import './features/indexing/index.job.js';
 
 console.log('Booting server...');
 console.log('Start of server.ts');
