@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 
 import { allowedOrigins } from './config/allowedOrigins.js';
 
-import repoRoutes from './features/indexing/index.routes.js';
+//import repoRoutes from './features/indexing/index.routes.js';
 import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
