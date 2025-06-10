@@ -43,11 +43,11 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
 app.use(express.static('assets')); // serve files in assets
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../views/index.html'), {
-    headers: { 'Content-Type': 'text/html' },
-  });
-});
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../views/index.html'), {
+//     headers: { 'Content-Type': 'text/html' },
+//   });
+// });
 
 app.get('/api/health', (req, res) => {
   const health = {
