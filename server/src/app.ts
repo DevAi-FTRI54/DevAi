@@ -54,18 +54,6 @@ app.use(express.static('assets')); // serve files in assets
 //   });
 // });
 
-app.get('/api/health', (req, res) => {
-  const health = {
-    mongodb: mongoose.connection.readyState === 1,
-    server: true,
-    timestamp: new Date().toISOString(),
-  };
-
-  const isHealthy = Object.values(health).every((status) => status === true);
-
-  res.status(isHealthy ? 200 : 503).json(health);
-});
-
 // --- Define routes ---------------------------------------------
 // Repo route
 app.use('/api/index', repoRoutes);
@@ -79,6 +67,18 @@ app.use('/api/auth', authRoute);
 //ChatHistory route
 app.use('/api/chat', chatHistoryRoute);
 
+//Health check
+app.get('/api/health', (req, res) => {
+  const health = {
+    mongodb: mongoose.connection.readyState === 1,
+    server: true,
+    timestamp: new Date().toISOString(),
+  };
+
+  const isHealthy = Object.values(health).every((status) => status === true);
+
+  res.status(isHealthy ? 200 : 503).json(health);
+});
 // Serve static files from the React build folder
 // app.use(express.static(path.join(__dirname, '../../client/dist')));
 
@@ -109,6 +109,10 @@ app.use('/api/chat', chatHistoryRoute);
 //   });
 // });
 
+//Render Route handler
+app.get('/', (_req, res) => {
+  res.status(200).send('Backend is live');
+});
 // --- Eror Handler ----------------------------------------------
 app.use((req, res, next) => {
   const error = new Error('Route not found');
