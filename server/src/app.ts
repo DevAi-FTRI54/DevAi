@@ -20,17 +20,11 @@ import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
 
 const app = express();
 
-app.get('/api/health', (req, res) => {
-  const health = {
-    mongodb: mongoose.connection.readyState === 1,
-    server: true,
-    timestamp: new Date().toISOString(),
-  };
-
-  const isHealthy = Object.values(health).every((status) => status === true);
+app.get('/api/health', (_req, res) => {
   console.log('✅ Health check hit');
-  res.status(isHealthy ? 200 : 503).json(health);
+  res.status(200).json({ ok: true });
 });
+
 // --- Global middleware -----------------------------------------
 //important!!
 // app.use(
