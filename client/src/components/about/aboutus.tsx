@@ -26,7 +26,7 @@ const AboutUs = () => {
       imageUrl: Eric_Shankman,
       firstName: 'Eric',
       lastName: 'Shankman',
-      positions: ['Vue Frontend Developer', 'Creator Of This Website'],
+      positions: ['Frontend Developer', 'Creator Of This Website'],
       socialNetworks: [
         { name: 'LinkedIn', url: 'https://www.linkedin.com/in/ershankman/' },
         { name: 'Github', url: 'https://github.com/eshankman' },
@@ -66,54 +66,58 @@ const AboutUs = () => {
   };
 
   return (
-    <section className="container mx-auto py-20 px-4">
-      <div className="text-center space-y-4 mb-12">
-        <span className="inline-block bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">TEAM</span>
-        <h2 className="text-4xl font-bold tracking-tight">Meet the best team of AI</h2>
-        <p className="text-lg text-gray-500">
-          In a realm where imagination meets technology, our platform fosters innovation, inspires creativity
-        </p>
-      </div>
+    <div className="bg-[#171717]  min-h-screen">
+      <section className="container mx-auto py-20 px-4 bg-[#171717]">
+        <div className="text-center space-y-4 mb-12">
+          <span className="inline-block bg-blue-100 text-blue-800 text-sm font-medium mt-20 px-3 py-1 rounded-full">
+            TEAM
+          </span>
+          <h2 className="text-4xl font-bold tracking-tight text-white">Meet the best team of AI</h2>
+          <p className="text-lg text-gray-500">
+            In a realm where imagination meets technology, our platform fosters innovation, inspires creativity
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {teamList.map((member, index) => (
-          <div
-            key={index}
-            className="bg-white shadow rounded-lg overflow-hidden flex flex-col group hover:shadow-lg transition"
-          >
-            <img
-              src={member.imageUrl}
-              alt={`${member.firstName} ${member.lastName}`}
-              className="w-full h-64 object-contain grayscale group-hover:grayscale-0 transition bg-gray-100"
-            />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {teamList.map((member, index) => (
+            <div
+              key={index}
+              className="bg-white shadow rounded-lg overflow-hidden flex flex-col group hover:shadow-lg transition"
+            >
+              <img
+                src={member.imageUrl}
+                alt={`${member.firstName} ${member.lastName}`}
+                className="w-full h-64 object-contain grayscale group-hover:grayscale-0 transition bg-gray-100"
+              />
 
-            <div className="p-6 flex-grow">
-              <h3 className="text-xl font-semibold">
-                {member.firstName} <span className="text-blue-600">{member.lastName}</span>
-              </h3>
-              <div className="text-gray-600 mt-2 space-y-1">
-                {member.positions.map((position, i) => (
-                  <p key={i}>{position}</p>
+              <div className="p-6 flex-grow">
+                <h3 className="text-xl font-semibold">
+                  {member.firstName} <span className="text-blue-600">{member.lastName}</span>
+                </h3>
+                <div className="text-gray-600 mt-2 space-y-1">
+                  {member.positions.map((position, i) => (
+                    <p key={i}>{position}</p>
+                  ))}
+                </div>
+              </div>
+              <div className="p-6 pt-0 flex gap-4 mt-auto">
+                {member.socialNetworks.map((network, i) => (
+                  <a
+                    key={i}
+                    href={network.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:opacity-80"
+                  >
+                    {socialIcon(network.name)}
+                  </a>
                 ))}
               </div>
             </div>
-            <div className="p-6 pt-0 flex gap-4 mt-auto">
-              {member.socialNetworks.map((network, i) => (
-                <a
-                  key={i}
-                  href={network.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:opacity-80"
-                >
-                  {socialIcon(network.name)}
-                </a>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 };
 

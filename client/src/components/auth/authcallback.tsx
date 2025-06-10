@@ -35,7 +35,7 @@ const AuthCallback: React.FC = () => {
   }, [navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black">
+    <div className="flex items-center justify-center min-h-screen bg-gray-800">
       <div className="font-tt-hoves p-4 text-white">Authenticating with GitHub...</div>
     </div>
   );

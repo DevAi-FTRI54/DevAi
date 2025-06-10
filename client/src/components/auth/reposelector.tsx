@@ -137,20 +137,23 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
   const handleSelectOrg = (orgObj: { login: string; installation_id: string | number }) => {
     if (setSelectedOrg) setSelectedOrg(orgObj.login);
     if (setInstallationId) setInstallationId(String(orgObj.installation_id));
-    // If you want to do more, do it here.
   };
 
   return (
     <div
       className={
         compact
-          ? 'w-full flex flex-col items-start bg-[#232946] p-0 m-0'
+          ? 'w-full h-full flex flex-col items-start bg-[#171717] p-0 m-0'
           : 'min-h-screen w-full bg-[#23262f] flex items-center justify-center'
       }
-      style={compact ? { minHeight: 0, height: 'auto' } : {}}
+      style={compact ? { minHeight: 0, height: '100%', overflow: 'hidden' } : {}}
     >
-      <div className={compact ? 'w-full p-0' : 'p-6 max-w-xl mx-auto'}>
-        <h2 className={compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'} style={{ color: '#fff' }}>
+      <div className={compact ? 'w-full h-full p-0 m-0 flex-1' : 'p-6 max-w-xl mx-auto'}>
+        <h2
+          className={compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'}
+          text-black
+          style={{ color: '#fff' }}
+        >
           Select a repository to index
         </h2>
 
@@ -184,15 +187,17 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
                 ? 'p-2 bg-yellow-100 text-yellow-800 rounded mb-2 text-xs'
                 : 'p-3 bg-yellow-100 text-yellow-800 rounded mb-4'
             }
-          >
-            {/* ...unchanged... */}
-          </div>
+          ></div>
         )}
 
         {repos.length > 0 && (
           <>
             <select
-              className={compact ? 'w-full text-xs p-1 border rounded mb-1' : 'w-full p-2 border rounded mb-4'}
+              className={
+                compact
+                  ? 'w-full text-xs p-1 border rounded mb-1 text-black'
+                  : 'w-full p-2 border rounded mb-4 text-black'
+              }
               value={selectedRepo?.id ?? ''}
               onChange={(e) => {
                 const repo = repos.find((r) => r.id === Number(e.target.value));
