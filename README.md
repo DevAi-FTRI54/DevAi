@@ -2,29 +2,32 @@
 
 DevAI is an intelligent code assistant that helps developers understand and navigate their codebases more efficiently. Get instant answers about your code with AI-powered insights.
 
-🌐 **Website**: [dev-ai.app](https://dev-ai.app) *(coming soon)*
+🌐 **Website**: [dev-ai.app](https://dev-ai.app) _(coming soon)_
 
 ## ✨ Features
 
 - **Code Understanding**: Ask questions about your codebase in natural language
-- **Smart Search**: Find relevant code snippets and documentation instantly  
+- **Smart Search**: Find relevant code snippets and documentation instantly
 - **GitHub Integration**: Connect your repositories seamlessly
 - **Context-Aware**: AI understands your project structure and dependencies
 
 ## 🚀 Getting Started
 
 ### For Users
+
 1. Visit [dev-ai.app](https://dev-ai.app)
 2. Connect your GitHub account
 3. Select your repository
 4. Start asking questions about your code!
 
 ### For Developers
+
 See our [Developer Setup Guide](DEVELOPER_SETUP.md) for local development instructions.
 
 ## 🎯 Roadmap
 
 **Coming Soon:**
+
 - 🌍 Multi-language support
 - 🔧 VS Code extension
 - 🤖 Code generation capabilities
