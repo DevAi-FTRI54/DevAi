@@ -46,7 +46,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
-app.use(express.static('assets')); // serve files in assets
+//app.use(express.static('assets')); // serve files in assets
 
 // app.get('/', (req, res) => {
 //   res.sendFile(path.join(__dirname, '../views/index.html'), {
@@ -113,6 +113,11 @@ app.get('/api/health', (req, res) => {
 app.get('/', (_req, res) => {
   res.status(200).send('Backend is live');
 });
+//catch favicon error in Render
+app.use((req, res, next) => {
+  console.log(`🔍 Unmatched request: ${req.method} ${req.originalUrl}`);
+  next();
+});
 // --- Eror Handler ----------------------------------------------
 app.use((req, res, next) => {
   const error = new Error('Route not found');
@@ -140,17 +145,11 @@ const errorHandler: ErrorRequestHandler = (
   };
 
   console.error('❌ Global Error Handler Triggered:');
-  console.error({
-    log: errorObj.log,
-    status: errorObj.status,
-    message: errorObj.message,
-    name: err.name,
-    stack: err.stack,
-  });
+  console.error('→ Name:', err.name);
+  console.error('→ Message:', err.message);
+  console.error('→ Stack:\n', err.stack);
 
   res.status(errorObj.status).json(errorObj.message);
 };
-
-app.use(errorHandler);
 
 export default app;
