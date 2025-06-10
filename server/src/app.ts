@@ -97,8 +97,10 @@ app.use('/api/chat', chatHistoryRoute);
 // });
 
 // --- Eror Handler ----------------------------------------------
-app.use((req, res) => {
-  res.status(404).send('404 Not Found');
+app.use((req, res, next) => {
+  const error = new Error('Route not found');
+  (error as any).status = 404;
+  next(error);
 });
 
 // --- Global error handler --------------------------------------
@@ -113,10 +115,22 @@ const errorHandler: ErrorRequestHandler = (
     status: 500,
     message: { err: 'An error occurred' },
   };
+
   const errorObj: ServerError = { ...defaultError, ...err };
-  console.log(errorObj.log);
+
+  // Enhanced error logging
+  console.error('❌ Global Error Handler Triggered:');
+  console.error({
+    log: errorObj.log,
+    status: errorObj.status,
+    message: errorObj.message,
+    name: err.name,
+    stack: err.stack,
+  });
+
   res.status(errorObj.status).json(errorObj.message);
 };
+
 app.use(errorHandler);
 
 export default app;
