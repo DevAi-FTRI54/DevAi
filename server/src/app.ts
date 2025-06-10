@@ -32,13 +32,13 @@ app.get('/api/health', (req, res) => {
   res.status(isHealthy ? 200 : 503).json(health);
 });
 // --- Global middleware -----------------------------------------
-
-app.use(
-  cors({
-    origin: ['http://localhost:5173', 'https://a59d8fd60bb0.ngrok.app'],
-    credentials: true,
-  })
-);
+//important!!
+// app.use(
+//   cors({
+//     origin: ['http://localhost:5173', 'https://a59d8fd60bb0.ngrok.app'],
+//     credentials: true,
+//   })
+// );
 
 // app.use(
 //   cors({
@@ -53,10 +53,10 @@ app.use(
 //     credentials: true,
 //   })
 // );
-
-app.use(express.json());
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
+//important!!
+// app.use(express.json());
+// app.use(cookieParser());
+// app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
 //app.use(express.static('assets')); // serve files in assets
 
 // app.get('/', (req, res) => {
@@ -67,16 +67,16 @@ app.use(express.urlencoded({ extended: true })); // for form submissions, fix fr
 
 // --- Define routes ---------------------------------------------
 // Repo route
-app.use('/api/index', repoRoutes);
+// app.use('/api/index', repoRoutes);
 
-// Query LLM route
-app.use('/api/query', queryRoutes);
+// // Query LLM route
+// app.use('/api/query', queryRoutes);
 
-// Auth route
-app.use('/api/auth', authRoute);
+// // Auth route
+// app.use('/api/auth', authRoute);
 
-//ChatHistory route
-app.use('/api/chat', chatHistoryRoute);
+// //ChatHistory route
+// app.use('/api/chat', chatHistoryRoute);
 
 //Health check
 // app.get('/api/health', (req, res) => {
@@ -121,46 +121,46 @@ app.use('/api/chat', chatHistoryRoute);
 // });
 
 //Render Route handler
-app.get('/', (_req, res) => {
-  res.status(200).send('Backend is live');
-});
-//catch favicon error in Render
-app.use((req, res, next) => {
-  console.log(`🔍 Unmatched request: ${req.method} ${req.originalUrl}`);
-  next();
-});
-// --- Eror Handler ----------------------------------------------
-app.use((req, res, next) => {
-  const error = new Error('Route not found');
-  (error as any).status = 404;
-  next(error);
-});
+// app.get('/', (_req, res) => {
+//   res.status(200).send('Backend is live');
+// });
+// //catch favicon error in Render
+// app.use((req, res, next) => {
+//   console.log(`🔍 Unmatched request: ${req.method} ${req.originalUrl}`);
+//   next();
+// });
+// // --- Eror Handler ----------------------------------------------
+// app.use((req, res, next) => {
+//   const error = new Error('Route not found');
+//   (error as any).status = 404;
+//   next(error);
+// });
 
-// --- Global error handler --------------------------------------
-const errorHandler: ErrorRequestHandler = (
-  err: ServerError,
-  _req,
-  res,
-  _next
-) => {
-  const defaultError: ServerError = {
-    log: 'Express error handler caught unknown middleware error',
-    status: 500,
-    message: { err: 'An error occurred' },
-  };
+// // --- Global error handler --------------------------------------
+// const errorHandler: ErrorRequestHandler = (
+//   err: ServerError,
+//   _req,
+//   res,
+//   _next
+// ) => {
+//   const defaultError: ServerError = {
+//     log: 'Express error handler caught unknown middleware error',
+//     status: 500,
+//     message: { err: 'An error occurred' },
+//   };
 
-  const errorObj: ServerError = {
-    ...defaultError,
-    ...err,
-    message: err.message ? { err: String(err.message) } : defaultError.message,
-  };
+//   const errorObj: ServerError = {
+//     ...defaultError,
+//     ...err,
+//     message: err.message ? { err: String(err.message) } : defaultError.message,
+//   };
 
-  console.error('❌ Global Error Handler Triggered:');
-  console.error('→ Name:', err.name);
-  console.error('→ Message:', err.message);
-  console.error('→ Stack:\n', err.stack);
+//   console.error('❌ Global Error Handler Triggered:');
+//   console.error('→ Name:', err.name);
+//   console.error('→ Message:', err.message);
+//   console.error('→ Stack:\n', err.stack);
 
-  res.status(errorObj.status).json(errorObj.message);
-};
+//   res.status(errorObj.status).json(errorObj.message);
+// };
 
 export default app;
