@@ -12,15 +12,21 @@ interface TabPanelProps {
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
   return (
-    <div role="tabpanel" hidden={value !== index} id={`tablpanel-${index}`} aria-labelledby={`tab-${index}`} {...other}>
+    <div
+      role='tabpanel'
+      hidden={value !== index}
+      id={`tablpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      {...other}
+    >
       {value === index && <Box sx={{ p: 2 }}>{children}</Box>}
     </div>
   );
 }
 
-function FilePreview() {
-  return <div>File Preview</div>;
-}
+// function FilePreview() {
+//   return <div>File Preview</div>;
+// }
 
 const TabComps: React.FC = () => {
   const [value, setValue] = React.useState(0);
@@ -28,9 +34,9 @@ const TabComps: React.FC = () => {
   return (
     <Box>
       <Tabs value={value} onChange={(_, v) => setValue(v)}>
-        <Tab label="Index.html" />
-        <Tab label="server.js" />
-        <Tab label="app.jsx" />
+        <Tab label='Index.html' />
+        <Tab label='server.js' />
+        <Tab label='app.jsx' />
       </Tabs>
       <TabPanel value={value} index={1}>
         {/* <FilePreview /> */}

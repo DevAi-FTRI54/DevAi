@@ -31,3 +31,11 @@ __pycache__/
 **.pem
 .pem
 *.pem
+
+# .renderignore
+.vscode
+.env
+node_modules
+client/node_modules
+ml/
+README*
