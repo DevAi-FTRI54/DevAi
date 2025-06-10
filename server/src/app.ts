@@ -3,10 +3,15 @@ import cors from 'cors';
 import 'dotenv/config';
 import { ServerError } from './types/types.js';
 import cookieParser from 'cookie-parser';
-import path from 'path';
-import { allowedOrigins } from '../src/config/allowedOrigins.js';
+
 import mongoose from 'mongoose';
 // import taskController from './controllers/taskController';
+import { fileURLToPath } from 'url';
+import path from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import { allowedOrigins } from './config/allowedOrigins.js';
 
 import repoRoutes from './features/indexing/index.routes.js';
 import queryRoutes from './features/queries/query.routes.js';
@@ -43,11 +48,11 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
 app.use(express.static('assets')); // serve files in assets
 
-// app.get('/', (req, res) => {
-//   res.sendFile(path.join(__dirname, '../views/index.html'), {
-//     headers: { 'Content-Type': 'text/html' },
-//   });
-// });
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../views/index.html'), {
+    headers: { 'Content-Type': 'text/html' },
+  });
+});
 
 app.get('/api/health', (req, res) => {
   const health = {
