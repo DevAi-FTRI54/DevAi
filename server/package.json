@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js",
-    "postinstall": "npm run build"
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",
