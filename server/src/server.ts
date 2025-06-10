@@ -7,6 +7,7 @@ import 'dotenv/config';
 
 console.log('Booting server...');
 console.log('Start of server.ts');
+console.log('🟡 Fresh deploy loaded');
 
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err);
