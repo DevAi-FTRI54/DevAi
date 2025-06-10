@@ -48,11 +48,11 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
 app.use(express.static('assets')); // serve files in assets
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../views/index.html'), {
-    headers: { 'Content-Type': 'text/html' },
-  });
-});
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../views/index.html'), {
+//     headers: { 'Content-Type': 'text/html' },
+//   });
+// });
 
 app.get('/api/health', (req, res) => {
   const health = {
@@ -78,6 +78,12 @@ app.use('/api/auth', authRoute);
 
 //ChatHistory route
 app.use('/api/chat', chatHistoryRoute);
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../client/dist/index.html'), {
+    headers: { 'Content-Type': 'text/html' },
+  });
+});
 
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
