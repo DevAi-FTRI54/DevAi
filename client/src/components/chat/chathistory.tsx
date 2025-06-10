@@ -13,6 +13,7 @@ const COLUMNS = [
   { key: 'startLine', label: 'Start Line' },
   { key: 'endLine', label: 'End Line' },
 ];
+type ColumnKey = (typeof COLUMNS)[number]['key']; // "userPrompt" | "answer" | "file" | "startLine" | "endLine"
 
 const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({ repoUrl }) => {
   const [logs, setLogs] = useState<ChatHistoryEntry[]>([]);
@@ -24,7 +25,7 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({ repoUrl }) => 
   // (Removed start line range)
 
   // --- Sorting states ---
-  const [sortKey, setSortKey] = useState('startLine'); // default
+  const [sortKey, setSortKey] = useState<ColumnKey>('startLine');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   // Try to find the full repo object by repoUrl from localStorage
@@ -84,12 +85,13 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({ repoUrl }) => 
     }
     // Filter: file name
     if (fileFilter.trim()) {
-      filtered = filtered.filter((log) => log.file.toLowerCase().includes(fileFilter.toLowerCase()));
+      filtered = filtered.filter((log) => log.file?.toLowerCase().includes(fileFilter.toLowerCase()));
     }
     // Sort by key/direction
     filtered = [...filtered].sort((a, b) => {
-      const aValue = a[sortKey];
-      const bValue = b[sortKey];
+      const aValue = a[sortKey as keyof ChatHistoryEntry];
+      const bValue = b[sortKey as keyof ChatHistoryEntry];
+
       if (typeof aValue === 'number' && typeof bValue === 'number') {
         return sortDir === 'asc' ? aValue - bValue : bValue - aValue;
       }
