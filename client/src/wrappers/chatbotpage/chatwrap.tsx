@@ -156,7 +156,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
   return (
     <div className="flex h-screen bg-[#212121]">
       {/* Sidebar */}
-      <div className="h-full flex flex-col flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#232946] border-r border-[#39415a]">
+      <div className="h-full flex flex-col flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#23272F] border-r border-[#2D2D37]">
         {/* Pass org/installId as needed */}
         {/* 
           The PermanentSidebar component should itself use a flex column layout, with:
@@ -197,7 +197,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
       </div>
 
       {/* File Viewer */}
-      <div className="w-2/5 h-full overflow-y-auto bg-[#] border-l border-[#39415a] p-6 min-h-0">
+      <div className="w-2/5 h-full overflow-y-auto bg-[#23272F] border-l border-[#2D2D37] p-6 min-h-0">
         {/* Show file preview if selected, else placeholder */}
         {selectedFilePath ? (
           <RepoViewer

@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect, org
             {isDir ? (expanded ? '📂' : '📁') : '📄'} <span className="ml-1">{item.name}</span>
           </div>
           {isDir && expanded && childrenMap[item.path] && (
-            <div className="pl-4 border-l border-[#232946] ml-1">{renderTree(childrenMap[item.path], level + 1)}</div>
+            <div className="pl-4 border-l border-[#2D2D37] ml-1">{renderTree(childrenMap[item.path], level + 1)}</div>
           )}
         </div>
       );
@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect, org
   };
 
   return (
-    <div className="flex flex-col w-full h-full bg-[#171717] text-white border-r border-[#39415a]">
+    <div className="flex flex-col w-full h-full bg-[#23272F] text-white border-r border-[#2D2D37]">
       <div className="mb-2 text-xs p-2">
         <IngestionExperience compact org={org} installationId={installationId} />
       </div>
