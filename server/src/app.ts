@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 
 import { allowedOrigins } from './config/allowedOrigins.js';
 
-//import repoRoutes from './features/indexing/index.routes.js';
+import repoRoutes from './features/indexing/index.routes.js';
 import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
@@ -67,17 +67,20 @@ app.use(express.urlencoded({ extended: true })); // for form submissions, fix fr
 
 // --- Define routes ---------------------------------------------
 // Repo route
-// app.use('/api/index', repoRoutes);
+app.use('/api/index', repoRoutes);
+console.log('✅ Repo route initialized');
 
 // // Query LLM route
-// app.use('/api/query', queryRoutes);
+app.use('/api/query', queryRoutes);
+console.log('✅ Query route initialized');
 
 // // Auth route
 app.use('/api/auth', authRoute);
 console.log('✅ Auth route initialized');
 
 // //ChatHistory route
-// app.use('/api/chat', chatHistoryRoute);
+app.use('/api/chat', chatHistoryRoute);
+console.log('✅ ChatHistory route initialized');
 
 //Health check
 // app.get('/api/health', (req, res) => {
