@@ -197,7 +197,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
       </div>
 
       {/* File Viewer */}
-      <div className="w-2/5 h-full overflow-y-auto bg-[#232946] border-l border-[#39415a] p-6 min-h-0">
+      <div className="w-2/5 h-full overflow-y-auto bg-[#] border-l border-[#39415a] p-6 min-h-0">
         {/* Show file preview if selected, else placeholder */}
         {selectedFilePath ? (
           <RepoViewer

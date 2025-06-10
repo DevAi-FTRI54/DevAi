@@ -221,7 +221,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-[#41423E] rounded-xl shadow-lg">
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-[#303030] rounded-xl shadow-lg">
       {/* Quick Prompts */}
       <div className="w-full max-w-3xl mx-auto flex justify-center space-x-2">
         {QUICK_PROMPTS.map(({ label, text, type }) => (

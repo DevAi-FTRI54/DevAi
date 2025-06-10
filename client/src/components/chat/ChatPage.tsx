@@ -14,6 +14,7 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     // Try to get from router state first
     const repoFromState = location.state?.repo;
+    const orgFromState = location.state?.org;
     if (repoFromState) {
       setRepo(repoFromState);
       localStorage.setItem(REPO_KEY, JSON.stringify(repoFromState));
@@ -22,7 +23,8 @@ const ChatPage: React.FC = () => {
       console.log('repoFromState:', repoFromState);
       console.log('All keys:', Object.keys(repoFromState));
       // Try every reasonable way to get org/installationId
-      setOrg(repoFromState.org || repoFromState.owner?.login || repoFromState.organization || null);
+      // Prefer org from state if available, then fallback to extraction
+      setOrg(orgFromState || repoFromState.org || repoFromState.owner?.login || repoFromState.organization || null);
       setInstallationId(
         repoFromState.installationId ||
           repoFromState.installation_id ||
@@ -71,7 +73,7 @@ const ChatPage: React.FC = () => {
         org: org ?? '',
         installationId: installationId ?? null,
       }}
-      org={org}
+      org={org ?? undefined}
       installationId={installationId}
     />
   );
