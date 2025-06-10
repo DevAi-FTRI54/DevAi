@@ -154,7 +154,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
   );
 
   return (
-    <div className="flex h-screen bg-[#121629]">
+    <div className="flex h-screen bg-[#212121]">
       {/* Sidebar */}
       <div className="h-full flex flex-col flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#232946] border-r border-[#39415a]">
         {/* Pass org/installId as needed */}

@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect, org
   };
 
   return (
-    <div className="flex flex-col w-full h-full bg-[#232946] text-black border-r border-[#39415a]">
+    <div className="flex flex-col w-full h-full bg-[#171717] text border-r border-[#39415a]">
       <div className="mb-2 text-xs p-2">
         <IngestionExperience compact org={org} installationId={installationId} />
       </div>

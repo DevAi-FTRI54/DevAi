@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ChatInputProps } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 
 type PromptType = 'default' | 'Find' | 'Bugs' | 'Debug' | 'WalkThrough' | 'Services';
 
@@ -51,6 +52,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState('');
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedSessionID = localStorage.getItem('documentSessionId');
@@ -218,14 +221,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-[#232946] rounded-xl shadow-lg">
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-[#41423E] rounded-xl shadow-lg">
       {/* Quick Prompts */}
       <div className="w-full max-w-3xl mx-auto flex justify-center space-x-2">
         {QUICK_PROMPTS.map(({ label, text, type }) => (
           <button
             key={type}
             type="button"
-            className="px-2 py-1 rounded bg-[#5ea9ea] text-[#121629] font-bold hover:bg-[#31677a] hover:text-white transition disabled:opacity-50"
+            className="px-2 py-1 rounded bg-gray-200 text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50"
             onClick={() => handleQuickPrompt(text, type)}
             disabled={loading}
           >
@@ -238,7 +241,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       <div className="relative w-full">
         <textarea
           id="user-prompt"
-          className="w-full min-h-[48px] resize-none overflow-hidden text-base p-2 pr-20 border border-[#39415a] rounded focus:outline-none focus:ring-2 focus:ring-[#5ea9ea] bg-[#181A2B] text-[#eaeaea] transition"
+          className="w-full min-h-[48px] resize-none overflow-hidden text-base p-2 pr-20 border border-[#39415a] rounded focus:outline-none focus:ring-2 focus:ring-[#5ea9ea] bg-[#171717] text-[#eaeaea] transition"
           placeholder="Please type your prompt here"
           value={promptText}
           onChange={handleChange}
@@ -248,7 +251,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         />
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded bg-[#5ea9ea] text-white font-semibold hover:bg-[#31677a] hover:text-[#181A2B] transition disabled:opacity-50"
+          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded bg-gray-200 text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50"
           onClick={handleSubmit}
           disabled={loading || !promptText.trim()}
         >
@@ -256,6 +259,16 @@ const ChatInput: React.FC<ChatInputProps> = ({
         </button>
       </div>
       {error && <p className="text-red-400">{error}</p>}
+
+      <button
+        type="button"
+        className="mt-2 px-2 py-1 rounded bg-gray-200 text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50 w-fit"
+        style={{ minWidth: '120px' }}
+        onClick={() => navigate('/chat/history')}
+        disabled={loading}
+      >
+        Go to Chat History
+      </button>
     </div>
   );
 };
