@@ -1,5 +1,6 @@
 import IORedis from 'ioredis';
 import { Queue } from 'bullmq';
+console.log('🔍 REDIS_URL:', process.env.REDIS_URL);
 const redisClient = new IORedis(process.env.REDIS_URL);
 export const indexQueue = new Queue('index', {
     connection: redisClient,
