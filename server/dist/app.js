@@ -12,15 +12,10 @@ import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
 const app = express();
-app.get('/api/health', (req, res) => {
-    const health = {
-        mongodb: mongoose.connection.readyState === 1,
-        server: true,
-        timestamp: new Date().toISOString(),
-    };
-    const isHealthy = Object.values(health).every((status) => status === true);
-    console.log('✅ Health check hit');
-    res.status(isHealthy ? 200 : 503).json(health);
+app.get('/api/health', (_req, res) => {
+    const mongoOk = mongoose.connection.readyState === 1;
+    console.log('🔍 Health check - Mongo ready?', mongoOk);
+    res.status(mongoOk ? 200 : 503).json({ mongoOk });
 });
 // --- Global middleware -----------------------------------------
 //important!!
