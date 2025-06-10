@@ -1,33 +1,13 @@
+import IORedis from 'ioredis';
 import { Worker, Queue } from 'bullmq';
 import { cloneRepo } from './git.service.js';
 import { TsmorphCodeLoader } from './loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import { upsert } from './vector.service.js';
-/**
- * ## Resources =>
- * https://docs.bullmq.io/guide/telemetry/running-a-simple-example
- * https://betterstack.com/community/guides/scaling-nodejs/bullmq-scheduled-tasks/
- *
- * ## indexRepo =>
- * 1/ Clone repo [done]
- * 2/ Load repo (ts-morph) [done]
- * 3/ Chunk it down - RecursiveChunkSplitter [done]
- * 4/ Turn it into vector embeddings (LangChain) [done]
- * 5/ Upsert [done]
- *
- * ## query =>
- * 6/ Receive Query from the User
- * 7/ Retrieve relevant docs
- * 8/ rerank [wed]
- * 9/ Run eval scripts (LangSmith) [thu] -> should be easy
- * 10/ Log costs/latency [thu] -> should be easy
- */
-const redisOptions = {
-    host: process.env.REDIS_HOST ?? 'localhost',
-    port: Number(process.env.REDIS_PORT) || 6379,
-};
-export const indexQueue = new Queue('index', { connection: redisOptions });
-// --- Worker ------------------------------------------------------------
+const redisClient = new IORedis(process.env.REDIS_URL);
+export const indexQueue = new Queue('index', {
+    connection: redisClient,
+});
 const worker = new Worker('index', async (job) => {
     const { repoUrl, sha } = job.data;
     const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
@@ -36,7 +16,6 @@ const worker = new Worker('index', async (job) => {
     const bigDocs = await loader.load();
     await job.updateProgress(30);
     const chunkedDocs = (await chunkDocuments(bigDocs)).map((doc) => {
-        // If the document is empty, write into the pageContent that it's empty
         if (!doc.pageContent || doc.pageContent.trim().length === 0) {
             return {
                 ...doc,
@@ -54,14 +33,14 @@ const worker = new Worker('index', async (job) => {
     for (let i = 0; i < total; i++) {
         await upsert([chunkedDocs[i]]);
         const percentage = 36 + Math.floor(((i + 1) / total) * 64);
-        console.log('--- chunkedDoc[i] ---------');
-        console.log(chunkedDocs[i]);
         await job.updateProgress(percentage);
     }
-}, { connection: redisOptions })
+}, {
+    connection: redisClient,
+})
     .on('completed', (job) => {
     console.log(`${job.id} has completed!`);
 })
     .on('failed', (job, err) => {
-    console.log(`${job.id} has failed with ${err.message}`);
+    console.log(`${job?.id} has failed with ${err.message}`);
 });
