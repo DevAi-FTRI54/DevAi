@@ -33,7 +33,7 @@ async function startServer() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     app
-      .listen(port, () => {
+      .listen(Number(port), '0.0.0.0', () => {
         console.log(`✅ App listening on port ${port}`);
         console.log(`🏥 Health check: http://localhost:${port}/api/health`);
       })
