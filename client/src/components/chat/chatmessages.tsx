@@ -45,7 +45,7 @@ const ChatMessage: React.FC<{ message: Message; onSelectFile?: (filePath: string
   message,
   onSelectFile,
 }) => {
-  console.log('👎🏻>>> ChatMessage component file loaded!');
+  console.log('👌>>> ChatMessage component file loaded!');
   console.log('🥊In ChatMessage, onSelectFile:', onSelectFile, 'file:', message.file);
 
   return (

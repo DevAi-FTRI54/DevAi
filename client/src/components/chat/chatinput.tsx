@@ -228,7 +228,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           <button
             key={type}
             type="button"
-            className="px-2 py-1 rounded bg-gray-200 text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50"
+            className="px-2 py-1 rounded bg-[#DEE1FC] text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50"
             onClick={() => handleQuickPrompt(text, type)}
             disabled={loading}
           >
@@ -251,7 +251,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         />
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded bg-gray-200 text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50"
+          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded bg-[#DEE1FC] text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50"
           onClick={handleSubmit}
           disabled={loading || !promptText.trim()}
         >
@@ -262,7 +262,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
       <button
         type="button"
-        className="mt-2 px-2 py-1 rounded bg-gray-200 text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50 w-fit"
+        className="mt-2 px-2 py-1 rounded bg-[#DEE1FC] text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50 w-fit"
         style={{ minWidth: '120px' }}
         onClick={() => navigate('/chat/history')}
         disabled={loading}

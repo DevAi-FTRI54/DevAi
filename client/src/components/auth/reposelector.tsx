@@ -12,14 +12,21 @@ function getQueryParam(name: string) {
 const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact = false, org, installationId }) => {
   // Context (optional, may be undefined)
   const context = useContext(IngestionContext);
-  const setSelectedOrg = context?.setSelectedOrg;
-  const setInstallationId = context?.setInstallationId;
   const contextOrg = context?.selectedOrg;
   const contextInstallationId = context?.installationId;
 
-  // Org/installationId: prop > context > URL param
-  const selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
-  const effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
+  // Org/installationId: logic depends on compact mode
+  let selectedOrgToUse: string | undefined;
+  let effectiveInstallationId: string | undefined;
+  if (compact) {
+    // In compact mode, always use context (which should be updated globally on org select)
+    selectedOrgToUse = contextOrg ?? getQueryParam('org');
+    effectiveInstallationId = contextInstallationId ?? getQueryParam('installation_id');
+  } else {
+    // In standard mode, use props if provided, else context/query
+    selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
+    effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
+  }
 
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setRepo] = useState<Repo | null>(null);
@@ -131,12 +138,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
       console.error('Error indexing repo:', error);
       alert(`Failed to start ingestion. Please try again.`);
     }
-  };
-
-  // If you have org selection UI, update context
-  const handleSelectOrg = (orgObj: { login: string; installation_id: string | number }) => {
-    if (setSelectedOrg) setSelectedOrg(orgObj.login);
-    if (setInstallationId) setInstallationId(String(orgObj.installation_id));
   };
 
   return (

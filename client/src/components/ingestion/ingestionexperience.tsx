@@ -22,6 +22,7 @@ const IngestionExperience: React.FC<IngestionExperienceProps & { org?: string; i
 
   // Use context for org and installationId
   const context = useContext(IngestionContext) as IngestionContextType;
+  // Always use props for org/installationId if provided, even in compact mode
   const selectedOrg = org ?? context.selectedOrg;
   const selectedInstallationId = installationId ?? context.installationId;
 
@@ -67,7 +68,7 @@ const IngestionExperience: React.FC<IngestionExperienceProps & { org?: string; i
       jobId={jobId}
       onComplete={() => {
         setCompleted(true);
-        navigate('/chat', { state: { repo: selectedRepo } });
+        navigate('/chat', { state: { repo: selectedRepo, org: selectedOrg, installationId: selectedInstallationId } });
       }}
     />
   );
