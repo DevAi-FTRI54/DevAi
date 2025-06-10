@@ -20,6 +20,17 @@ import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
 
 const app = express();
 
+app.get('/api/health', (req, res) => {
+  const health = {
+    mongodb: mongoose.connection.readyState === 1,
+    server: true,
+    timestamp: new Date().toISOString(),
+  };
+
+  const isHealthy = Object.values(health).every((status) => status === true);
+  console.log('✅ Health check hit');
+  res.status(isHealthy ? 200 : 503).json(health);
+});
 // --- Global middleware -----------------------------------------
 
 app.use(
@@ -68,17 +79,17 @@ app.use('/api/auth', authRoute);
 app.use('/api/chat', chatHistoryRoute);
 
 //Health check
-app.get('/api/health', (req, res) => {
-  const health = {
-    mongodb: mongoose.connection.readyState === 1,
-    server: true,
-    timestamp: new Date().toISOString(),
-  };
+// app.get('/api/health', (req, res) => {
+//   const health = {
+//     mongodb: mongoose.connection.readyState === 1,
+//     server: true,
+//     timestamp: new Date().toISOString(),
+//   };
 
-  const isHealthy = Object.values(health).every((status) => status === true);
+//   const isHealthy = Object.values(health).every((status) => status === true);
 
-  res.status(isHealthy ? 200 : 503).json(health);
-});
+//   res.status(isHealthy ? 200 : 503).json(health);
+// });
 // Serve static files from the React build folder
 // app.use(express.static(path.join(__dirname, '../../client/dist')));
 
