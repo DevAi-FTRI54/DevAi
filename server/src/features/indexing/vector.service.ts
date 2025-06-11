@@ -101,6 +101,28 @@ export async function createCodeRetriever(repoId: string, k = 8) {
 // Vector Search Tutorial: https://qdrant.tech/articles/vector-search-filtering/
 export async function ensureQdrantIndexes() {
   try {
+    // First, ensure the collection exists
+    console.log(`Checking if collection "${COLLECTION}" exists...`);
+
+    try {
+      await client.getCollection(COLLECTION);
+      console.log(`✅ Collection "${COLLECTION}" exists`);
+    } catch (err: any) {
+      if (err.status === 404) {
+        console.log(`Creating collection "${COLLECTION}"...`);
+        await client.createCollection(COLLECTION, {
+          vectors: {
+            size: 3072, // text-embedding-3-large dimension
+            distance: 'Cosine',
+          },
+        });
+        console.log(`✅ Collection "${COLLECTION}" created`);
+      } else {
+        throw err;
+      }
+    }
+
+    // Now create the index
     console.log('Creating index for metadata.repoId...');
     await client.createPayloadIndex(COLLECTION, {
       field_name: 'metadata.repoId',

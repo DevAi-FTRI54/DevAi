@@ -22,9 +22,9 @@ const useLocalModel = process.env.USE_LOCAL_MODEL === 'true';
 
 const llm = useLocalModel
   ? new Ollama({
-      model: 'llama3:latest', // Use available model for testing
+      model: 'devai-assistant:starcoder', // Use our fine-tuned DevAI model based on StarCoder2
       baseUrl: 'http://localhost:11434',
-      temperature: 0,
+      temperature: 0.7, // Slightly higher for more natural responses
     })
   : new ChatOpenAI({
       model: 'gpt-4o-mini',

@@ -5,7 +5,6 @@ Automated fine-tuning job scheduler for weekly training runs
 """
 
 import os
-import sys
 import json
 import time
 import logging
@@ -62,7 +61,7 @@ class TrainingScheduler:
                 if "Current conversation pairs:" in line:
                     try:
                         current_pairs = int(line.split(':')[1].strip())
-                    except:
+                    except (ValueError, IndexError):
                         pass
             
             return {

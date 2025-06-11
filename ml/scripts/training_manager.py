@@ -182,6 +182,12 @@ class TrainingManager:
     def run_runpod_training(self, job_id: str, min_pairs: int):
         """Run training on RunPod GPU (manual setup for now)"""
         try:
+            # Check if RunPod is available
+            if not RUNPOD_AVAILABLE:
+                print("❌ RunPod Python SDK not installed")
+                print("💡 Install with: pip install runpod")
+                print("🔄 Falling back to manual RunPod setup instructions...")
+            
             # Export data first
             data_file = f"training_data_{job_id}.json"
             print(f"📊 Exporting training data to {data_file}...")

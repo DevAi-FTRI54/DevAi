@@ -1,30 +1,51 @@
 import os 
-import sys 
 import numpy as np 
 import pandas as pd 
 import torch
 import json
 import argparse
 from datasets import Dataset
-from transformers import BitsAndBytesConfig, AutoModelForCausalLM, AutoTokenizer, TrainingArguments
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
+from peft import LoraConfig, get_peft_model
 from trl import SFTTrainer
+
+# Optional bitsandbytes import for quantization (RunPod only)
+try:
+    from transformers import BitsAndBytesConfig
+    from peft import prepare_model_for_kbit_training
+    QUANTIZATION_AVAILABLE = True
+except ImportError:
+    print("⚠️ Quantization not available (bitsandbytes not installed)")
+    print("💡 This is normal on Mac - quantization will run on RunPod")
+    QUANTIZATION_AVAILABLE = False
 
 # --- 1. Load a Quantized model ------------------------------------------------
 # Article: https://huggingface.co/blog/dvgodoy/fine-tuning-llm-hugging-face
 # QLoRA: https://arxiv.org/pdf/2305.14314
 
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4", # Reducing the weights from 32 to 4 bits
-    bnb_4bit_use_double_quant=True, # Another feature of QLoRA
-    bnb_4bit_compute_dtype=torch.float32
-)
+if QUANTIZATION_AVAILABLE:
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4", # Reducing the weights from 32 to 4 bits
+        bnb_4bit_use_double_quant=True, # Another feature of QLoRA
+        bnb_4bit_compute_dtype=torch.float32
+    )
+else:
+    bnb_config = None
 
 repo_id = 'bigcode/starcoder2-7b' # Good coding reasoning
-model = AutoModelForCausalLM.from_pretrained(
-    repo_id, device_map="cuda:0", quantization_config=bnb_config
-)
+
+# Load model with conditional quantization
+if QUANTIZATION_AVAILABLE and bnb_config:
+    print("🔧 Loading model with 4-bit quantization (QLoRA)")
+    model = AutoModelForCausalLM.from_pretrained(
+        repo_id, device_map="cuda:0", quantization_config=bnb_config
+    )
+else:
+    print("⚠️ Loading model without quantization (Mac compatibility)")
+    model = AutoModelForCausalLM.from_pretrained(
+        repo_id, device_map="auto" if torch.cuda.is_available() else "cpu"
+    )
 
 print(model.get_memory_footprint()/1e6)
 # Even after quantization, the model still takes up a bit more than 2 gigabytes of RAM. 
@@ -37,7 +58,12 @@ print(model.get_memory_footprint()/1e6)
 # The adapters are (mostly) regular Linear layers that can be updated.
 # The trick: They're significantly smaller than the quantized layers.
 
-model = prepare_model_for_kbit_training(model)
+# Prepare model for training (quantized or standard)
+if QUANTIZATION_AVAILABLE and bnb_config:
+    model = prepare_model_for_kbit_training(model)
+    print("✅ Model prepared for quantized training")
+else:
+    print("✅ Model prepared for standard training")
 
 config = LoraConfig(
     r=8, # the rank of the adopter, the lower the fewer parameters we'll need to train
@@ -100,7 +126,7 @@ def main():
     print(f"🎯 Base model: {repo_id}")
     print(f"📊 Training data: {args.data}")
     print(f"💾 Output directory: {args.output}")
-    print(f"🖥️  Device: {'CUDA' if torch.cuda.is_available() else 'CPU'}")
+    print(f"🖥️ Device: {'CUDA' if torch.cuda.is_available() else 'CPU'}")
     
     if not torch.cuda.is_available():
         print("❌ ERROR: CUDA not available. This script requires GPU!")
