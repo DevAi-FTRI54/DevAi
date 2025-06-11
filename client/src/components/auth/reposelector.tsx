@@ -2,10 +2,13 @@ import React, { useContext, useEffect, useState } from 'react';
 import { IngestionContext } from '../../components/ingestion/ingestioncontext';
 import type { Repo } from '../../types';
 import type { RepoSelectorProps } from '../../types';
+import { useNavigate } from 'react-router-dom';
 
 // Helper: Parse query params
 function getQueryParam(name: string) {
   const params = new URLSearchParams(window.location.search);
+  console.log('--- params ---------');
+  console.log(params);
   return params.get(name) || '';
 }
 
@@ -18,10 +21,18 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
   // Org/installationId: logic depends on compact mode
   let selectedOrgToUse: string | undefined;
   let effectiveInstallationId: string | undefined;
+
+  const navigate = useNavigate();
+
+  console.log('--- repoSelector.tsx ---------');
+  console.log(compact);
+  console.log(org);
+  console.log(installationId);
+
   if (compact) {
     // In compact mode, always use context (which should be updated globally on org select)
-    selectedOrgToUse = contextOrg ?? getQueryParam('org');
-    effectiveInstallationId = contextInstallationId ?? getQueryParam('installation_id');
+    selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
+    effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
   } else {
     // In standard mode, use props if provided, else context/query
     selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
@@ -138,6 +149,17 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
       console.error('Error indexing repo:', error);
       alert(`Failed to start ingestion. Please try again.`);
     }
+  };
+
+  // In your repo selection component (wherever you navigate to chat):
+  const handleRepoSelect = (repo: Repo) => {
+    navigate('/chat', {
+      state: {
+        repo,
+        org: selectedOrgToUse,
+        installationId: effectiveInstallationId,
+      },
+    });
   };
 
   return (

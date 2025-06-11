@@ -18,6 +18,7 @@
     "@mui/material": "^7.1.1",
     "@mui/styled-engine-sc": "^7.1.1",
     "dotenv": "^16.5.0",
+    "file-icons-js": "^1.1.0",
     "lucide-react": "^0.513.0",
     "mui": "^0.0.1",
     "react": "^19.1.0",
