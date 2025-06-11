@@ -3,7 +3,14 @@ import ChatMessage from './chatmessages';
 import type { ChatWindowProps } from '../../types';
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSelectFile }) => {
+  console.log('🗨️ ChatWindow received messages:', messages.length);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  messages.forEach((msg, i) => {
+    if (msg.file) {
+      console.log(`🗨️ Message ${i} file:`, msg.file);
+    }
+  });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

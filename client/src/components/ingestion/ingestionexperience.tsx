@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import RepoSelector from '../auth/reposelector';
 import ProgressBar from '../../components/auth/promptbaringeststatus';
 import { useNavigate } from 'react-router-dom';
@@ -22,8 +22,25 @@ const IngestionExperience: React.FC<IngestionExperienceProps & { org?: string; i
 
   // Use context for org and installationId
   const context = useContext(IngestionContext) as IngestionContextType;
-  const selectedOrg = org ?? context.selectedOrg;
-  const selectedInstallationId = installationId ?? context.installationId;
+
+  // Update context when we receive org/installationId props
+  useEffect(() => {
+    if (org && context) {
+      context.setSelectedOrg(org);
+    }
+    if (installationId && context) {
+      context.setInstallationId(installationId);
+    }
+  }, [org, installationId, context]);
+
+  // Always use context after it's been updated
+  const selectedOrg = context.selectedOrg || org;
+  const selectedInstallationId = context.installationId || installationId;
+
+  console.log('--- ingestionexperience.tsx ---------');
+  console.log(compact);
+  console.log(selectedOrg);
+  console.log(selectedInstallationId);
 
   const handleStartIngestion = (jobId: string, repo: Repo) => {
     setJobId(jobId);
@@ -67,7 +84,7 @@ const IngestionExperience: React.FC<IngestionExperienceProps & { org?: string; i
       jobId={jobId}
       onComplete={() => {
         setCompleted(true);
-        navigate('/chat', { state: { repo: selectedRepo } });
+        navigate('/chat', { state: { repo: selectedRepo, org: selectedOrg, installationId: selectedInstallationId } });
       }}
     />
   );
