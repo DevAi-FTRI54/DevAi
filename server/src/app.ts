@@ -17,9 +17,19 @@ const app = express();
 
 // --- Global middleware -----------------------------------------
 
+// app.use(
+//   cors({
+//     origin: ['http://localhost:5173', 'https://a59d8fd60bb0.ngrok.app'],
+//     credentials: true,
+//   })
+// );
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'https://a59d8fd60bb0.ngrok.app'],
+    origin: [
+      'https://devai-three.vercel.app',
+      'https://devai-eshankman-devai-app.vercel.app',
+      'https://devai-devai-app.vercel.app',
+    ],
     credentials: true,
   })
 );
