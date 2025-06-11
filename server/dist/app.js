@@ -1,34 +1,20 @@
 import express from 'express';
+import cors from 'cors';
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
+import path from 'path';
 import mongoose from 'mongoose';
 // import taskController from './controllers/taskController';
-import { fileURLToPath } from 'url';
-import path from 'path';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 import repoRoutes from './features/indexing/index.routes.js';
 import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
 const app = express();
-app.get('/api/health', (_req, res) => {
-    const mongoReady = mongoose.connection.readyState === 1;
-    console.log('🔍 Health check - Mongo ready?', mongoReady);
-    res.status(200).json({
-        mongo: mongoReady,
-        server: true,
-        timestamp: new Date().toISOString(),
-    });
-});
 // --- Global middleware -----------------------------------------
-//important!!
-// app.use(
-//   cors({
-//     origin: ['http://localhost:5173', 'https://a59d8fd60bb0.ngrok.app'],
-//     credentials: true,
-//   })
-// );
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://a59d8fd60bb0.ngrok.app'],
+    credentials: true,
+}));
 // app.use(
 //   cors({
 //     origin: allowedOrigins, // your React dev host
@@ -41,45 +27,33 @@ app.get('/api/health', (_req, res) => {
 //     credentials: true,
 //   })
 // );
-// important!!
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
-//app.use(express.static('assets')); // serve files in assets
-// app.get('/', (req, res) => {
-//   res.sendFile(path.join(__dirname, '../views/index.html'), {
-//     headers: { 'Content-Type': 'text/html' },
-//   });
-// });
+app.use(express.static('assets')); // serve files in assets
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/index.html'), {
+        headers: { 'Content-Type': 'text/html' },
+    });
+});
+app.get('/api/health', (_req, res) => {
+    const mongoReady = mongoose.connection.readyState === 1;
+    console.log('🔍 Health check - Mongo ready?', mongoReady);
+    res.status(200).json({
+        mongo: mongoReady,
+        server: true,
+        timestamp: new Date().toISOString(),
+    });
+});
 // --- Define routes ---------------------------------------------
 // Repo route
 app.use('/api/index', repoRoutes);
-console.log('✅ Repo route initialized');
-// // Query LLM route
+// Query LLM route
 app.use('/api/query', queryRoutes);
-console.log('✅ Query route initialized');
-// // Auth route
+// Auth route
 app.use('/api/auth', authRoute);
-console.log('✅ Auth route initialized');
-// //ChatHistory route
+//ChatHistory route
 app.use('/api/chat', chatHistoryRoute);
-console.log('✅ ChatHistory route initialized');
-//Health check
-// app.get('/api/health', (req, res) => {
-//   const health = {
-//     mongodb: mongoose.connection.readyState === 1,
-//     server: true,
-//     timestamp: new Date().toISOString(),
-//   };
-//   const isHealthy = Object.values(health).every((status) => status === true);
-//   res.status(isHealthy ? 200 : 503).json(health);
-// });
-// Serve static files from the React build folder
-// app.use(express.static(path.join(__dirname, '../../client/dist')));
-// // Fallback: serve index.html for all unmatched routes
-// app.get('*', (req, res) => {
-//   res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
-// });
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
 // app.get('/api/tasks', taskController.getTasks);
@@ -97,42 +71,20 @@ console.log('✅ ChatHistory route initialized');
 //     headers: { 'Content-Type': 'text/html' },
 //   });
 // });
-//Render Route handler
-// app.get('/', (_req, res) => {
-//   res.status(200).send('Backend is live');
-// });
-// //catch favicon error in Render
-// app.use((req, res, next) => {
-//   console.log(`🔍 Unmatched request: ${req.method} ${req.originalUrl}`);
-//   next();
-// });
-// // --- Eror Handler ----------------------------------------------
-// app.use((req, res, next) => {
-//   const error = new Error('Route not found');
-//   (error as any).status = 404;
-//   next(error);
-// });
-// // --- Global error handler --------------------------------------
-// const errorHandler: ErrorRequestHandler = (
-//   err: ServerError,
-//   _req,
-//   res,
-//   _next
-// ) => {
-//   const defaultError: ServerError = {
-//     log: 'Express error handler caught unknown middleware error',
-//     status: 500,
-//     message: { err: 'An error occurred' },
-//   };
-//   const errorObj: ServerError = {
-//     ...defaultError,
-//     ...err,
-//     message: err.message ? { err: String(err.message) } : defaultError.message,
-//   };
-//   console.error('❌ Global Error Handler Triggered:');
-//   console.error('→ Name:', err.name);
-//   console.error('→ Message:', err.message);
-//   console.error('→ Stack:\n', err.stack);
-//   res.status(errorObj.status).json(errorObj.message);
-// };
+// --- Eror Handler ----------------------------------------------
+app.use((req, res) => {
+    res.status(404).send('404 Not Found');
+});
+// --- Global error handler --------------------------------------
+const errorHandler = (err, _req, res, _next) => {
+    const defaultError = {
+        log: 'Express error handler caught unknown middleware error',
+        status: 500,
+        message: { err: 'An error occurred' },
+    };
+    const errorObj = { ...defaultError, ...err };
+    console.log(errorObj.log);
+    res.status(errorObj.status).json(errorObj.message);
+};
+app.use(errorHandler);
 export default app;
