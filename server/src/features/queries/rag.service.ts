@@ -135,17 +135,17 @@ export async function answerQuestion(
     Question: {question}
     
     CRITICAL: You MUST respond with a valid JSON object in this EXACT format. Do not include any text before or after the JSON:
-    {
+    {{
       "answer": "your detailed answer here explaining the code and concepts",
       "citations": [
-        {
+        {{
           "file": "path/to/file.ts",
           "startLine": 10,
           "endLine": 20,
           "snippet": "relevant code snippet"
-        }
+        }}
       ]
-    }
+    }}
     
     Remember: 
     - Include the complete file path in citations
@@ -192,10 +192,17 @@ export async function answerQuestion(
       console.log(`Attempting to retrieve docs for repo: ${repoId}`);
 
       const retrievedDocs = await retriever.invoke(state.question);
+      
+      // Check if we got empty results (Qdrant connection failed)
+      if (!retrievedDocs || retrievedDocs.length === 0) {
+        console.warn('⚠️ No documents retrieved - vector database may be unavailable');
+        return { context: [] }; // Return empty context
+      }
 
       return { context: retrievedDocs }; // merges into  WorkingState, thus the WorkingState has now access to both question + context
     } catch (err) {
-      throw new Error('VECTOR_DB_DOWN');
+      console.warn('⚠️ Vector database connection failed, continuing without context');
+      return { context: [] }; // Return empty context instead of throwing
     }
   };
 
@@ -244,20 +251,19 @@ export async function answerQuestion(
   };
 
   const generate = async (state: typeof WorkingState.State) => {
-    // // Option #1: Generate context for the prompt
-    // const docsContent = state.context
-    //   .map(
-    //     (d) =>
-    //       `FILE NAME: ${d.metadata.declarationName} \nFILE: ${d.metadata.filePath} (lines ${d.metadata.startLine}-${d.metadata.endLine})\n---\n${d.pageContent}\n====`
-    //   )
-    //   .join('\n');
-
-    // Option #2: Avoid $50+ API calls by limiting the numbre of tokens allowed to be spend on the prompt
+    // Handle case where no context is available
     let promptBody = '';
-    for (const doc of state.context) {
-      const nextChunk = formatDoc(doc);
-      if (roughTokens(promptBody + nextChunk) > MAX_TOKENS) break;
-      promptBody += nextChunk;
+    
+    if (!state.context || state.context.length === 0) {
+      console.warn('⚠️ No context available - generating response without code context');
+      promptBody = 'No code context available from the repository. Please provide a general answer based on common development practices.';
+    } else {
+      // Option #2: Avoid $50+ API calls by limiting the number of tokens allowed to be spent on the prompt
+      for (const doc of state.context) {
+        const nextChunk = formatDoc(doc);
+        if (roughTokens(promptBody + nextChunk) > MAX_TOKENS) break;
+        promptBody += nextChunk;
+      }
     }
     /* Example format:
 

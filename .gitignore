@@ -31,11 +31,3 @@ __pycache__/
 **.pem
 .pem
 *.pem
-
-#####################################
-#  Documentation 
-#####################################
-# Exclude all markdown files except main README
-*.md
-!README.md
-node_modules

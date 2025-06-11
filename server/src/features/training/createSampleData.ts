@@ -1,10 +1,6 @@
 import mongoose from 'mongoose';
 import Conversation from '../../models/conversation.model.js';
-import dotenv from 'dotenv';
 import path from 'path';
-
-// Load environment variables from the correct location
-dotenv.config({ path: path.join(process.cwd(), 'src/config/.env') });
 
 const conversationPairs = [
   {

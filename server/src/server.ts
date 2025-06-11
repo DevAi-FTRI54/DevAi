@@ -1,23 +1,7 @@
+import 'dotenv/config';
 import app from './app.js';
 import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Load environment variables from the correct location
-dotenv.config({ path: path.join(process.cwd(), 'src/config/.env') });
-
-// Debug: Check if training tokens are loaded
-console.log('🔍 Debug - Environment variables loaded:');
-console.log(
-  '🔍 INTERNAL_TEAM_TOKEN:',
-  process.env.INTERNAL_TEAM_TOKEN ? 'SET' : 'NOT SET'
-);
-console.log(
-  '🔍 FINE_TUNING_TOKEN:',
-  process.env.FINE_TUNING_TOKEN ? 'SET' : 'NOT SET'
-);
-
 import './features/indexing/index.job.js';
 
 console.log('Booting server...');
@@ -40,13 +24,9 @@ async function startServer() {
     await connectMongo();
     console.log('✅ MongoDB connected');
 
-    // Qdrant setup (optional - server continues without it)
-    try {
-      await ensureQdrantIndexes();
-      console.log('✅ Qdrant indexes ready');
-    } catch (error) {
-      // Silently ignore Qdrant connection issues - server continues normally
-    }
+    console.log('🔄 Setting up Qdrant indexes...');
+    await ensureQdrantIndexes();
+    console.log('✅ Qdrant indexes ready');
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 

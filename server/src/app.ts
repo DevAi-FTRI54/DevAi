@@ -1,6 +1,5 @@
 import express, { ErrorRequestHandler } from 'express';
 import cors from 'cors';
-import 'dotenv/config';
 import { ServerError } from './types/types.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
