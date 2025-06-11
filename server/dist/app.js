@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
-import path from 'path';
 import mongoose from 'mongoose';
 // import taskController from './controllers/taskController';
 import repoRoutes from './features/indexing/index.routes.js';
@@ -31,11 +30,11 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
 app.use(express.static('assets')); // serve files in assets
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/index.html'), {
-        headers: { 'Content-Type': 'text/html' },
-    });
-});
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../views/index.html'), {
+//     headers: { 'Content-Type': 'text/html' },
+//   });
+// });
 app.get('/api/health', (_req, res) => {
     const mongoReady = mongoose.connection.readyState === 1;
     console.log('🔍 Health check - Mongo ready?', mongoReady);
