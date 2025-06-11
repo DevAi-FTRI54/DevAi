@@ -41,7 +41,10 @@ const OrgSelector: React.FC<{
     return null;
   }
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800">
+      <h2 className={'text-xl font-bold mb-4'} style={{ color: '#fff' }}>
+        Select an organization to index
+      </h2>
       <select
         onChange={(e) => onSelect(e.target.value)}
         className="text-black bg-white px-4 py-2 rounded-md border border-gray-300 text-base"

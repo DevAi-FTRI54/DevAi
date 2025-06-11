@@ -1,26 +1,18 @@
-import React, { useState, createContext } from 'react';
+import React, { createContext, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { Repo } from '../../types';
+import type { IngestionContextType, Repo } from '../../types'; // adjust path as needed
 
-// TypeScript: Define the context value shape
-type IngestionContextType = {
-  jobId: string | null;
-  selectedRepo: Repo | null;
-  handleStartIngestion: (jobId: string, repo: Repo) => void;
-  setJobId: React.Dispatch<React.SetStateAction<string | null>>;
-  setSelectedRepo: React.Dispatch<React.SetStateAction<Repo | null>>;
-};
-
-export const IngestionContext = createContext<IngestionContextType | undefined>(undefined);
+const IngestionContext = createContext<IngestionContextType | undefined>(undefined);
 
 interface IngestionProviderProps {
   children: ReactNode;
 }
 
-const IngestionProvider: React.FC<IngestionProviderProps> = ({ children }) => {
-  // ---- THESE WERE MISSING: ----
+export const IngestionProvider: React.FC<IngestionProviderProps> = ({ children }) => {
   const [jobId, setJobId] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
+  const [installationId, setInstallationId] = useState<string | null>(null);
 
   const handleStartIngestion = (jobId: string, repo: Repo) => {
     setJobId(jobId);
@@ -32,9 +24,13 @@ const IngestionProvider: React.FC<IngestionProviderProps> = ({ children }) => {
       value={{
         jobId,
         selectedRepo,
+        selectedOrg,
+        installationId,
         handleStartIngestion,
         setJobId,
         setSelectedRepo,
+        setSelectedOrg,
+        setInstallationId,
       }}
     >
       {children}
@@ -42,4 +38,5 @@ const IngestionProvider: React.FC<IngestionProviderProps> = ({ children }) => {
   );
 };
 
+export { IngestionContext };
 export default IngestionProvider;

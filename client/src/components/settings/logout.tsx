@@ -5,7 +5,10 @@ const useLogout = () => {
 
   return async () => {
     try {
-      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
     } catch (err) {
       console.error('Error logging out', err);
     }

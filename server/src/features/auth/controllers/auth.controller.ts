@@ -58,8 +58,9 @@ export const handleGitHubCallback = async (
 
     res.cookie('github_access_token', access_token, {
       httpOnly: true,
-      secure: true, // ⛔ Set to true in production over HTTPS
-      sameSite: 'lax', // 'lax' allows GET redirects to carry cookies
+      secure: true,
+      sameSite: 'none',
+      // domain: '.ngrok.app', // important
     });
 
     return res.redirect(`${FRONTEND_BASE_URL}/auth/callback?code=${code}`);
@@ -133,15 +134,19 @@ export const completeAuth = async (
 ): Promise<any> => {
   try {
     let githubToken = req.cookies.github_access_token;
-
+    console.log('🍪 GitHub token from cookie:', githubToken);
     // ❌ Don't re-use code to get another token
     if (!githubToken) {
       return res.status(401).send('Missing GitHub token');
     }
-
+    console.log('📤 Calling getGitHubUserProfile() with token:', githubToken);
     const githubData = await getGitHubUserProfile(githubToken);
+    console.log(
+      '✅ GitHub user profile fetched:',
+      githubData.login || githubData
+    );
     const user = await findOrCreateUser(githubData, githubToken);
-
+    console.log('👤 DB user record:', user?.username);
     const token = generateUserJWTToken({
       _id: user._id!.toString(),
       username: user.username,
@@ -155,19 +160,20 @@ export const completeAuth = async (
 
     const installations = await getAppInstallations(githubToken);
     const { isInstalled, installationId } = checkIfAppInstalled(installations);
+    console.log(
+      '🔧 GitHub App installed:',
+      isInstalled,
+      'Installation ID:',
+      installationId
+    );
 
     if (installationId) {
       res.cookie('installation_id', installationId, {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: 'none',
         secure: true,
+        // domain: '.ngrok.app', //! es removed 6/8
       });
-      // res.cookie('token', token, {
-      //   httpOnly: true,
-      //   sameSite: 'none', // <- must be 'none' for cross-origin cookies!
-      //   secure: true, // <- required for 'none'
-      //   domain: '.ngrok.app', // (optional, can be omitted, usually works w/o)
-      // });
     }
 
     res.json({
@@ -178,6 +184,7 @@ export const completeAuth = async (
       needsInstall: !isInstalled,
     });
   } catch (err: any) {
+    console.error('❌ Error in completeAuth:', err);
     handleApiError(err, res, 'Authentication completion failed');
   }
 };
@@ -350,4 +357,28 @@ export const getGithubToken = async (
   }
 
   res.json({ token: githubToken });
+};
+
+//Logout function
+
+export const logout = (req: Request, res: Response) => {
+  res.clearCookie('github_access_token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+  });
+
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+  });
+
+  res.clearCookie('installation_id', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+  });
+
+  res.status(200).json({ message: 'Logged out successfully' });
 };

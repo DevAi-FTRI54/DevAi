@@ -38,3 +38,4 @@ __pycache__/
 # Exclude all markdown files except main README
 *.md
 !README.md
+node_modules

@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'tt-hoves': ['TT Hoves Pro', 'sans-serif'],
+        'TT Hoves Pro Trial': ['TT Hoves Pro', 'sans-serif'],
       },
       colors: {
         'custom-blue': '#3058EB',

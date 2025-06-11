@@ -130,12 +130,18 @@ export async function ensureQdrantIndexes() {
 
     // Now create the index (silently)
     const client = getQdrantClient();
+    console.log('Creating index for metadata.repoId...');
     await client.createPayloadIndex(COLLECTION, {
       field_name: 'metadata.repoId',
       field_schema: 'keyword',
     });
+    console.log('✅ Index created for metadata.repoId');
   } catch (err: any) {
-    // Silently handle all Qdrant connection/setup errors
+    if (err.message?.includes('already exists')) {
+      console.log('✅ Index for metadata.repoId already exists');
+      return;
+    }
+    console.error('❌ Failed to create index:', err);
     throw err;
   }
 }

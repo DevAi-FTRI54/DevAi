@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
-// import { useNavigate } from 'react-router-dom';
 import type { GitHubContentItem, SidebarProps } from '../../../types';
-// import { IngestionContext } from '../../ingestion/ingestioncontext';
 import IngestionExperience from '../../ingestion/ingestionexperience';
+import {
+  VscFile,
+  VscFileCode,
+  VscFilePdf,
+  VscFileMedia,
+  VscFileZip,
+  VscFolder,
+  VscFolderOpened,
+  VscFileBinary,
+} from 'react-icons/vsc';
+import { SiTypescript, SiJavascript, SiReact, SiJson, SiHtml5, SiCss3, SiMarkdown } from 'react-icons/si';
 
-const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect }) => {
+const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect, org, installationId }) => {
   const [rootItems, setRootItems] = useState<GitHubContentItem[]>([]);
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const [childrenMap, setChildrenMap] = useState<Record<string, GitHubContentItem[]>>({});
-  // const ctx = useContext(IngestionContext);
-
-  // const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRoot = async () => {
@@ -33,6 +39,61 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect }) =
     }
   };
 
+  // Choose an icon based on file type/extension
+  const getFileIcon = (item: GitHubContentItem, expanded: boolean) => {
+    if (item.type === 'dir') {
+      return expanded ? <VscFolderOpened className="inline-block mr-1" /> : <VscFolder className="inline-block mr-1" />;
+    }
+
+    // React-specific: .tsx and .jsx
+    if (item.name.endsWith('.tsx') || item.name.endsWith('.jsx')) {
+      return <SiReact className="inline-block mr-1 text-[#61dafb]" />;
+    }
+    // TypeScript: .ts (but not .tsx)
+    if (item.name.endsWith('.ts') && !item.name.endsWith('.tsx')) {
+      return <SiTypescript className="inline-block mr-1 text-[#3178c6]" />;
+    }
+    // JavaScript: .js (but not .jsx)
+    if (item.name.endsWith('.js') && !item.name.endsWith('.jsx')) {
+      return <SiJavascript className="inline-block mr-1 text-[#f7df1e]" />;
+    }
+    // JSON
+    if (item.name.endsWith('.json')) {
+      return <SiJson className="inline-block mr-1 text-[#cbcb41]" />;
+    }
+    // HTML
+    if (item.name.endsWith('.html')) {
+      return <SiHtml5 className="inline-block mr-1 text-[#e34c26]" />;
+    }
+    // CSS
+    if (item.name.endsWith('.css')) {
+      return <SiCss3 className="inline-block mr-1 text-[#264de4]" />;
+    }
+    // Markdown
+    if (item.name.endsWith('.md')) {
+      return <SiMarkdown className="inline-block mr-1 text-[#ffffff]" />;
+    }
+
+    // Generic code file
+    const ext = item.name.split('.').pop()?.toLowerCase();
+    if (['py', 'rb', 'java', 'go', 'c', 'cpp', 'cs', 'php', 'sh', 'yml', 'yaml'].includes(ext || '')) {
+      return <VscFileCode className="inline-block mr-1" />;
+    }
+    if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp', 'webp', 'ico', 'mp4', 'mp3', 'webm', 'mov'].includes(ext || '')) {
+      return <VscFileMedia className="inline-block mr-1" />;
+    }
+    if (['zip', 'rar', 'tar', 'gz', 'bz2', '7z'].includes(ext || '')) {
+      return <VscFileZip className="inline-block mr-1" />;
+    }
+    if (['pdf'].includes(ext || '')) {
+      return <VscFilePdf className="inline-block mr-1" />;
+    }
+    if (['exe', 'bin', 'dll', 'so', 'dylib'].includes(ext || '')) {
+      return <VscFileBinary className="inline-block mr-1" />;
+    }
+    return <VscFile className="inline-block mr-1" />;
+  };
+
   const renderTree = (items: GitHubContentItem[], level = 0): React.ReactElement[] => {
     return items.map((item) => {
       const isDir = item.type === 'dir';
@@ -52,10 +113,11 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect }) =
               }
             `}
           >
-            {isDir ? (expanded ? '📂' : '📁') : '📄'} <span className="ml-1">{item.name}</span>
+            {getFileIcon(item, expanded)}
+            <span className="ml-1">{item.name}</span>
           </div>
           {isDir && expanded && childrenMap[item.path] && (
-            <div className="pl-4 border-l border-[#232946] ml-1">{renderTree(childrenMap[item.path], level + 1)}</div>
+            <div className="pl-4 border-l border-[#2D2D37] ml-1">{renderTree(childrenMap[item.path], level + 1)}</div>
           )}
         </div>
       );
@@ -63,9 +125,9 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect }) =
   };
 
   return (
-    <div className="flex flex-col w-full h-full bg-[#232946] text-black border-r border-[#39415a]">
+    <div className="flex flex-col w-full h-full bg-[#23272F] text-white border-r border-[#2D2D37]">
       <div className="mb-2 text-xs p-2">
-        <IngestionExperience compact />
+        <IngestionExperience compact org={org} installationId={installationId} />
       </div>
       <div className="font-bold text-xs mb-2 px-2">
         {owner}/{repo}

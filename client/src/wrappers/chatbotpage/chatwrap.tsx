@@ -5,9 +5,16 @@ import ChatInput from '../../components/chat/chatinput';
 import RepoViewer from '../../components/chat/filepreview';
 import type { Message, ChatWrapProps } from '../../types';
 
-const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
+// // Helper to convert absolute to repo-relative path
+// function toRepoRelative(absolutePath: string) {
+//   const match = absolutePath.match(/AI_ML_Project\/[^/]+\/(.+)/);
+//   return match ? match[1] : absolutePath;
+// }
+
+const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  // const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [originalFilePath, setOriginalFilePath] = useState<string>('');
   const [githubToken, setGithubToken] = useState<string | null>(null);
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
 
@@ -51,6 +58,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
     getGithubToken();
   }, []);
 
+  // Show streaming state while waiting for/receiving AI response
   const streamingComponent = useMemo(() => {
     // Show nothing if not loading or streaming
     if (!isLoadingResponse && !isStreaming) return null;
@@ -76,7 +84,6 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
                 {isLoadingResponse ? 'AI is thinking...' : 'AI is responding...'}
               </span>
             </div>
-
             {/* Only show streaming text when actually streaming */}
             {isStreaming && streamingAnswer && (
               <div className="text-[#eaeaea] text-sm leading-relaxed whitespace-pre-wrap">
@@ -92,12 +99,13 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
 
   if (!githubToken) {
     return (
-      <div className="flex h-[calc(100vh-56px)] bg-[#121629] items-center justify-center">
+      <div className="flex h-screen bg-[#121629] items-center justify-center">
         <div className="text-white">Loading GitHub token...</div>
       </div>
     );
   }
 
+  // Add user's message to message list
   const handleAddUserMessage = (userPrompt: string) => {
     setMessages((prev) => [
       ...prev,
@@ -112,6 +120,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
     ]);
   };
 
+  // Add AI's answer to message list
   const handleSetAnswer = (
     answer: string,
     // userPrompt: string,
@@ -120,19 +129,18 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
     startLine: number,
     endLine: number
   ) => {
-    console.log('🎯 handleSetAnswer called:', {
-      answer: answer.substring(0, 50) + '...',
-      messagesBefore: messages.length,
-    });
-
-    console.log('handleSetAnswer file:', file);
-
+    console.log('💾 Storing message with file:', file);
+    console.log('💾 File type:', typeof file);
+    console.log('💾 File length:', file?.length);
+    // Convert the file path to repo-relative before storing
+    // const relativeFile = file ? toRepoRelative(file) : '';
     setMessages((prev) => [
       ...prev,
       {
         role: 'assistant' as const,
         content: answer,
         snippet: snippet || '',
+        // file: relativeFile,
         file: file,
         startLine: startLine,
         endLine: endLine,
@@ -140,31 +148,50 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
     ]);
   };
 
+  // Handle file click from sidebar or chat message
   const handleFileSelect = (filePath: string) => {
-    setSelectedFilePath(filePath);
+    console.log('📁 Original file path from selection:', filePath);
+
+    setOriginalFilePath(filePath);
+    // setSelectedFilePath(filePath);
   };
 
+  // Always pass repo-relative paths to the chat window
+  // const fixedMessages = messages.map((msg) =>
+  //   msg && typeof msg === 'object' ? { ...msg, file: msg.file ?? '' } : msg
+  // );
+
   return (
-    <div className="flex h-[calc(100vh-56px)] bg-[#121629]">
+    <div className="flex h-screen bg-[#212121]">
       {/* Sidebar */}
-      {/* <div className='w-1/5 h-full bg-[#232946] border-r border-[#39415a] overflow-y-auto min-h-0'> */}
-      <div className="flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#232946] border-r border-[#39415a] overflow-y-auto">
-        <PermanentSidebar owner={owner} repo={repoName} onFileSelect={handleFileSelect} token={githubToken!} />
+      <div className="h-full flex flex-col flex-[1_1_20%] min-w-[150px] max-w-[400px] bg-[#23272F] border-r border-[#2D2D37]">
+        {/* Pass org/installId as needed */}
+        {/* 
+          The PermanentSidebar component should itself use a flex column layout, with:
+          - header/top area (e.g. repo selector/ingestion)
+          - scrollable content area for file tree (flex-1 overflow-y-auto)
+        */}
+        <PermanentSidebar
+          owner={owner}
+          repo={repoName}
+          token={githubToken!}
+          onFileSelect={handleFileSelect}
+          org={org || repo.org}
+          installationId={installationId || repo.installationId}
+        />
       </div>
 
       {/* Chat Area */}
-      <div className="w-2/5 flex flex-col h-full px-6 py-0 min-h-0 items-center">
-        {/* Centered wrapper, full height column */}
+      <div className="w-2/5 flex flex-col h-full items-center">
         <div className="flex flex-col items-center w-full h-full max-w-2xl mx-auto">
-          {/* Chat messages area: scrollable and grows */}
+          {/* Message list */}
           <div className="flex-1 w-full overflow-y-auto min-h-0 p-4">
             <ChatWindow messages={messages} onSelectFile={handleFileSelect} />
             {streamingComponent}
             <div ref={messagesEndRef} />
           </div>
-
-          {/* Chat input area: fixed at bottom */}
-          <div className="w-full mt-4">
+          {/* Input */}
+          <div className="w-full">
             <ChatInput
               repoUrl={repo.html_url}
               setAnswer={handleSetAnswer}
@@ -178,21 +205,15 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo }) => {
       </div>
 
       {/* File Viewer */}
-      <div className="w-2/5 h-full overflow-y-auto bg-[#232946] border-l border-[#39415a] p-6 min-h-0">
-        {selectedFilePath ? (
-          <>
-            {/* ✅ Show full path */}
-            <div className="text-sm text-white font-mono mb-2">
-              <span className="text-gray-400">Path:</span> /{selectedFilePath}
-            </div>
-
-            <RepoViewer
-              repoUrl={`${owner}/${repoName}`}
-              selectedPath={selectedFilePath}
-              setSelectedPath={setSelectedFilePath}
-              token={githubToken!}
-            />
-          </>
+      <div className="w-2/5 h-full overflow-y-auto bg-[#23272F] border-l border-[#2D2D37] p-6 min-h-0">
+        {/* Show file preview if selected, else placeholder */}
+        {originalFilePath ? (
+          <RepoViewer
+            repoUrl={`${owner}/${repoName}`}
+            selectedPath={originalFilePath}
+            setSelectedPath={setOriginalFilePath}
+            token={githubToken!}
+          />
         ) : (
           <div className="text-gray-400 italic">Select a file to view its contents</div>
         )}

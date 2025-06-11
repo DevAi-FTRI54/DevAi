@@ -1,52 +1,55 @@
-import React, { useEffect, useState } from 'react';
-
-type Repo = {
-  id: number;
-  full_name: string;
-  html_url: string;
-  sha: string;
-};
-
-interface RepoSelectorProps {
-  onStartIngestion: (jobId: string, repo: Repo) => void;
-  compact?: boolean;
-}
+import React, { useContext, useEffect, useState } from 'react';
+import { IngestionContext } from '../../components/ingestion/ingestioncontext';
+import type { Repo } from '../../types';
+import type { RepoSelectorProps } from '../../types';
 
 // Helper: Parse query params
 function getQueryParam(name: string) {
   const params = new URLSearchParams(window.location.search);
+  console.log('--- params ---------');
+  console.log(params);
   return params.get(name) || '';
 }
 
-const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact = false }) => {
+const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact = false, org, installationId }) => {
+  // Context (optional, may be undefined)
+  const context = useContext(IngestionContext);
+  const contextOrg = context?.selectedOrg;
+  const contextInstallationId = context?.installationId;
+
+  // Org/installationId: logic depends on compact mode
+  let selectedOrgToUse: string | undefined;
+  let effectiveInstallationId: string | undefined;
+
+  console.log('--- repoSelector.tsx ---------');
+  console.log(compact);
+  console.log(org);
+  console.log(installationId);
+
+  if (compact) {
+    // In compact mode, always use context (which should be updated globally on org select)
+    selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
+    effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
+  } else {
+    // In standard mode, use props if provided, else context/query
+    selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
+    effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
+  }
+
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setRepo] = useState<Repo | null>(null);
-  const [installationId, setInstallationId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [autoRetryAttempts, setAutoRetryAttempts] = useState(0);
   const [initializing, setInitializing] = useState(true);
 
-  // Get selected org from URL
-  const selectedOrg = getQueryParam('org');
-
   useEffect(() => {
-    console.log('Loading state:', loading);
+    // For debugging
     console.log('Repos length:', repos.length);
     console.log('Error:', error);
     console.log('Auto retry attempts:', autoRetryAttempts);
   }, [loading, repos.length, error, autoRetryAttempts]);
-
-  function getInstallationId() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('installation_id') || '';
-  }
-
-  useEffect(() => {
-    const id = getInstallationId();
-    setInstallationId(id);
-  }, []);
 
   const fetchRepos = async (attempt = 0, isRetry = false) => {
     if (!isRetry) {
@@ -55,34 +58,26 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
     }
 
     try {
-      // Pass org as query param if set
-      const orgQuery = selectedOrg ? `?org=${encodeURIComponent(selectedOrg)}` : '';
-      const response = await fetch(`/api/auth/repos${orgQuery}`, {
-        credentials: 'include',
-      });
+      // Compose query string
+      const orgQuery = selectedOrgToUse ? `org=${encodeURIComponent(selectedOrgToUse)}` : '';
+      const installQuery = effectiveInstallationId
+        ? `installation_id=${encodeURIComponent(effectiveInstallationId)}`
+        : '';
+      const query = [orgQuery, installQuery].filter(Boolean).join('&');
+      const response = await fetch(`/api/auth/repos${query ? '?' + query : ''}`, { credentials: 'include' });
 
       if (!response.ok) {
-        // Error: Auth
-        if (response.status === 401) {
-          throw new Error('Authentication required. Please log in again.');
-        }
-        // Error: App installation
-        if (response.status === 400) {
+        if (response.status === 401) throw new Error('Authentication required. Please log in again.');
+        if (response.status === 400)
           throw new Error('Github App installation not found. Please install the app first.');
-        }
-        // Error: Backend (typically, DBs are not ready yet)
-        if (response.status === 503) {
-          throw new Error('Service temporarily unavailable. Retrying...');
-        }
+        if (response.status === 503) throw new Error('Service temporarily unavailable. Retrying...');
         throw new Error(`Failed to load repositories (${response.status})`);
       }
 
       const data = (await response.json()) as Repo[];
 
-      // Auto-retry if no repos found (timing issue)
       if (data.length === 0 && autoRetryAttempts < 3) {
         console.log(`Auto-retrying... (${autoRetryAttempts + 1}/3)`);
-
         setTimeout(() => {
           setAutoRetryAttempts((prev) => prev + 1);
           fetchRepos(0, true);
@@ -100,7 +95,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
 
-      // Retry Attempt: General case
       if (attempt < 3) {
         console.log(`Retrying in ${(attempt + 1) * 1000}ms... (attempt ${attempt + 1} / 3)`);
         setTimeout(() => {
@@ -114,16 +108,19 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
     }
   };
 
-  // Invoke fetchRepos with frontend delay
+  // Fetch repos whenever selectedOrgToUse changes
   useEffect(() => {
     setLoading(true);
     setInitializing(true);
     setTimeout(() => {
       fetchRepos();
     }, 2000);
-    // Refetch when org changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedOrg]);
+  }, [selectedOrgToUse, effectiveInstallationId]);
+
+  useEffect(() => {
+    console.log('RepoSelector using org:', selectedOrgToUse, 'installationId:', effectiveInstallationId);
+  }, [selectedOrgToUse, effectiveInstallationId]);
 
   const handleSelect = async () => {
     if (!selectedRepo) return;
@@ -135,7 +132,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
         body: JSON.stringify({
           repoUrl: selectedRepo.html_url,
           sha: selectedRepo.sha,
-          installation_id: installationId,
+          installation_id: effectiveInstallationId,
         }),
       });
 
@@ -155,17 +152,20 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
     <div
       className={
         compact
-          ? 'w-full flex flex-col items-start bg-[#232946] p-0 m-0'
+          ? 'w-full h-full flex flex-col items-start bg-[#171717] p-0 m-0'
           : 'min-h-screen w-full bg-[#23262f] flex items-center justify-center'
       }
-      style={compact ? { minHeight: 0, height: 'auto' } : {}}
+      style={compact ? { minHeight: 0, height: '100%', overflow: 'hidden' } : {}}
     >
-      <div className={compact ? 'w-full p-0' : 'p-6 max-w-xl mx-auto'}>
-        <h2 className={compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'} style={{ color: '#fff' }}>
+      <div className={compact ? 'w-full h-full p-0 m-0 flex-1' : 'p-6 max-w-xl mx-auto'}>
+        <h2
+          className={compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'}
+          text-black
+          style={{ color: '#fff' }}
+        >
           Select a repository to index
         </h2>
 
-        {/* Loading and error sections are unchanged, or you can use smaller font for compact */}
         {loading && (
           <div
             className={
@@ -196,15 +196,17 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
                 ? 'p-2 bg-yellow-100 text-yellow-800 rounded mb-2 text-xs'
                 : 'p-3 bg-yellow-100 text-yellow-800 rounded mb-4'
             }
-          >
-            {/* ...unchanged... */}
-          </div>
+          ></div>
         )}
 
         {repos.length > 0 && (
           <>
             <select
-              className={compact ? 'w-full text-xs p-1 border rounded mb-1' : 'w-full p-2 border rounded mb-4'}
+              className={
+                compact
+                  ? 'w-full text-xs p-1 border rounded mb-1 text-black'
+                  : 'w-full p-2 border rounded mb-4 text-black'
+              }
               value={selectedRepo?.id ?? ''}
               onChange={(e) => {
                 const repo = repos.find((r) => r.id === Number(e.target.value));
