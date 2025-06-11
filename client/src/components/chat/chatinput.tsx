@@ -137,6 +137,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 const file = finalCitations?.[0]?.file ?? '';
                 const startLine = finalCitations?.[0]?.startLine ?? 0;
                 const endLine = finalCitations?.[0]?.endLine ?? 0;
+                console.log('--- file ------------');
+                console.log(file);
 
                 setAnswer(accumulatedAnswer.trim(), snippet, file, startLine, endLine);
 

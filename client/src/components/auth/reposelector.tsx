@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import { IngestionContext } from '../../components/ingestion/ingestioncontext';
 import type { Repo } from '../../types';
 import type { RepoSelectorProps } from '../../types';
-import { useNavigate } from 'react-router-dom';
 
 // Helper: Parse query params
 function getQueryParam(name: string) {
@@ -21,8 +20,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
   // Org/installationId: logic depends on compact mode
   let selectedOrgToUse: string | undefined;
   let effectiveInstallationId: string | undefined;
-
-  const navigate = useNavigate();
 
   console.log('--- repoSelector.tsx ---------');
   console.log(compact);
@@ -149,17 +146,6 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
       console.error('Error indexing repo:', error);
       alert(`Failed to start ingestion. Please try again.`);
     }
-  };
-
-  // In your repo selection component (wherever you navigate to chat):
-  const handleRepoSelect = (repo: Repo) => {
-    navigate('/chat', {
-      state: {
-        repo,
-        org: selectedOrgToUse,
-        installationId: effectiveInstallationId,
-      },
-    });
   };
 
   return (
