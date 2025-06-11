@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Message } from '../../types';
-import { getRepoFileContent } from '../../api.js';
+import { getRepoFileContent } from '../../api';
 
 interface CodeProps {
   inline?: boolean;

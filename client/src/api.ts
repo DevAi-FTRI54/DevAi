@@ -73,6 +73,17 @@ export async function startRepoIngestion(opts: {
   return res.json();
 }
 
+// Fetch file content from GitHub, decode base64
+export async function getRepoFileContent(repoUrl: string, filePath: string, token: string): Promise<string> {
+  const res = await fetch(`https://api.github.com/repos/${repoUrl}/contents/${filePath}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch file');
+  const data = await res.json();
+  // GitHub returns content as base64
+  return atob(data.content.replace(/\n/g, ''));
+}
+
 //* Calls to GitHub stay the same (they don't use your API_BASE_URL):
 export async function getRepoContents(
   owner: string,
@@ -137,15 +148,4 @@ export async function logoutUser(): Promise<void> {
     method: 'POST',
     credentials: 'include',
   });
-}
-
-// Fetch file content from GitHub, decode base64
-export async function getRepoFileContent(repoUrl: string, filePath: string, token: string): Promise<string> {
-  const res = await fetch(`https://api.github.com/repos/${repoUrl}/contents/${filePath}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Failed to fetch file');
-  const data = await res.json();
-  // GitHub returns content as base64
-  return atob(data.content.replace(/\n/g, ''));
 }
