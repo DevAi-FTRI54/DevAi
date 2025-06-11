@@ -17,6 +17,7 @@
     "@mui/icons-material": "^7.1.1",
     "@mui/material": "^7.1.1",
     "@mui/styled-engine-sc": "^7.1.1",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "file-icons-js": "^1.1.0",
     "lucide-react": "^0.513.0",
