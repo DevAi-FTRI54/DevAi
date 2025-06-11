@@ -6,7 +6,7 @@ const ComingSoon = () => (
       <div className="text-white text-lg opacity-75 text-center">
         More to come
         <br />
-        Check back later.
+        Check back later. Thank you for your patience while we continue to build new features.
       </div>
     </div>
   </div>
