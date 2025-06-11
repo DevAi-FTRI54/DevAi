@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { GitHubContentItem, SidebarProps } from '../../../types';
+import { getRepoContents } from '../../../api';
 import IngestionExperience from '../../ingestion/ingestionexperience';
 import {
   VscFile,
@@ -20,24 +21,52 @@ const Sidebar: React.FC<SidebarProps> = ({ owner, repo, token, onFileSelect, org
 
   useEffect(() => {
     const fetchRoot = async () => {
-      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`, { headers });
-      const data: GitHubContentItem[] = await res.json();
-      setRootItems(data);
+      try {
+        const data = await getRepoContents(owner, repo, '', token);
+        setRootItems(data);
+      } catch (err: unknown) {
+        // handle error
+        console.error('found Error', err);
+        setRootItems([]);
+      }
     };
     fetchRoot();
   }, [owner, repo, token]);
 
   const handleToggle = async (path: string) => {
     setExpandedMap((prev) => ({ ...prev, [path]: !prev[path] }));
-
     if (!childrenMap[path]) {
-      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, { headers });
-      const data: GitHubContentItem[] = await res.json();
-      setChildrenMap((prev) => ({ ...prev, [path]: data }));
+      try {
+        const data = await getRepoContents(owner, repo, path, token);
+        setChildrenMap((prev) => ({ ...prev, [path]: data }));
+      } catch (err) {
+        // handle error, optionally
+        console.error('found Error', err);
+        setChildrenMap((prev) => ({ ...prev, [path]: [] }));
+      }
     }
   };
+
+  // useEffect(() => {
+  //   const fetchRoot = async () => {
+  //     const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+  //     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`, { headers });
+  //     const data: GitHubContentItem[] = await res.json();
+  //     setRootItems(data);
+  //   };
+  //   fetchRoot();
+  // }, [owner, repo, token]);
+
+  // const handleToggle = async (path: string) => {
+  //   setExpandedMap((prev) => ({ ...prev, [path]: !prev[path] }));
+
+  //   if (!childrenMap[path]) {
+  //     const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+  //     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, { headers });
+  //     const data: GitHubContentItem[] = await res.json();
+  //     setChildrenMap((prev) => ({ ...prev, [path]: data }));
+  //   }
+  // };
 
   // Choose an icon based on file type/extension
   const getFileIcon = (item: GitHubContentItem, expanded: boolean) => {

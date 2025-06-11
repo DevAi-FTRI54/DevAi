@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Message } from '../../types';
+import { getRepoFileContent } from '../../api';
 
 interface CodeProps {
   inline?: boolean;
@@ -187,13 +188,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({ repoUrl, selectedPath, token 
 
     const fetchFile = async () => {
       try {
-        const res = await fetch(`https://api.github.com/repos/${repoUrl}/contents/${selectedPath}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error('Failed to fetch file');
-        const data = await res.json();
-        // GitHub returns content as base64
-        const decoded = atob(data.content.replace(/\n/g, ''));
+        const decoded = await getRepoFileContent(repoUrl, selectedPath, token);
         setContent(decoded);
       } catch (err) {
         setError('Could not load file.');
@@ -203,6 +198,30 @@ const FilePreview: React.FC<FilePreviewProps> = ({ repoUrl, selectedPath, token 
 
     fetchFile();
   }, [repoUrl, selectedPath, token]);
+
+  // useEffect(() => {
+  //   if (!selectedPath) return;
+  //   setContent(null);
+  //   setError(null);
+
+  //   const fetchFile = async () => {
+  //     try {
+  //       const res = await fetch(`https://api.github.com/repos/${repoUrl}/contents/${selectedPath}`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       if (!res.ok) throw new Error('Failed to fetch file');
+  //       const data = await res.json();
+  //       // GitHub returns content as base64
+  //       const decoded = atob(data.content.replace(/\n/g, ''));
+  //       setContent(decoded);
+  //     } catch (err) {
+  //       setError('Could not load file.');
+  //       console.error('Error found could not load file', err);
+  //     }
+  //   };
+
+  //   fetchFile();
+  // }, [repoUrl, selectedPath, token]);
 
   if (!selectedPath) return null;
   if (error) return <div className="text-red-500">{error}</div>;

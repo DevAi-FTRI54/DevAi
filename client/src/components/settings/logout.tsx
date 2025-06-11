@@ -1,14 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+import { logoutUser } from '../../api'; // adjust path as needed
 
 const useLogout = () => {
   const navigate = useNavigate();
 
   return async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await logoutUser();
     } catch (err) {
       console.error('Error logging out', err);
     }

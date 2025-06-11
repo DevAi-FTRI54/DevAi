@@ -4,6 +4,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import type { ChatHistoryEntry } from '../../types';
 import type { ChatInputProps, Repo } from '../../types';
+import { getChatHistory } from '../../api';
 
 const REPO_KEY = 'devai_repo';
 
@@ -95,18 +96,42 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({ repoUrl }) => 
     return null;
   }, [repoUrl]);
 
+  // useEffect(() => {
+  //   let didCancel = false;
+  //   const fetchHistory = async () => {
+  //     try {
+  //       const res = await fetch('/api/chat/history/flat', {
+  //         // ✅ Use relative URL
+  //         method: 'GET',
+  //         credentials: 'include',
+  //       });
+  //       if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+  //       const data = await res.json();
+  //       if (!Array.isArray(data)) throw new Error('Invalid response format: expected an array');
+  //       if (!didCancel) setLogs(data);
+  //     } catch (err: unknown) {
+  //       console.error('❌ Error fetching history:', err);
+  //       if (!didCancel) {
+  //         const errorMessage =
+  //           typeof err === 'object' && err !== null && 'message' in err
+  //             ? String((err as { message?: unknown }).message)
+  //             : 'Failed to load chat history';
+  //         setError(errorMessage);
+  //         setLogs([]);
+  //       }
+  //     }
+  //   };
+  //   fetchHistory();
+  //   return () => {
+  //     didCancel = true;
+  //   };
+  // }, []);
+
   useEffect(() => {
     let didCancel = false;
     const fetchHistory = async () => {
       try {
-        const res = await fetch('/api/chat/history/flat', {
-          // ✅ Use relative URL
-          method: 'GET',
-          credentials: 'include',
-        });
-        if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
-        const data = await res.json();
-        if (!Array.isArray(data)) throw new Error('Invalid response format: expected an array');
+        const data = await getChatHistory();
         if (!didCancel) setLogs(data);
       } catch (err: unknown) {
         console.error('❌ Error fetching history:', err);
