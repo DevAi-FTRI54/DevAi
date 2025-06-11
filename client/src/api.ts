@@ -3,11 +3,14 @@ import type { Repo } from './types';
 import type { GitHubContentItem } from './types';
 import type { ChatHistoryEntry } from './types';
 
-const API_BASE_URL = import.meta.env.VITE_APIL_URL || 'http://localhost:4000/api';
+// api.ts or apiHelpers.ts
+
+// SINGLE consistent variable at the top
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 
 //* AuthCallback.tsx get
 export async function completeAuth(code: string) {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/complete`, {
+  const res = await fetch(`${API_BASE_URL}/auth/complete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code }),
@@ -18,7 +21,6 @@ export async function completeAuth(code: string) {
 }
 
 //* orgselector.tsx
-// This should accept `token: string` as a parameter:
 export async function getUserOrgs(token: string): Promise<{ id: number; login: string }[]> {
   const res = await fetch(`${API_BASE_URL}/auth/orgs`, {
     method: 'GET',
@@ -35,7 +37,6 @@ export async function getUserOrgs(token: string): Promise<{ id: number; login: s
 }
 
 //* promptbaringestion
-
 export async function getIngestionStatus(jobId: string): Promise<IngestionStatusData> {
   const res = await fetch(`${API_BASE_URL}/index/status/${jobId}`);
   if (!res.ok) throw new Error(`Failed to fetch ingestion status: ${res.statusText}`);
@@ -43,8 +44,6 @@ export async function getIngestionStatus(jobId: string): Promise<IngestionStatus
 }
 
 //* repo-selector:
-
-// 1. Fetch repos for org/installation
 export async function getReposForOrg(opts: { org?: string; installation_id?: string }): Promise<Repo[]> {
   const params = new URLSearchParams();
   if (opts.org) params.append('org', opts.org);
@@ -60,7 +59,6 @@ export async function getReposForOrg(opts: { org?: string; installation_id?: str
   return res.json();
 }
 
-// 2. Start ingestion
 export async function startRepoIngestion(opts: {
   repoUrl: string;
   sha: string;
@@ -75,7 +73,7 @@ export async function startRepoIngestion(opts: {
   return res.json();
 }
 
-//*sidebarDrawer.tsx
+//* Calls to GitHub stay the same (they don't use your API_BASE_URL):
 export async function getRepoContents(
   owner: string,
   repo: string,
@@ -89,9 +87,9 @@ export async function getRepoContents(
   return res.json();
 }
 
-//* ChatHistory
+//* If these are also your backend routes, update them to use API_BASE_URL:
 export async function getChatHistory(): Promise<ChatHistoryEntry[]> {
-  const res = await fetch('/api/chat/history/flat', {
+  const res = await fetch(`${API_BASE_URL}/chat/history/flat`, {
     method: 'GET',
     credentials: 'include',
   });
@@ -101,8 +99,6 @@ export async function getChatHistory(): Promise<ChatHistoryEntry[]> {
   return data;
 }
 
-//* ChatInput
-// Store a user message
 export async function storeUserMessage(data: {
   sessionId: string;
   role: string;
@@ -110,7 +106,7 @@ export async function storeUserMessage(data: {
   repoUrl: string;
   timestamp: Date;
 }): Promise<boolean> {
-  const response = await fetch('/api/query/store', {
+  const response = await fetch(`${API_BASE_URL}/query/store`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -120,37 +116,24 @@ export async function storeUserMessage(data: {
   return true;
 }
 
-// Start a question (AI response) - streaming support is handled in the component
 export async function postUserPrompt(data: {
   url: string;
   prompt: string;
   type: string;
   sessionId: string;
 }): Promise<Response> {
-  const response = await fetch('/api/query/question', {
+  const response = await fetch(`${API_BASE_URL}/query/question`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
   if (!response.ok) throw new Error('Failed to submit prompt');
-  return response; // Streaming will be handled in the component, as before
-}
-
-//* filepreview
-// Fetch file content from GitHub, decode base64
-export async function getRepoFileContent(repoUrl: string, filePath: string, token: string): Promise<string> {
-  const res = await fetch(`https://api.github.com/repos/${repoUrl}/contents/${filePath}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Failed to fetch file');
-  const data = await res.json();
-  // GitHub returns content as base64
-  return atob(data.content.replace(/\n/g, ''));
+  return response;
 }
 
 //* Logout
 export async function logoutUser(): Promise<void> {
-  await fetch('/api/auth/logout', {
+  await fetch(`${API_BASE_URL}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });
