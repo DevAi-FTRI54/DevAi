@@ -40,9 +40,13 @@ async function startServer() {
     await connectMongo();
     console.log('✅ MongoDB connected');
 
-    console.log('🔄 Setting up Qdrant indexes...');
-    await ensureQdrantIndexes();
-    console.log('✅ Qdrant indexes ready');
+    // Qdrant setup (optional - server continues without it)
+    try {
+      await ensureQdrantIndexes();
+      console.log('✅ Qdrant indexes ready');
+    } catch (error) {
+      // Silently ignore Qdrant connection issues - server continues normally
+    }
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
