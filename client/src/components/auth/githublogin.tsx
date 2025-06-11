@@ -1,13 +1,19 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
+import { API_BASE_URL } from '../../api';
 
 const GitHubLogin: React.FC = () => {
-  const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-
   const handleLogin = () => {
-    window.location.href = `${BACKEND_URL}/api/auth/github`;
+    window.location.href = `${API_BASE_URL}/auth/github`;
   };
+
+  // const GitHubLogin: React.FC = () => {
+  //   const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+  //   const handleLogin = () => {
+  //     window.location.href = `${BACKEND_URL}/api/auth/github`;
+  //   };
 
   // const handleLogin = () => {
   //   window.location.href = 'http://localhost:4000/api/auth/github';
