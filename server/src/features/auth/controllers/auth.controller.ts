@@ -72,30 +72,41 @@ export const getGitHubLoginURL = (req: Request, res: Response) => {
 //   }
 // };
 
-export const handleGitHubCallback = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const code = req.query.code as string;
+// export const handleGitHubCallback = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   const code = req.query.code as string;
+//   if (!code) {
+//     res.status(400).send('Missing code');
+//     return;
+//   }
+
+//   try {
+//     const githubToken = await exchangeCodeForToken(code);
+//     res.cookie('github_access_token', githubToken, {
+//       httpOnly: true,
+//       secure: true,
+//       sameSite: 'none',
+//       domain: 'devai-three.vercel.app',
+//     });
+
+//     res.redirect(`${FRONTEND_BASE_URL}/orgselector`);
+//   } catch (err: any) {
+//     console.error('GitHub callback failed:', err.message);
+//     res.status(500).json({ error: 'Token exchange failed' });
+//   }
+// };
+
+export const handleGitHubCallback = async (req: Request, res: Response) => {
+  const code = req.query.code;
   if (!code) {
     res.status(400).send('Missing code');
     return;
   }
 
-  try {
-    const githubToken = await exchangeCodeForToken(code);
-    res.cookie('github_access_token', githubToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      domain: 'devai-three.vercel.app',
-    });
-
-    res.redirect(`${FRONTEND_BASE_URL}/orgselector`);
-  } catch (err: any) {
-    console.error('GitHub callback failed:', err.message);
-    res.status(500).json({ error: 'Token exchange failed' });
-  }
+  // ✅ just redirect to frontend with the code
+  res.redirect(`${FRONTEND_BASE_URL}/auth/callback?code=${code}`);
 };
 
 // 2. Get GitHub response   OG!!!!!!
