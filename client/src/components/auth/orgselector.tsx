@@ -14,7 +14,7 @@ const OrgSelector: React.FC<{ token: string; onSelect: (org: string) => void }> 
     if (!token) return; // Don't fetch if token is missing
     const fetchOrgs = async () => {
       try {
-        const orgs = await getUserOrgs(token);
+        const orgs = await getUserOrgs();
         setOrgs(orgs);
       } catch (err) {
         console.error('Failed to load orgs:', err);
