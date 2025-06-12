@@ -25,28 +25,37 @@ export const getGitHubLoginURL = (req, res) => {
     res.redirect(githubAuthURL);
 };
 // Process Github callback with auth code
+// export const handleGitHubCallback = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const code = req.query.code as string;
+//     if (!code) return res.status(400).send('Missing code');
+//     // ✅ Do NOT call exchangeCodeForToken again if it was already used
+//     console.log('[GitHub OAuth] Received code:', code);
+//     const access_token = await exchangeCodeForToken(code);
+//     res.cookie('github_access_token', access_token, {
+//       httpOnly: true,
+//       secure: true,
+//       sameSite: 'none',
+//       // domain: '.ngrok.app', // important
+//     });
+//     return res.redirect(`${FRONTEND_BASE_URL}/auth/callback?code=${code}`);
+//   } catch (error: any) {
+//     console.error('❌ GitHub callback failed:', error);
+//     return res
+//       .status(500)
+//       .json({ error: 'Server Error', message: error.message });
+//   }
+// };
 export const handleGitHubCallback = async (req, res) => {
-    try {
-        const code = req.query.code;
-        if (!code)
-            return res.status(400).send('Missing code');
-        // ✅ Do NOT call exchangeCodeForToken again if it was already used
-        console.log('[GitHub OAuth] Received code:', code);
-        const access_token = await exchangeCodeForToken(code);
-        res.cookie('github_access_token', access_token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            // domain: '.ngrok.app', // important
-        });
-        return res.redirect(`${FRONTEND_BASE_URL}/auth/callback?code=${code}`);
+    const code = req.query.code;
+    if (!code) {
+        res.status(400).send('Missing code');
+        return;
     }
-    catch (error) {
-        console.error('❌ GitHub callback failed:', error);
-        return res
-            .status(500)
-            .json({ error: 'Server Error', message: error.message });
-    }
+    res.redirect(`${FRONTEND_BASE_URL}/auth/callback?code=${code}`);
 };
 // 2. Get GitHub response   OG!!!!!!
 // export const completeAuth = async (
