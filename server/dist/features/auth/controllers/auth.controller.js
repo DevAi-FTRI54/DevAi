@@ -189,17 +189,38 @@ export const getGitHubUserOrgs = async (req, res) => {
         const response = await fetch('https://api.github.com/user/orgs', {
             headers: {
                 Authorization: `Bearer ${githubToken}`,
-                'User-Agent': 'YourAppName',
+                'User-Agent': 'devAI-app',
                 Accept: 'application/vnd.github+json',
             },
         });
-        if (!response.ok)
-            throw new Error('Failed to fetch orgs');
+        // Handle expired or invalid token
+        if (response.status === 401) {
+            console.warn('⚠️ GitHub token is invalid or expired — clearing cookie');
+            res.clearCookie('github_access_token', {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'none',
+            });
+            res.status(401).json({
+                error: 'GitHub token expired or invalid — please reauthenticate',
+            });
+            return;
+        }
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ GitHub orgs fetch failed:', errorText);
+            res.status(500).json({ error: 'Failed to fetch GitHub orgs' });
+            return;
+        }
         const orgs = (await response.json());
-        // Return to frontend (maybe only send id, login, avatar_url, etc)
-        res.json(orgs.map(({ id, login, avatar_url }) => ({ id, login, avatar_url })));
+        res.json(orgs.map(({ id, login, avatar_url }) => ({
+            id,
+            login,
+            avatar_url,
+        })));
     }
     catch (err) {
+        console.error('🔥 Error in getGitHubUserOrgs:', err.message);
         res
             .status(500)
             .json({ error: 'Failed to fetch orgs', detail: err.message });
