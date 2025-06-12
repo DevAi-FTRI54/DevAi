@@ -179,6 +179,7 @@ export const completeAuth = async (
       httpOnly: true,
       secure: true,
       sameSite: 'none',
+      domain: '.vercel.app',
     });
 
     const githubData = await getGitHubUserProfile(githubToken);
