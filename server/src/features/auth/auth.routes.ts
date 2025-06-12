@@ -8,6 +8,7 @@ import {
   getGitHubLoginURL,
   handleGitHubCallback,
   listRepos,
+  completeAuth,
   getGithubToken,
 } from './controllers/auth.controller.js';
 
@@ -18,7 +19,7 @@ const router: Router = express.Router();
 router.get('/github', getGitHubLoginURL);
 router.get('/callback', handleGitHubCallback);
 //router.post('/complete', completeAuth);
-//router.get('/complete', completeAuth);
+router.get('/complete', completeAuth);
 router.get('/repos', listRepos);
 router.get('/github-token', getGithubToken);
 router.get('/orgs', requireAuth, getGitHubUserOrgs);
