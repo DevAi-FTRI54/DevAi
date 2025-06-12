@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import useLogout from '../../settings/logout';
+import { useCurrentUser } from '../../../hooks/useCurrentUser';
 
 const settings = ['Chat History', 'Logout']; // ! add back in after OSP 'Account'
 
@@ -11,6 +12,7 @@ const UserAvatarMenu: React.FC = () => {
     null
   );
   const logout = useLogout(); // <--- Use the hook
+  const { displayName, isLoading } = useCurrentUser();
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
@@ -38,29 +40,41 @@ const UserAvatarMenu: React.FC = () => {
 
   return (
     <div
-      className='absolute top-3 right-6 z-50'
-      style={{ pointerEvents: 'auto' }} // ensure click passes through overlay
+      className='absolute right-6 z-50'
+      style={{ 
+        pointerEvents: 'auto', // ensure click passes through overlay
+        top: '14px' // Custom positioning between top and file preview line
+      }}
     >
       <button
         onClick={handleOpenUserMenu}
-        className='w-9 h-9 bg-gradient-to-br from-[#5ea9ea] to-[#4a9ae0] hover:from-[#4a9ae0] hover:to-[#3a8bd0] rounded-full flex items-center justify-center transition-all duration-200 border-2 border-[#303030] hover:border-[#5ea9ea] shadow-lg hover:shadow-xl'
+        className='h-8 px-2.5 bg-gradient-to-br from-[#5ea9ea] to-[#4a9ae0] hover:from-[#4a9ae0] hover:to-[#3a8bd0] rounded-full flex items-center gap-2 justify-center transition-all duration-200 border-2 border-[#303030] hover:border-[#5ea9ea] shadow-lg hover:shadow-xl min-w-[70px]'
         title='Open settings'
       >
-        <svg
-          className='w-5 h-5 text-white'
-          fill='currentColor'
-          viewBox='0 0 20 20'
-        >
-          <path
-            fillRule='evenodd'
-            d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z'
-            clipRule='evenodd'
-          />
-        </svg>
+        {isLoading ? (
+          <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+        ) : (
+          <>
+            <svg
+              className='w-3.5 h-3.5 text-white flex-shrink-0'
+              fill='currentColor'
+              viewBox='0 0 20 20'
+            >
+              <path
+                fillRule='evenodd'
+                d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z'
+                clipRule='evenodd'
+              />
+            </svg>
+            <span className='text-white font-medium text-xs truncate max-w-[90px]'>
+              {displayName || 'User'}
+            </span>
+          </>
+        )}
       </button>
       <Menu
         sx={{
-          mt: '40px',
+          mt: '32px',
           '& .MuiPaper-root': {
             backgroundColor: '#212121',
             border: '1px solid #303030',
