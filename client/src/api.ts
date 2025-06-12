@@ -30,6 +30,13 @@ export async function getUserOrgs(): Promise<{ id: number; login: string }[]> {
       // Authorization: `Bearer ${token}`,
     },
   });
+
+  if (res.status === 401) {
+    console.warn('🔁 Token expired, redirecting to login...');
+    window.location.href = `${API_BASE_URL}/auth/login`; // Or redirect to your frontend GitHub login button
+    throw new Error('GitHub token expired — reauth required');
+  }
+
   if (!res.ok) throw new Error(`Failed to fetch orgs: ${res.statusText}`);
   const data = await res.json();
   if (!Array.isArray(data)) throw new Error('Invalid orgs response');
