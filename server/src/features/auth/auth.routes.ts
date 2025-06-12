@@ -8,7 +8,6 @@ import Project from '../../models/project.model.js';
 import {
   getGitHubLoginURL,
   handleGitHubCallback,
-  completeAuth,
   listRepos,
   getGithubToken,
 } from './controllers/auth.controller.js';
@@ -19,8 +18,6 @@ const router: Router = express.Router();
 // /api/auth/
 router.get('/github', getGitHubLoginURL);
 router.get('/callback', handleGitHubCallback);
-router.post('/complete', completeAuth);
-//router.get('/complete', completeAuth);
 router.get('/repos', listRepos);
 router.get('/github-token', getGithubToken);
 router.get('/orgs', requireAuth, getGitHubUserOrgs);

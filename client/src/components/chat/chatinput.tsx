@@ -86,6 +86,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setPromptText(event.target.value);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit();
+    }
+  };
+
   const resetLoadingStates = () => {
     setIsStreaming?.(false);
     setStreamingAnswer?.('');
@@ -262,6 +269,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           placeholder='Ask about your codebase...'
           value={promptText}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           onInput={autoGrow}
           rows={1}
           disabled={loading}
@@ -275,8 +283,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
           {loading ? (
             <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
           ) : (
-            <svg className='w-4 h-4' fill='currentColor' viewBox='0 0 20 20'>
-              <path d='M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z' />
+            <svg className='w-4 h-4' fill='currentColor' viewBox='0 0 24 24'>
+              <path
+                d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z'
+                strokeLinejoin='round'
+                strokeLinecap='round'
+              />
             </svg>
           )}
         </button>

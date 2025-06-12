@@ -16,6 +16,8 @@ import AuthCallback from './components/auth/authcallback'; // adjust if needed
 import UserSettings from './components/settings/settings';
 
 function App() {
+  console.log('🏗️ App component rendered at:', new Date().toISOString());
+
   return (
     <IngestionProvider>
       <Router>

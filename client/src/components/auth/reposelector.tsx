@@ -167,10 +167,10 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
       const jobId: string = body.jobId;
 
       onStartIngestion(jobId, selectedRepo);
-      alert(`Started ingesting ${selectedRepo.full_name}`);
+      console.log(`✅ Started ingesting ${selectedRepo.full_name}`);
     } catch (error) {
       console.error('Error indexing repo:', error);
-      alert(`Failed to start ingestion. Please try again.`);
+      setError('Failed to start ingestion. Please try again.');
     }
   };
 
@@ -204,7 +204,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
               Select Repository
             </h2>
             <p className='text-[#888] text-sm'>
-              Choose a repository to index and analyze
+              Select a repository to index and analyze
             </p>
           </div>
         )}
@@ -269,7 +269,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
                 setRepo(repo ?? null);
               }}
             >
-              <option value=''>-- Choose a repository --</option>
+              <option value=''>Select a repository</option>
               {repos.map((repo: Repo) => (
                 <option key={repo.id} value={repo.id} className='bg-[#303030]'>
                   {repo.full_name}

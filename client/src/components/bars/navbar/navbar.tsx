@@ -1,17 +1,15 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Avatar from '@mui/material/Avatar';
-import Tooltip from '@mui/material/Tooltip';
-import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Typography from '@mui/material/Typography';
 import useLogout from '../../settings/logout';
 
 const settings = ['Chat History', 'Logout']; // ! add back in after OSP 'Account'
 
 const UserAvatarMenu: React.FC = () => {
-  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
+  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
+    null
+  );
   const logout = useLogout(); // <--- Use the hook
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -40,17 +38,46 @@ const UserAvatarMenu: React.FC = () => {
 
   return (
     <div
-      className="absolute top-4 right-6 z-50"
+      className='absolute top-3 right-6 z-50'
       style={{ pointerEvents: 'auto' }} // ensure click passes through overlay
     >
-      <Tooltip title="Open settings">
-        <IconButton onClick={handleOpenUserMenu} size="large">
-          <Avatar alt="User" src="/static/images/avatar/2.jpg" sx={{ width: 40, height: 40 }} />
-        </IconButton>
-      </Tooltip>
+      <button
+        onClick={handleOpenUserMenu}
+        className='w-9 h-9 bg-gradient-to-br from-[#5ea9ea] to-[#4a9ae0] hover:from-[#4a9ae0] hover:to-[#3a8bd0] rounded-full flex items-center justify-center transition-all duration-200 border-2 border-[#303030] hover:border-[#5ea9ea] shadow-lg hover:shadow-xl'
+        title='Open settings'
+      >
+        <svg
+          className='w-5 h-5 text-white'
+          fill='currentColor'
+          viewBox='0 0 20 20'
+        >
+          <path
+            fillRule='evenodd'
+            d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z'
+            clipRule='evenodd'
+          />
+        </svg>
+      </button>
       <Menu
-        sx={{ mt: '45px' }}
-        id="menu-appbar"
+        sx={{
+          mt: '40px',
+          '& .MuiPaper-root': {
+            backgroundColor: '#212121',
+            border: '1px solid #303030',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+            minWidth: '160px',
+          },
+          '& .MuiMenuItem-root': {
+            color: '#fafafa',
+            fontSize: '14px',
+            padding: '8px 16px',
+            '&:hover': {
+              backgroundColor: '#303030',
+            },
+          },
+        }}
+        id='menu-appbar'
         anchorEl={anchorElUser}
         anchorOrigin={{
           vertical: 'top',
@@ -66,7 +93,35 @@ const UserAvatarMenu: React.FC = () => {
       >
         {settings.map((setting) => (
           <MenuItem key={setting} onClick={() => handleMenuItemClick(setting)}>
-            <Typography sx={{ textAlign: 'center' }}>{setting}</Typography>
+            <div className='flex items-center gap-2'>
+              {setting === 'Chat History' && (
+                <svg
+                  className='w-4 h-4'
+                  fill='currentColor'
+                  viewBox='0 0 20 20'
+                >
+                  <path
+                    fillRule='evenodd'
+                    d='M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              )}
+              {setting === 'Logout' && (
+                <svg
+                  className='w-4 h-4'
+                  fill='currentColor'
+                  viewBox='0 0 20 20'
+                >
+                  <path
+                    fillRule='evenodd'
+                    d='M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              )}
+              <span>{setting}</span>
+            </div>
           </MenuItem>
         ))}
       </Menu>

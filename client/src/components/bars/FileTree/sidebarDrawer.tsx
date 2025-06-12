@@ -197,7 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className='flex flex-col w-full h-full bg-[#212121] text-white'>
       {/* Header */}
-      <div className='flex-shrink-0 p-4 border-b border-[#303030]/30'>
+      <div className='flex-shrink-0 p-5 border-b border-[#303030]/30'>
         <div className='mb-3'>
           <IngestionExperience
             compact
@@ -225,7 +225,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* File Tree */}
-      <div className='flex-1 overflow-y-auto p-4'>
+      <div className='flex-1 overflow-y-auto p-5'>
         <h3 className='text-xs font-medium text-[#888] uppercase tracking-wider mb-2'>
           Files
         </h3>

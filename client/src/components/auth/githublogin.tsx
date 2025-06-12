@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 const GitHubLogin: React.FC = () => {
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for error in URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam));
+    }
+  }, []);
+
   const handleLogin = () => {
     window.location.href = 'http://localhost:4000/api/auth/github';
   };
@@ -21,6 +32,12 @@ const GitHubLogin: React.FC = () => {
           Connect your GitHub account to get started with AI-powered code
           analysis
         </p>
+
+        {error && (
+          <div className='mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg'>
+            <p className='text-red-400 text-sm'>{error}</p>
+          </div>
+        )}
 
         <button
           onClick={handleLogin}
