@@ -88,6 +88,7 @@ export const handleGitHubCallback = async (
       httpOnly: true,
       secure: true,
       sameSite: 'none',
+      domain: 'devai-three.vercel.app',
     });
 
     res.redirect(`${FRONTEND_BASE_URL}/orgselector`);
