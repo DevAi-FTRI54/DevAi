@@ -6,7 +6,7 @@ import type { ChatHistoryEntry } from './types';
 // api.ts or apiHelpers.ts
 
 // SINGLE consistent variable at the top
-export const API_BASE_URL = 'HTTPS://DEVAI-B2UI.ONRENDER.COM/API'; //|| 'http://localhost:4000/';
+export const API_BASE_URL = 'https://devai-b2ui.onrender.com/api'; //|| 'http://localhost:4000/';
 
 //* AuthCallback.tsx get
 export async function completeAuth(code: string) {
