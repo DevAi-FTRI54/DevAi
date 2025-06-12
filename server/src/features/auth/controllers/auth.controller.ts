@@ -4,8 +4,16 @@ import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 import User from '../../../models/user.model.js';
 import mongoose from 'mongoose';
-import { exchangeCodeForToken, getGitHubUserProfile, getRepositoriesWithMeta } from '../services/github.service.js';
-import { getAppInstallationUrl, checkIfAppInstalled, getAppInstallations } from '../services/installation.service.js';
+import {
+  exchangeCodeForToken,
+  getGitHubUserProfile,
+  getRepositoriesWithMeta,
+} from '../services/github.service.js';
+import {
+  getAppInstallationUrl,
+  checkIfAppInstalled,
+  getAppInstallations,
+} from '../services/installation.service.js';
 import { findOrCreateUser } from '../services/user.service.js';
 import { generateUserJWTToken } from '../services/jwt.service.js';
 import { handleApiError } from '../utils/error.utils.js';
@@ -16,7 +24,8 @@ console.log('Loading auth.controller.ts');
 //Github OAuth credentials for the app NOT FOR THE USER!!!!
 //Github code and access token are for users and are dynamic (Different Thing)
 const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID!;
-const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+const FRONTEND_BASE_URL =
+  process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
 
 // Circuit breaker pattern
 let failureCount = 0;
@@ -34,7 +43,10 @@ export const getGitHubLoginURL = (req: Request, res: Response) => {
 };
 
 // Process Github callback with auth code
-export const handleGitHubCallback = async (req: Request, res: Response): Promise<any> => {
+export const handleGitHubCallback = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const code = req.query.code as string;
     if (!code) return res.status(400).send('Missing code');
@@ -54,7 +66,9 @@ export const handleGitHubCallback = async (req: Request, res: Response): Promise
     return res.redirect(`${FRONTEND_BASE_URL}/auth/callback?code=${code}`);
   } catch (error: any) {
     console.error('❌ GitHub callback failed:', error);
-    return res.status(500).json({ error: 'Server Error', message: error.message });
+    return res
+      .status(500)
+      .json({ error: 'Server Error', message: error.message });
   }
 };
 
@@ -114,24 +128,24 @@ export const handleGitHubCallback = async (req: Request, res: Response): Promise
 //   }
 // };
 
-export const completeAuth = async (req: Request, res: Response): Promise<any> => {
+export const completeAuth = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
-    let githubToken = req.cookies.github_access_token;
+    const code = req.body.code as string;
+    if (!code) return res.status(400).send('Missing code');
 
-    console.log('🍪 GitHub token from cookie:', githubToken);
+    const githubToken = await exchangeCodeForToken(code);
 
-    // ❌ Don't re-use code to get another token
-    if (!githubToken) {
-      return res.status(401).send('Missing GitHub token');
-    }
-    console.log('📤 Calling getGitHubUserProfile() with token:', githubToken);
+    res.cookie('github_access_token', githubToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+
     const githubData = await getGitHubUserProfile(githubToken);
-    console.log(
-      '✅ GitHub user profile fetched:',
-      githubData.login || githubData
-    );
     const user = await findOrCreateUser(githubData, githubToken);
-    console.log('👤 DB user record:', user?.username);
 
     const token = generateUserJWTToken({
       _id: user._id!.toString(),
@@ -140,28 +154,22 @@ export const completeAuth = async (req: Request, res: Response): Promise<any> =>
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
     });
 
     const installations = await getAppInstallations(githubToken);
     const { isInstalled, installationId } = checkIfAppInstalled(installations);
-    console.log(
-      '🔧 GitHub App installed:',
-      isInstalled,
-      'Installation ID:',
-      installationId
-    );
+
     if (installationId) {
       res.cookie('installation_id', installationId, {
         httpOnly: true,
-        sameSite: 'none',
         secure: true,
-        // domain: '.ngrok.app', //! es removed 6/8
+        sameSite: 'none',
       });
     }
 
-    res.json({
+    res.status(200).json({
       token,
       githubToken,
       installed: isInstalled,
@@ -176,7 +184,10 @@ export const completeAuth = async (req: Request, res: Response): Promise<any> =>
 
 // Add this to your auth.controller.ts
 
-export const getGitHubUserOrgs = async (req: Request, res: Response): Promise<void> => {
+export const getGitHubUserOrgs = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const githubToken = req.cookies.github_access_token;
     if (!githubToken) {
@@ -201,9 +212,13 @@ export const getGitHubUserOrgs = async (req: Request, res: Response): Promise<vo
     }[];
 
     // Return to frontend (maybe only send id, login, avatar_url, etc)
-    res.json(orgs.map(({ id, login, avatar_url }) => ({ id, login, avatar_url })));
+    res.json(
+      orgs.map(({ id, login, avatar_url }) => ({ id, login, avatar_url }))
+    );
   } catch (err: Error | any) {
-    res.status(500).json({ error: 'Failed to fetch orgs', detail: err.message });
+    res
+      .status(500)
+      .json({ error: 'Failed to fetch orgs', detail: err.message });
   }
 };
 
@@ -219,7 +234,9 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
       res.status(503).json({
         error: 'Service temporarily unavailable',
         retry: true,
-        retryAfter: Math.ceil((CIRCUIT_RESET_TIME - (now - lastFailureTime)) / 1000),
+        retryAfter: Math.ceil(
+          (CIRCUIT_RESET_TIME - (now - lastFailureTime)) / 1000
+        ),
       });
       return;
     }
@@ -258,7 +275,10 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
         return;
       }
       const match = installations.find(
-        (inst: any) => inst.account && inst.account.login && inst.account.login.toLowerCase() === org.toLowerCase()
+        (inst: any) =>
+          inst.account &&
+          inst.account.login &&
+          inst.account.login.toLowerCase() === org.toLowerCase()
       );
       if (!match) {
         res.status(404).json({ error: 'App not installed on this org' });
@@ -314,7 +334,10 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
 };
 
 // 4. Get githubToken and pass to chatwrap.tsx
-export const getGithubToken = async (req: Request, res: Response): Promise<void> => {
+export const getGithubToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   if (!mongoose.connection.readyState) {
     res.status(503).json({ error: 'Database not ready', ready: true });
     return;

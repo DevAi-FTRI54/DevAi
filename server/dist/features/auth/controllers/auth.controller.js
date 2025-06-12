@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import mongoose from 'mongoose';
-import { exchangeCodeForToken, getGitHubUserProfile, getRepositoriesWithMeta } from '../services/github.service.js';
-import { checkIfAppInstalled, getAppInstallations } from '../services/installation.service.js';
+import { exchangeCodeForToken, getGitHubUserProfile, getRepositoriesWithMeta, } from '../services/github.service.js';
+import { checkIfAppInstalled, getAppInstallations, } from '../services/installation.service.js';
 import { findOrCreateUser } from '../services/user.service.js';
 import { generateUserJWTToken } from '../services/jwt.service.js';
 import { handleApiError } from '../utils/error.utils.js';
@@ -43,7 +43,9 @@ export const handleGitHubCallback = async (req, res) => {
     }
     catch (error) {
         console.error('❌ GitHub callback failed:', error);
-        return res.status(500).json({ error: 'Server Error', message: error.message });
+        return res
+            .status(500)
+            .json({ error: 'Server Error', message: error.message });
     }
 };
 // 2. Get GitHub response   OG!!!!!!
@@ -97,38 +99,36 @@ export const handleGitHubCallback = async (req, res) => {
 // };
 export const completeAuth = async (req, res) => {
     try {
-        let githubToken = req.cookies.github_access_token;
-        console.log('🍪 GitHub token from cookie:', githubToken);
-        // ❌ Don't re-use code to get another token
-        if (!githubToken) {
-            return res.status(401).send('Missing GitHub token');
-        }
-        console.log('📤 Calling getGitHubUserProfile() with token:', githubToken);
+        const code = req.body.code;
+        if (!code)
+            return res.status(400).send('Missing code');
+        const githubToken = await exchangeCodeForToken(code);
+        res.cookie('github_access_token', githubToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+        });
         const githubData = await getGitHubUserProfile(githubToken);
-        console.log('✅ GitHub user profile fetched:', githubData.login || githubData);
         const user = await findOrCreateUser(githubData, githubToken);
-        console.log('👤 DB user record:', user?.username);
         const token = generateUserJWTToken({
             _id: user._id.toString(),
             username: user.username,
         });
         res.cookie('token', token, {
             httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
         });
         const installations = await getAppInstallations(githubToken);
         const { isInstalled, installationId } = checkIfAppInstalled(installations);
-        console.log('🔧 GitHub App installed:', isInstalled, 'Installation ID:', installationId);
         if (installationId) {
             res.cookie('installation_id', installationId, {
                 httpOnly: true,
-                sameSite: 'none',
                 secure: true,
-                // domain: '.ngrok.app', //! es removed 6/8
+                sameSite: 'none',
             });
         }
-        res.json({
+        res.status(200).json({
             token,
             githubToken,
             installed: isInstalled,
@@ -165,7 +165,9 @@ export const getGitHubUserOrgs = async (req, res) => {
         res.json(orgs.map(({ id, login, avatar_url }) => ({ id, login, avatar_url })));
     }
     catch (err) {
-        res.status(500).json({ error: 'Failed to fetch orgs', detail: err.message });
+        res
+            .status(500)
+            .json({ error: 'Failed to fetch orgs', detail: err.message });
     }
 };
 // 3. List repos
@@ -215,7 +217,9 @@ export const listRepos = async (req, res) => {
                 res.status(404).json({ error: 'No installations found for this user' });
                 return;
             }
-            const match = installations.find((inst) => inst.account && inst.account.login && inst.account.login.toLowerCase() === org.toLowerCase());
+            const match = installations.find((inst) => inst.account &&
+                inst.account.login &&
+                inst.account.login.toLowerCase() === org.toLowerCase());
             if (!match) {
                 res.status(404).json({ error: 'App not installed on this org' });
                 return;
