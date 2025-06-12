@@ -4,6 +4,7 @@ import ChatWindow from '../../components/chat/chatwindow';
 import ChatInput from '../../components/chat/chatinput';
 import RepoViewer from '../../components/chat/filepreview';
 import type { Message, ChatWrapProps } from '../../types';
+import { getGithubToken } from '../../api'; // [ADDED]
 
 // // Helper to convert absolute to repo-relative path
 // function toRepoRelative(absolutePath: string) {
@@ -16,6 +17,8 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
   // const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [originalFilePath, setOriginalFilePath] = useState<string>('');
   const [githubToken, setGithubToken] = useState<string | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(true); // [ADDED]
+  const [tokenError, setTokenError] = useState<string | null>(null); // [ADDED]
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
 
   const [streamingAnswer, setStreamingAnswer] = useState('');
@@ -36,26 +39,20 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingAnswer]);
 
-  // Get GitHub token
+  // Get GitHub token (now using helper in api.ts)
   useEffect(() => {
-    const getGithubToken = async () => {
+    async function fetchToken() {
       try {
-        const response = await fetch('/api/auth/github-token', {
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setGithubToken(data.token);
-        } else {
-          console.error('Failed to get token:', response.status, response.statusText);
-        }
+        const token = await getGithubToken(); // [CHANGED]
+        setGithubToken(token); // [CHANGED]
       } catch (error) {
+        setTokenError('Failed to get GitHub token'); // [ADDED]
         console.error('Failed to get GitHub token:', error);
+      } finally {
+        setTokenLoading(false); // [ADDED]
       }
-    };
-
-    getGithubToken();
+    }
+    fetchToken();
   }, []);
 
   // Show streaming state while waiting for/receiving AI response
@@ -96,6 +93,25 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
       </div>
     );
   }, [isLoadingResponse, isStreaming, streamingAnswer]);
+
+  // Handle loading/error for token
+  if (tokenLoading) {
+    // [ADDED]
+    return (
+      <div className="flex h-screen bg-[#121629] items-center justify-center">
+        <div className="text-white">Loading GitHub token...</div>
+      </div>
+    );
+  }
+
+  if (tokenError) {
+    // [ADDED]
+    return (
+      <div className="flex h-screen bg-[#121629] items-center justify-center">
+        <div className="text-red-400">{tokenError}</div>
+      </div>
+    );
+  }
 
   if (!githubToken) {
     return (

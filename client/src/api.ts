@@ -149,3 +149,14 @@ export async function logoutUser(): Promise<void> {
     credentials: 'include',
   });
 }
+
+//* Chatwrap helper function
+export async function getGithubToken(): Promise<string> {
+  const res = await fetch('${API_BASE_URL}/auth/github-token', {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to get token: ' + res.statusText);
+  const data = await res.json();
+  if (!data.token) throw new Error('No GitHub token in response');
+  return data.token;
+}
