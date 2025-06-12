@@ -226,9 +226,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         console.log('🔍 FilePreview fetching:', {
           repoUrl,
           selectedPath,
-          fullUrl: `https://api.github.com/repos/${repoUrl}/contents/${selectedPath}`
+          fullUrl: `https://api.github.com/repos/${repoUrl}/contents/${selectedPath}`,
         });
-        
+
         const res = await fetch(
           `https://api.github.com/repos/${repoUrl}/contents/${selectedPath}`,
           {
@@ -249,26 +249,97 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     fetchFile();
   }, [repoUrl, selectedPath, token]);
 
-  if (!selectedPath) return null;
-  if (error) return <div className='text-red-500'>{error}</div>;
-  if (!content) return <div>Loading...</div>;
+  if (!selectedPath)
+    return (
+      <div className='flex flex-col items-center justify-center h-64 text-center'>
+        <div className='w-12 h-12 bg-[#303030] rounded-lg flex items-center justify-center mb-4'>
+          <svg
+            className='w-6 h-6 text-[#888]'
+            fill='currentColor'
+            viewBox='0 0 20 20'
+          >
+            <path d='M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z' />
+          </svg>
+        </div>
+        <p className='text-[#888] text-sm'>No file selected</p>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className='flex flex-col items-center justify-center h-64 text-center'>
+        <div className='w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center mb-4'>
+          <svg
+            className='w-6 h-6 text-red-400'
+            fill='currentColor'
+            viewBox='0 0 20 20'
+          >
+            <path
+              fillRule='evenodd'
+              d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z'
+              clipRule='evenodd'
+            />
+          </svg>
+        </div>
+        <p className='text-red-400 text-sm'>{error}</p>
+      </div>
+    );
+
+  if (!content)
+    return (
+      <div className='flex flex-col items-center justify-center h-64 text-center'>
+        <div className='w-8 h-8 border-2 border-[#5ea9ea] border-t-transparent rounded-full animate-spin mb-4'></div>
+        <p className='text-[#888] text-sm'>Loading file content...</p>
+      </div>
+    );
 
   const lang = getLanguageFromFilename(selectedPath);
 
   return (
-    <div>
-      <div className='mb-2 text-xs text-gray-400 font-mono'>
-        Path: {selectedPath}
+    <div className='h-full flex flex-col'>
+      {/* File Header */}
+      <div className='flex-shrink-0 bg-[#303030] rounded-lg p-3 mb-4 border border-[#404040]'>
+        <div className='flex items-center gap-2 text-sm'>
+          <div className='w-4 h-4 bg-[#5ea9ea]/20 rounded flex items-center justify-center'>
+            <svg
+              className='w-3 h-3 text-[#5ea9ea]'
+              fill='currentColor'
+              viewBox='0 0 20 20'
+            >
+              <path d='M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z' />
+            </svg>
+          </div>
+          <span className='font-medium text-[#fafafa]'>
+            {selectedPath.split('/').pop()}
+          </span>
+        </div>
+        <div className='mt-2 text-xs text-[#888] font-mono'>{selectedPath}</div>
       </div>
-      <SyntaxHighlighter
-        language={lang}
-        style={vscDarkPlus}
-        customStyle={{ margin: 0, background: 'transparent', fontSize: 14 }}
-        wrapLongLines
-        showLineNumbers
-      >
-        {content}
-      </SyntaxHighlighter>
+
+      {/* File Content */}
+      <div className='flex-1 overflow-auto bg-[#171717] rounded-lg border border-[#303030]'>
+        <SyntaxHighlighter
+          language={lang}
+          style={vscDarkPlus}
+          customStyle={{
+            margin: 0,
+            background: 'transparent',
+            fontSize: '14px',
+            lineHeight: '1.5',
+            padding: '1rem',
+          }}
+          wrapLongLines
+          showLineNumbers
+          lineNumberStyle={{
+            color: '#6b7280',
+            fontSize: '12px',
+            paddingRight: '1rem',
+            userSelect: 'none',
+          }}
+        >
+          {content}
+        </SyntaxHighlighter>
+      </div>
     </div>
   );
 };

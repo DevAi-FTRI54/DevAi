@@ -67,7 +67,7 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
         // Add entire file content as a document
         const filePath = sourceFile.getFilePath();
         console.log('🔍 InMemoryCodeLoader adding file with path:', filePath);
-        
+
         docs.push(
           new Document({
             pageContent: sourceFile.getFullText(),
@@ -84,7 +84,9 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
         );
 
         // Add individual functions and classes
-        const addDeclaration = (node: FunctionDeclaration | ClassDeclaration) => {
+        const addDeclaration = (
+          node: FunctionDeclaration | ClassDeclaration
+        ) => {
           try {
             const start = node.getStartLineNumber(true);
             const end = node.getEndLineNumber();
@@ -100,25 +102,33 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
                   declarationName: name,
                   startLine: start,
                   endLine: end,
-                  declarationType: node instanceof ClassDeclaration ? 'class' : 'function',
+                  declarationType:
+                    node instanceof ClassDeclaration ? 'class' : 'function',
                 },
               })
             );
           } catch (error) {
-            console.warn(`⚠️ Failed to process declaration in ${sourceFile.getFilePath()}:`, error);
+            console.warn(
+              `⚠️ Failed to process declaration in ${sourceFile.getFilePath()}:`,
+              error
+            );
           }
         };
 
         // Extract functions and classes
         sourceFile.getFunctions().forEach(addDeclaration);
         sourceFile.getClasses().forEach(addDeclaration);
-
       } catch (error) {
-        console.warn(`⚠️ Failed to process ${sourceFile.getFilePath()}:`, error);
+        console.warn(
+          `⚠️ Failed to process ${sourceFile.getFilePath()}:`,
+          error
+        );
       }
     });
 
-    console.log(`✅ Generated ${docs.length} documents from ${this.files.length} files`);
+    console.log(
+      `✅ Generated ${docs.length} documents from ${this.files.length} files`
+    );
     return docs;
   }
 }

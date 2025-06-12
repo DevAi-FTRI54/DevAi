@@ -8,17 +8,28 @@ const GitHubLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#23262f]">
-      <h1 className="text-2xl text-white mb-6 font-tt-hoves font-normal leading-none tracking-tight text-center">
-        Get started with DevAi
-      </h1>
-      <button
-        onClick={handleLogin}
-        className="px-8 py-3 text-base bg-[#5ea9ea] hover:bg-[#31677a] text-white rounded-lg shadow-md flex items-center gap-2 transition-colors font-tt-hoves"
-      >
-        <FontAwesomeIcon icon={faGithub} />
-        Login with GitHub
-      </button>
+    <div className='min-h-screen bg-[#171717] flex flex-col items-center justify-center'>
+      <div className='bg-[#212121] border border-[#303030] rounded-2xl shadow-lg p-8 max-w-md mx-auto text-center'>
+        <div className='w-16 h-16 bg-gradient-to-br from-[#5ea9ea] to-[#4a9ae0] rounded-2xl flex items-center justify-center mx-auto mb-6'>
+          <FontAwesomeIcon icon={faGithub} className='text-white text-2xl' />
+        </div>
+
+        <h1 className='text-xl font-semibold text-[#fafafa] mb-2'>
+          Welcome to DevAI
+        </h1>
+        <p className='text-[#888] text-sm mb-6'>
+          Connect your GitHub account to get started with AI-powered code
+          analysis
+        </p>
+
+        <button
+          onClick={handleLogin}
+          className='w-full flex items-center justify-center gap-3 bg-[#5ea9ea] hover:bg-[#4a9ae0] text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl'
+        >
+          <FontAwesomeIcon icon={faGithub} />
+          Login with GitHub
+        </button>
+      </div>
     </div>
   );
 };

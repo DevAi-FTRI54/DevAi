@@ -11,7 +11,12 @@ function getQueryParam(name: string) {
   return params.get(name) || '';
 }
 
-const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact = false, org, installationId }) => {
+const RepoSelector: React.FC<RepoSelectorProps> = ({
+  onStartIngestion,
+  compact = false,
+  org,
+  installationId,
+}) => {
   // Context (optional, may be undefined)
   const context = useContext(IngestionContext);
   const contextOrg = context?.selectedOrg;
@@ -29,18 +34,23 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
   if (compact) {
     // In compact mode, always use context (which should be updated globally on org select)
     selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
-    effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
+    effectiveInstallationId =
+      installationId ??
+      contextInstallationId ??
+      getQueryParam('installation_id');
   } else {
     // In standard mode, use props if provided, else context/query
     selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
-    effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
+    effectiveInstallationId =
+      installationId ??
+      contextInstallationId ??
+      getQueryParam('installation_id');
   }
 
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setRepo] = useState<Repo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const [autoRetryAttempts, setAutoRetryAttempts] = useState(0);
   const [initializing, setInitializing] = useState(true);
 
@@ -59,18 +69,27 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
 
     try {
       // Compose query string
-      const orgQuery = selectedOrgToUse ? `org=${encodeURIComponent(selectedOrgToUse)}` : '';
+      const orgQuery = selectedOrgToUse
+        ? `org=${encodeURIComponent(selectedOrgToUse)}`
+        : '';
       const installQuery = effectiveInstallationId
         ? `installation_id=${encodeURIComponent(effectiveInstallationId)}`
         : '';
       const query = [orgQuery, installQuery].filter(Boolean).join('&');
-      const response = await fetch(`/api/auth/repos${query ? '?' + query : ''}`, { credentials: 'include' });
+      const response = await fetch(
+        `/api/auth/repos${query ? '?' + query : ''}`,
+        { credentials: 'include' }
+      );
 
       if (!response.ok) {
-        if (response.status === 401) throw new Error('Authentication required. Please log in again.');
+        if (response.status === 401)
+          throw new Error('Authentication required. Please log in again.');
         if (response.status === 400)
-          throw new Error('Github App installation not found. Please install the app first.');
-        if (response.status === 503) throw new Error('Service temporarily unavailable. Retrying...');
+          throw new Error(
+            'Github App installation not found. Please install the app first.'
+          );
+        if (response.status === 503)
+          throw new Error('Service temporarily unavailable. Retrying...');
         throw new Error(`Failed to load repositories (${response.status})`);
       }
 
@@ -86,19 +105,21 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
       }
 
       setRepos(data);
-      setRetryCount(0);
       setAutoRetryAttempts(0);
       setLoading(false);
       setInitializing(false);
     } catch (err: unknown) {
       console.error('Fetch repos error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
-
       if (attempt < 3) {
-        console.log(`Retrying in ${(attempt + 1) * 1000}ms... (attempt ${attempt + 1} / 3)`);
+        console.log(
+          `Retrying in ${(attempt + 1) * 1000}ms... (attempt ${
+            attempt + 1
+          } / 3)`
+        );
         setTimeout(() => {
-          setRetryCount(attempt + 1);
           fetchRepos(attempt + 1);
         }, (attempt + 1) * 1000);
         return;
@@ -119,7 +140,12 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
   }, [selectedOrgToUse, effectiveInstallationId]);
 
   useEffect(() => {
-    console.log('RepoSelector using org:', selectedOrgToUse, 'installationId:', effectiveInstallationId);
+    console.log(
+      'RepoSelector using org:',
+      selectedOrgToUse,
+      'installationId:',
+      effectiveInstallationId
+    );
   }, [selectedOrgToUse, effectiveInstallationId]);
 
   const handleSelect = async () => {
@@ -152,60 +178,90 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
     <div
       className={
         compact
-          ? 'w-full h-full flex flex-col items-start bg-[#171717] p-0 m-0'
-          : 'min-h-screen w-full bg-[#23262f] flex items-center justify-center'
+          ? 'w-full'
+          : 'min-h-screen w-full bg-[#171717] flex items-center justify-center'
       }
-      style={compact ? { minHeight: 0, height: '100%', overflow: 'hidden' } : {}}
     >
-      <div className={compact ? 'w-full h-full p-0 m-0 flex-1' : 'p-6 max-w-xl mx-auto'}>
-        <h2
-          className={compact ? 'text-xs font-bold mb-1' : 'text-xl font-bold mb-4'}
-          text-black
-          style={{ color: '#fff' }}
+      <div
+        className={
+          compact
+            ? 'w-full'
+            : 'bg-[#212121] border border-[#303030] rounded-2xl shadow-lg p-8 max-w-md mx-auto'
+        }
+      >
+        {!compact && (
+          <div className='text-center mb-6'>
+            <div className='w-12 h-12 bg-gradient-to-br from-[#5ea9ea] to-[#4a9ae0] rounded-xl flex items-center justify-center mx-auto mb-4'>
+              <svg
+                className='w-6 h-6 text-white'
+                fill='currentColor'
+                viewBox='0 0 20 20'
+              >
+                <path d='M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z' />
+              </svg>
+            </div>
+            <h2 className='text-lg font-semibold text-[#fafafa] mb-2'>
+              Select Repository
+            </h2>
+            <p className='text-[#888] text-sm'>
+              Choose a repository to index and analyze
+            </p>
+          </div>
+        )}
+
+        <h3
+          className={
+            compact
+              ? 'text-xs font-medium text-[#888] uppercase tracking-wider mb-2'
+              : 'sr-only'
+          }
         >
-          Select a repository to index
-        </h2>
+          {compact ? 'Repository Selection' : 'Select a repository to index'}
+        </h3>
 
         {loading && (
           <div
             className={
-              compact ? 'text-xs text-gray-300 flex items-center gap-2 mb-1' : 'text-gray-300 flex items-center gap-2'
+              compact
+                ? 'text-xs text-[#888] flex items-center gap-1.5 mb-2'
+                : 'text-[#888] flex items-center gap-2 justify-center mb-4'
             }
           >
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            {initializing ? 'Initializing...' : 'Loading repositories...'}
-            {autoRetryAttempts > 0 && <span>(auto-retry {autoRetryAttempts}/3)</span>}
-            {retryCount > 0 && <span>(retry {retryCount}/3)</span>}
+            <div
+              className={
+                compact
+                  ? 'w-3 h-3 border border-[#5ea9ea] border-t-transparent rounded-full animate-spin'
+                  : 'w-4 h-4 border-2 border-[#5ea9ea] border-t-transparent rounded-full animate-spin'
+              }
+            ></div>
+            <span className={compact ? 'text-xs' : 'text-sm'}>
+              {initializing ? 'Initializing...' : 'Loading repositories...'}
+            </span>
+            {autoRetryAttempts > 0 && (
+              <span>(retry {autoRetryAttempts}/3)</span>
+            )}
           </div>
         )}
 
         {error && (
           <div
             className={
-              compact ? 'p-2 bg-red-100 text-red-800 rounded mb-2 text-xs' : 'p-3 bg-red-100 text-red-800 rounded mb-4'
+              compact
+                ? 'p-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg mb-2 text-xs'
+                : 'p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg mb-4 text-sm'
             }
           >
-            <p className="font-semibold">Error: {error}</p>
+            <p className='font-medium'>Error: {error}</p>
           </div>
         )}
 
-        {!loading && !error && repos.length === 0 && !initializing && (
-          <div
-            className={
-              compact
-                ? 'p-2 bg-yellow-100 text-yellow-800 rounded mb-2 text-xs'
-                : 'p-3 bg-yellow-100 text-yellow-800 rounded mb-4'
-            }
-          ></div>
-        )}
-
         {repos.length > 0 && (
-          <>
+          <div className={compact ? 'space-y-2' : 'space-y-4'}>
             <select
               className={
                 compact
-                  ? 'w-full text-xs p-1 border rounded mb-1 text-black'
-                  : 'w-full p-2 border rounded mb-4 text-black'
+                  ? 'w-full text-xs p-2 bg-[#303030] border border-[#404040] rounded-lg text-[#fafafa] focus:outline-none focus:border-[#5ea9ea] transition-colors'
+                  : 'w-full bg-[#303030] border border-[#404040] text-[#fafafa] px-4 py-3 rounded-lg focus:outline-none focus:border-[#5ea9ea] transition-colors'
               }
               value={selectedRepo?.id ?? ''}
               onChange={(e) => {
@@ -213,9 +269,9 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
                 setRepo(repo ?? null);
               }}
             >
-              <option value="">-- Choose a repo --</option>
+              <option value=''>-- Choose a repository --</option>
               {repos.map((repo: Repo) => (
-                <option key={repo.id} value={repo.id}>
+                <option key={repo.id} value={repo.id} className='bg-[#303030]'>
                   {repo.full_name}
                 </option>
               ))}
@@ -225,14 +281,14 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact =
               onClick={handleSelect}
               className={
                 compact
-                  ? 'text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50'
-                  : 'px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50'
+                  ? 'w-full text-xs px-3 py-1.5 bg-[#5ea9ea] hover:bg-[#4a9ae0] disabled:bg-[#404040] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                  : 'w-full px-4 py-3 bg-[#5ea9ea] hover:bg-[#4a9ae0] disabled:bg-[#404040] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
               }
               disabled={!selectedRepo}
             >
-              🚀 Ingest Repo
+              {compact ? 'Ingest Repository' : 'Start Repository Ingestion'}
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>
