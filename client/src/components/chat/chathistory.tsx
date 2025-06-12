@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { formatDistanceToNow, format } from 'date-fns';
+// import { formatDistanceToNow, format } from 'date-fns';
 import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import type { ChatHistoryEntry } from '../../types';
 import type { ChatInputProps, Repo } from '../../types';
@@ -29,67 +29,67 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({
   const [search, setSearch] = useState('');
   const [fileFilter, setFileFilter] = useState('');
   // ✅ Add date filter states
-  const [dateFilter, setDateFilter] = useState<
-    'all' | 'today' | 'week' | 'month' | 'custom'
-  >('all');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
+  // const [dateFilter, setDateFilter] = useState<
+  //   'all' | 'today' | 'week' | 'month' | 'custom'
+  // >('all');
+  // const [customStartDate, setCustomStartDate] = useState('');
+  // const [customEndDate, setCustomEndDate] = useState('');
 
   // --- Sorting states ---
   const [sortKey, setSortKey] = useState<ColumnKey>('timestamp');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  // ✅ Helper function to check if date falls within filter range
-  const isDateInRange = (timestamp: Date | string) => {
-    const date = new Date(timestamp);
+  // // ✅ Helper function to check if date falls within filter range
+  // const isDateInRange = (timestamp: Date | string) => {
+  //   const date = new Date(timestamp);
 
-    switch (dateFilter) {
-      case 'today': {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return date >= today;
-      }
+  //   switch (dateFilter) {
+  // case 'today': {
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
+  //   return date >= today;
+  // }
 
-      case 'week': {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return date >= weekAgo;
-      }
+  // case 'week': {
+  //   const weekAgo = new Date();
+  //   weekAgo.setDate(weekAgo.getDate() - 7);
+  //   return date >= weekAgo;
+  // }
 
-      case 'month': {
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        return date >= monthAgo;
-      }
+  // case 'month': {
+  //   const monthAgo = new Date();
+  //   monthAgo.setMonth(monthAgo.getMonth() - 1);
+  //   return date >= monthAgo;
+  // }
 
-      case 'custom': {
-        if (!customStartDate && !customEndDate) return true;
-        const start = customStartDate
-          ? new Date(customStartDate)
-          : new Date('1900-01-01');
-        const end = customEndDate
-          ? new Date(customEndDate)
-          : new Date('2100-12-31');
-        end.setHours(23, 59, 59, 999); // Include entire end date
-        return date >= start && date <= end;
-      }
+  // case 'custom': {
+  //   if (!customStartDate && !customEndDate) return true;
+  //   const start = customStartDate
+  //     ? new Date(customStartDate)
+  //     : new Date('1900-01-01');
+  //   const end = customEndDate
+  //     ? new Date(customEndDate)
+  //     : new Date('2100-12-31');
+  //   end.setHours(23, 59, 59, 999); // Include entire end date
+  //   return date >= start && date <= end;
+  // }
 
-      default: // 'all'
-        return true;
-    }
-  };
+  //   default: // 'all'
+  //     return true;
+  // }
+  // };
 
-  const formatTimestamp = (timestamp: Date | string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+  // const formatTimestamp = (timestamp: Date | string) => {
+  //   const date = new Date(timestamp);
+  //   const now = new Date();
+  //   const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
-    if (diffInHours < 24) {
-      return formatDistanceToNow(date, { addSuffix: true });
-    } else {
-      return format(date, 'MMM d, yyyy h:mm a');
-    }
-  };
+  //   if (diffInHours < 24) {
+  //     return formatDistanceToNow(date, { addSuffix: true });
+  //   } else {
+  //     return format(date, 'MMM d, yyyy h:mm a');
+  //   }
+  // };
 
   // Try to find the full repo object by repoUrl from localStorage
   const repo: Repo | null = useMemo(() => {
@@ -148,12 +148,12 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({
       );
     }
 
-    // ✅ Filter: date range
-    if (dateFilter !== 'all') {
-      filtered = filtered.filter(
-        (log) => log.timestamp && isDateInRange(log.timestamp)
-      );
-    }
+    // // ✅ Filter: date range
+    // if (dateFilter !== 'all') {
+    //   filtered = filtered.filter(
+    //     (log) => log.timestamp && isDateInRange(log.timestamp)
+    //   );
+    // }
 
     // Sort by key/direction
     filtered = [...filtered].sort((a, b) => {
@@ -179,12 +179,12 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({
     logs,
     search,
     fileFilter,
-    dateFilter,
-    customStartDate,
-    customEndDate,
+    // dateFilter,
+    // customStartDate,
+    // customEndDate,
     sortKey,
     sortDir,
-    isDateInRange,
+    // isDateInRange,
   ]);
 
   function handleHeaderSort(column: ColumnKey) {
