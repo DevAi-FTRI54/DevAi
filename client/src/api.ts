@@ -33,7 +33,7 @@ export async function getUserOrgs(): Promise<{ id: number; login: string }[]> {
 
   if (res.status === 401) {
     console.warn('🔁 Token expired, redirecting to login...');
-    window.location.href = `${API_BASE_URL}/auth/github`; // Or redirect to your frontend GitHub login button
+    window.location.href = `https://dev-ai.app/login?expired=true`;
     throw new Error('GitHub token expired — reauth required');
   }
 
