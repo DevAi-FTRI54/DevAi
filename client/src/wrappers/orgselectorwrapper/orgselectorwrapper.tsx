@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import OrgSelector from '../../components/auth/orgselector';
 import { useNavigate } from 'react-router-dom';
 import { IngestionContext } from '../../components/ingestion/ingestioncontext';
