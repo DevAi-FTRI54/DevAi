@@ -33,6 +33,16 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
     super();
   }
 
+  // Helper method to convert absolute file path to repository-relative path
+  private getRelativeFilePath(absolutePath: string): string {
+    // Remove the repo path prefix to get repository-relative path
+    const relativePath = path.relative(this.repoPath, absolutePath);
+    // Normalize path separators for consistency
+    const normalizedPath = relativePath.replace(/\\/g, '/');
+    console.log(`🔄 Path conversion: ${absolutePath} -> ${normalizedPath}`);
+    return normalizedPath;
+  }
+
   async load(): Promise<Document[]> {
     // STEP 1: Get the tsconfig.json file path
     //! Important: The alternative is to omit the config gile completely
@@ -87,13 +97,16 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
 
     sourceFiles.forEach((sourceFile: any) => {
       // STEP 3.1: First add ENTIRE file content
+      const absoluteFilePath = sourceFile.getFilePath();
+      const relativeFilePath = this.getRelativeFilePath(absoluteFilePath);
+
       docs.push(
         new Document({
           pageContent: sourceFile.getFullText(),
           metadata: {
             repoId: this.repoId,
-            filePath: sourceFile.getFilePath(),
-            declarationName: path.basename(sourceFile.getFilePath()),
+            filePath: relativeFilePath, // Use relative path instead of absolute
+            declarationName: path.basename(relativeFilePath),
             startLine: sourceFile.getStartLineNumber(true),
             endLine: sourceFile.getEndLineNumber(),
           },
@@ -107,13 +120,13 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
         const end = node.getEndLineNumber();
 
         // For each source file, push new document containing both content and metadata.
-        // Metatada format: filepath - declarationName - startLine - endLine
+        // Metadata format: filepath - declarationName - startLine - endLine
         docs.push(
           new Document({
             pageContent: node.getFullText(),
             metadata: {
               repoId: this.repoId,
-              filePath: sourceFile.getFilePath(),
+              filePath: relativeFilePath, // Use relative path instead of absolute
               declarationName: node.getName() ?? '<anonymous>',
               startLine: start,
               endLine: end,

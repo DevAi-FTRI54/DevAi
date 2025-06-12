@@ -65,14 +65,17 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
     sourceFiles.forEach((sourceFile: SourceFile) => {
       try {
         // Add entire file content as a document
+        const filePath = sourceFile.getFilePath();
+        console.log('🔍 InMemoryCodeLoader adding file with path:', filePath);
+        
         docs.push(
           new Document({
             pageContent: sourceFile.getFullText(),
             metadata: {
               repoId: this.repoId,
               repoName: this.repoName,
-              filePath: sourceFile.getFilePath(),
-              declarationName: path.basename(sourceFile.getFilePath()),
+              filePath: filePath,
+              declarationName: path.basename(filePath),
               startLine: 1,
               endLine: sourceFile.getEndLineNumber(),
               fileSize: sourceFile.getFullText().length,

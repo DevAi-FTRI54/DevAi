@@ -223,6 +223,12 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     const fetchFile = async () => {
       try {
+        console.log('🔍 FilePreview fetching:', {
+          repoUrl,
+          selectedPath,
+          fullUrl: `https://api.github.com/repos/${repoUrl}/contents/${selectedPath}`
+        });
+        
         const res = await fetch(
           `https://api.github.com/repos/${repoUrl}/contents/${selectedPath}`,
           {
