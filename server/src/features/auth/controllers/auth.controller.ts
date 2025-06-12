@@ -82,7 +82,19 @@ export const handleGitHubCallback = async (
     return;
   }
 
-  res.redirect(`${FRONTEND_BASE_URL}/auth/callback?code=${code}`);
+  try {
+    const githubToken = await exchangeCodeForToken(code);
+    res.cookie('github_access_token', githubToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+
+    res.redirect(`${FRONTEND_BASE_URL}/orgselector`);
+  } catch (err: any) {
+    console.error('GitHub callback failed:', err.message);
+    res.status(500).json({ error: 'Token exchange failed' });
+  }
 };
 
 // 2. Get GitHub response   OG!!!!!!
@@ -141,59 +153,59 @@ export const handleGitHubCallback = async (
 //   }
 // };
 
-export const completeAuth = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
-  try {
-    const code = req.body.code as string;
-    if (!code) return res.status(400).send('Missing code');
+// export const completeAuth = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const code = req.body.code as string;
+//     if (!code) return res.status(400).send('Missing code');
 
-    const githubToken = await exchangeCodeForToken(code);
+//     const githubToken = await exchangeCodeForToken(code);
 
-    res.cookie('github_access_token', githubToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
+//     res.cookie('github_access_token', githubToken, {
+//       httpOnly: true,
+//       secure: true,
+//       sameSite: 'none',
+//     });
 
-    const githubData = await getGitHubUserProfile(githubToken);
-    const user = await findOrCreateUser(githubData, githubToken);
+//     const githubData = await getGitHubUserProfile(githubToken);
+//     const user = await findOrCreateUser(githubData, githubToken);
 
-    const token = generateUserJWTToken({
-      _id: user._id!.toString(),
-      username: user.username,
-    });
+//     const token = generateUserJWTToken({
+//       _id: user._id!.toString(),
+//       username: user.username,
+//     });
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
+//     res.cookie('token', token, {
+//       httpOnly: true,
+//       secure: true,
+//       sameSite: 'none',
+//     });
 
-    const installations = await getAppInstallations(githubToken);
-    const { isInstalled, installationId } = checkIfAppInstalled(installations);
+//     const installations = await getAppInstallations(githubToken);
+//     const { isInstalled, installationId } = checkIfAppInstalled(installations);
 
-    if (installationId) {
-      res.cookie('installation_id', installationId, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
-    }
+//     if (installationId) {
+//       res.cookie('installation_id', installationId, {
+//         httpOnly: true,
+//         secure: true,
+//         sameSite: 'none',
+//       });
+//     }
 
-    res.status(200).json({
-      token,
-      githubToken,
-      installed: isInstalled,
-      installationId,
-      needsInstall: !isInstalled,
-    });
-  } catch (err: any) {
-    console.error('❌ Error in completeAuth:', err);
-    handleApiError(err, res, 'Authentication completion failed');
-  }
-};
+//     res.status(200).json({
+//       token,
+//       githubToken,
+//       installed: isInstalled,
+//       installationId,
+//       needsInstall: !isInstalled,
+//     });
+//   } catch (err: any) {
+//     console.error('❌ Error in completeAuth:', err);
+//     handleApiError(err, res, 'Authentication completion failed');
+//   }
+// };
 
 // Add this to your auth.controller.ts
 

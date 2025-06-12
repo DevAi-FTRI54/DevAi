@@ -1,9 +1,7 @@
 import fetch from 'node-fetch';
 import mongoose from 'mongoose';
-import { exchangeCodeForToken, getGitHubUserProfile, getRepositoriesWithMeta, } from '../services/github.service.js';
-import { checkIfAppInstalled, getAppInstallations, } from '../services/installation.service.js';
-import { findOrCreateUser } from '../services/user.service.js';
-import { generateUserJWTToken } from '../services/jwt.service.js';
+import { exchangeCodeForToken, getRepositoriesWithMeta, } from '../services/github.service.js';
+import { getAppInstallations, } from '../services/installation.service.js';
 import { handleApiError } from '../utils/error.utils.js';
 import 'dotenv/config';
 console.log('Loading auth.controller.ts');
@@ -55,7 +53,19 @@ export const handleGitHubCallback = async (req, res) => {
         res.status(400).send('Missing code');
         return;
     }
-    res.redirect(`${FRONTEND_BASE_URL}/auth/callback?code=${code}`);
+    try {
+        const githubToken = await exchangeCodeForToken(code);
+        res.cookie('github_access_token', githubToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+        });
+        res.redirect(`${FRONTEND_BASE_URL}/orgselector`);
+    }
+    catch (err) {
+        console.error('GitHub callback failed:', err.message);
+        res.status(500).json({ error: 'Token exchange failed' });
+    }
 };
 // 2. Get GitHub response   OG!!!!!!
 // export const completeAuth = async (
@@ -106,50 +116,51 @@ export const handleGitHubCallback = async (req, res) => {
 //     handleApiError(err, res, 'Authentication completion failed');
 //   }
 // };
-export const completeAuth = async (req, res) => {
-    try {
-        const code = req.body.code;
-        if (!code)
-            return res.status(400).send('Missing code');
-        const githubToken = await exchangeCodeForToken(code);
-        res.cookie('github_access_token', githubToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-        });
-        const githubData = await getGitHubUserProfile(githubToken);
-        const user = await findOrCreateUser(githubData, githubToken);
-        const token = generateUserJWTToken({
-            _id: user._id.toString(),
-            username: user.username,
-        });
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-        });
-        const installations = await getAppInstallations(githubToken);
-        const { isInstalled, installationId } = checkIfAppInstalled(installations);
-        if (installationId) {
-            res.cookie('installation_id', installationId, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'none',
-            });
-        }
-        res.status(200).json({
-            token,
-            githubToken,
-            installed: isInstalled,
-            installationId,
-            needsInstall: !isInstalled,
-        });
-    }
-    catch (err) {
-        console.error('❌ Error in completeAuth:', err);
-        handleApiError(err, res, 'Authentication completion failed');
-    }
-};
+// export const completeAuth = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const code = req.body.code as string;
+//     if (!code) return res.status(400).send('Missing code');
+//     const githubToken = await exchangeCodeForToken(code);
+//     res.cookie('github_access_token', githubToken, {
+//       httpOnly: true,
+//       secure: true,
+//       sameSite: 'none',
+//     });
+//     const githubData = await getGitHubUserProfile(githubToken);
+//     const user = await findOrCreateUser(githubData, githubToken);
+//     const token = generateUserJWTToken({
+//       _id: user._id!.toString(),
+//       username: user.username,
+//     });
+//     res.cookie('token', token, {
+//       httpOnly: true,
+//       secure: true,
+//       sameSite: 'none',
+//     });
+//     const installations = await getAppInstallations(githubToken);
+//     const { isInstalled, installationId } = checkIfAppInstalled(installations);
+//     if (installationId) {
+//       res.cookie('installation_id', installationId, {
+//         httpOnly: true,
+//         secure: true,
+//         sameSite: 'none',
+//       });
+//     }
+//     res.status(200).json({
+//       token,
+//       githubToken,
+//       installed: isInstalled,
+//       installationId,
+//       needsInstall: !isInstalled,
+//     });
+//   } catch (err: any) {
+//     console.error('❌ Error in completeAuth:', err);
+//     handleApiError(err, res, 'Authentication completion failed');
+//   }
+// };
 // Add this to your auth.controller.ts
 export const getGitHubUserOrgs = async (req, res) => {
     try {
