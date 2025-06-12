@@ -8,7 +8,7 @@ const GITHUB_APP_ID = process.env.GITHUB_APP_ID;
 const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID;
 const GITHUB_APP_CLIENT_SECRET = process.env.GITHUB_APP_CLIENT_SECRET;
 const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI;
-const REDIRECT_URI = 'https://devai-b2ui.onrender.com/auth/callback';
+const REDIRECT_URI = 'https://devai-b2ui.onrender.com/api/auth/callback';
 // Exchange OAuth code for access token
 // export async function exchangeCodeForToken(code: string): Promise<string> {
 //   const response = await fetch('https://github.com/login/oauth/access_token', {
