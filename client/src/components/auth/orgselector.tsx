@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { getUserOrgs } from '../../api';
+import { getUserOrgs } from '../../api'; // adjust path as needed
 
-type Org = {
-  id: number;
-  login: string;
-};
+type Org = { id: number; login: string };
 
 const OrgSelector: React.FC<{ onSelect: (org: string) => void }> = ({ onSelect }) => {
   const [orgs, setOrgs] = useState<Org[]>([]);
@@ -13,7 +10,7 @@ const OrgSelector: React.FC<{ onSelect: (org: string) => void }> = ({ onSelect }
   useEffect(() => {
     const fetchOrgs = async () => {
       try {
-        const orgs = await getUserOrgs();
+        const orgs = await getUserOrgs(); // No token passed
         setOrgs(orgs);
       } catch (err) {
         console.error('Failed to load orgs:', err);

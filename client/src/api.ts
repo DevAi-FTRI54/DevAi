@@ -25,6 +25,10 @@ export async function getUserOrgs(): Promise<{ id: number; login: string }[]> {
   const res = await fetch(`${API_BASE_URL}/auth/orgs`, {
     method: 'GET',
     credentials: 'include',
+    headers: {
+      'Cache-Control': 'no-cache',
+      // Authorization: `Bearer ${token}`,
+    },
   });
   if (!res.ok) throw new Error(`Failed to fetch orgs: ${res.statusText}`);
   const data = await res.json();

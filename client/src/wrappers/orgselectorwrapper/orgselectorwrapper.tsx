@@ -1,17 +1,15 @@
-import { useState, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import OrgSelector from '../../components/auth/orgselector';
 import { useNavigate } from 'react-router-dom';
 import { IngestionContext } from '../../components/ingestion/ingestioncontext';
 
 const OrgSelectorWrapper = () => {
-  const githubToken = localStorage.getItem('githubToken');
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const context = useContext(IngestionContext);
   const navigate = useNavigate();
 
   const handleSelectOrg = (org: string, installationId?: string) => {
     setSelectedOrg(org);
-    // Update context immediately when user selects org
     if (context) {
       context.setSelectedOrg(org);
       if (installationId) {
@@ -23,7 +21,7 @@ const OrgSelectorWrapper = () => {
 
   return (
     <div>
-      <OrgSelector token={githubToken ?? ''} onSelect={handleSelectOrg} />
+      <OrgSelector onSelect={handleSelectOrg} />
       {selectedOrg && <div>Selected org: {selectedOrg}</div>}
     </div>
   );
