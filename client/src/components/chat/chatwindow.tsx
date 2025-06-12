@@ -16,8 +16,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSelectFile }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  console.log('☠️In ChatWindow, onSelectFile is:', onSelectFile);
-  console.log('🎯 ChatWindow rendering:', messages.length, 'messages');
+  // console.log('☠️In ChatWindow, onSelectFile is:', onSelectFile);
+  // console.log('🎯 ChatWindow rendering:', messages.length, 'messages');
 
   return (
     <div className='space-y-6'>

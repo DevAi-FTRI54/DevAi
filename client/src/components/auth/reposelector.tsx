@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { IngestionContext } from '../../components/ingestion/ingestioncontext';
 import type { Repo } from '../../types';
 import type { RepoSelectorProps } from '../../types';
+import { getReposForOrg, startRepoIngestion } from '../../api';
 
 // Helper: Parse query params
 function getQueryParam(name: string) {
@@ -61,6 +62,63 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
     console.log('Auto retry attempts:', autoRetryAttempts);
   }, [loading, repos.length, error, autoRetryAttempts]);
 
+  // const fetchRepos = async (attempt = 0, isRetry = false) => {
+  //   if (!isRetry) {
+  //     setLoading(true);
+  //     setError(null);
+  //   }
+
+  // try {
+  //   // Compose query string
+  //   const orgQuery = selectedOrgToUse ? `org=${encodeURIComponent(selectedOrgToUse)}` : '';
+  //   const installQuery = effectiveInstallationId
+  //     ? `installation_id=${encodeURIComponent(effectiveInstallationId)}`
+  //     : '';
+  //   const query = [orgQuery, installQuery].filter(Boolean).join('&');
+  //   const response = await fetch(`/api/auth/repos${query ? '?' + query : ''}`, { credentials: 'include' });
+
+  //   if (!response.ok) {
+  //     if (response.status === 401) throw new Error('Authentication required. Please log in again.');
+  //     if (response.status === 400)
+  //       throw new Error('Github App installation not found. Please install the app first.');
+  //     if (response.status === 503) throw new Error('Service temporarily unavailable. Retrying...');
+  //     throw new Error(`Failed to load repositories (${response.status})`);
+  //   }
+
+  //   const data = (await response.json()) as Repo[];
+
+  //   if (data.length === 0 && autoRetryAttempts < 3) {
+  //     console.log(`Auto-retrying... (${autoRetryAttempts + 1}/3)`);
+  //     setTimeout(() => {
+  //       setAutoRetryAttempts((prev) => prev + 1);
+  //       fetchRepos(0, true);
+  //     }, 1000);
+  //     return;
+  //   }
+
+  //         setRepos(data);
+  //     setRetryCount(0);
+  //     setAutoRetryAttempts(0);
+  //     setLoading(false);
+  //     setInitializing(false);
+  //   } catch (err: unknown) {
+  //     console.error('Fetch repos error:', err);
+  //     const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+  //     setError(errorMessage);
+
+  //     if (attempt < 3) {
+  //       console.log(`Retrying in ${(attempt + 1) * 1000}ms... (attempt ${attempt + 1} / 3)`);
+  //       setTimeout(() => {
+  //         setRetryCount(attempt + 1);
+  //         fetchRepos(attempt + 1);
+  //       }, (attempt + 1) * 1000);
+  //       return;
+  //     }
+  //     setLoading(false);
+  //     setInitializing(false);
+  //   }
+  // };
+
   const fetchRepos = async (attempt = 0, isRetry = false) => {
     if (!isRetry) {
       setLoading(true);
@@ -68,35 +126,13 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
     }
 
     try {
-      // Compose query string
-      const orgQuery = selectedOrgToUse
-        ? `org=${encodeURIComponent(selectedOrgToUse)}`
-        : '';
-      const installQuery = effectiveInstallationId
-        ? `installation_id=${encodeURIComponent(effectiveInstallationId)}`
-        : '';
-      const query = [orgQuery, installQuery].filter(Boolean).join('&');
-      const response = await fetch(
-        `/api/auth/repos${query ? '?' + query : ''}`,
-        { credentials: 'include' }
-      );
-
-      if (!response.ok) {
-        if (response.status === 401)
-          throw new Error('Authentication required. Please log in again.');
-        if (response.status === 400)
-          throw new Error(
-            'Github App installation not found. Please install the app first.'
-          );
-        if (response.status === 503)
-          throw new Error('Service temporarily unavailable. Retrying...');
-        throw new Error(`Failed to load repositories (${response.status})`);
-      }
-
-      const data = (await response.json()) as Repo[];
+      // Use new helper instead of raw fetch:
+      const data = await getReposForOrg({
+        org: selectedOrgToUse,
+        installation_id: effectiveInstallationId,
+      });
 
       if (data.length === 0 && autoRetryAttempts < 3) {
-        console.log(`Auto-retrying... (${autoRetryAttempts + 1}/3)`);
         setTimeout(() => {
           setAutoRetryAttempts((prev) => prev + 1);
           fetchRepos(0, true);
@@ -108,10 +144,17 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
       setAutoRetryAttempts(0);
       setLoading(false);
       setInitializing(false);
-    } catch (err: unknown) {
-      console.error('Fetch repos error:', err);
-      const errorMessage =
-        err instanceof Error ? err.message : 'An unknown error occurred';
+    } catch (err: any) {
+      let errorMessage: string;
+      if (err.status === 401)
+        errorMessage = 'Authentication required. Please log in again.';
+      else if (err.status === 400)
+        errorMessage =
+          'Github App installation not found. Please install the app first.';
+      else if (err.status === 503)
+        errorMessage = 'Service temporarily unavailable. Retrying...';
+      else errorMessage = err.message || 'Failed to load repositories.';
+
       setError(errorMessage);
       if (attempt < 3) {
         console.log(
@@ -152,20 +195,14 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
     if (!selectedRepo) return;
 
     try {
-      const res = await fetch('/api/index/ingest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          repoUrl: selectedRepo.html_url,
-          sha: selectedRepo.sha,
-          installation_id: effectiveInstallationId,
-        }),
+      // Use new helper:
+      const body = await startRepoIngestion({
+        repoUrl: selectedRepo.html_url,
+        sha: selectedRepo.sha,
+        installation_id: effectiveInstallationId,
       });
 
-      if (!res.ok) throw new Error(`Ingestion failed`);
-      const body = await res.json();
       const jobId: string = body.jobId;
-
       onStartIngestion(jobId, selectedRepo);
       console.log(`✅ Started ingesting ${selectedRepo.full_name}`);
     } catch (error) {
@@ -173,6 +210,29 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
       setError('Failed to start ingestion. Please try again.');
     }
   };
+
+  //   try {
+  //     const res = await fetch('/api/index/ingest', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         repoUrl: selectedRepo.html_url,
+  //         sha: selectedRepo.sha,
+  //         installation_id: effectiveInstallationId,
+  //       }),
+  //     });
+
+  //     if (!res.ok) throw new Error(`Ingestion failed`);
+  //     const body = await res.json();
+  //     const jobId: string = body.jobId;
+
+  //     onStartIngestion(jobId, selectedRepo);
+  //     alert(`Started ingesting ${selectedRepo.full_name}`);
+  //   } catch (error) {
+  //     console.error('Error indexing repo:', error);
+  //     alert(`Failed to start ingestion. Please try again.`);
+  //   }
+  // };
 
   return (
     <div

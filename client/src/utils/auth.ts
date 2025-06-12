@@ -33,7 +33,7 @@ export function decodeJWT(token: string): JWTPayload | null {
  */
 export function getTokenFromCookies(): string | null {
   if (typeof document === 'undefined') return null;
-  
+
   const cookies = document.cookie.split(';');
   for (const cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
@@ -47,16 +47,19 @@ export function getTokenFromCookies(): string | null {
 /**
  * Get current user information from JWT token in cookies
  */
-export function getCurrentUser(): { userId: string; githubUsername: string } | null {
+export function getCurrentUser(): {
+  userId: string;
+  githubUsername: string;
+} | null {
   const token = getTokenFromCookies();
   if (!token) return null;
-  
+
   const payload = decodeJWT(token);
   if (!payload) return null;
-  
+
   return {
     userId: payload.userId,
-    githubUsername: payload.githubUsername
+    githubUsername: payload.githubUsername,
   };
 }
 
@@ -65,18 +68,18 @@ export function getCurrentUser(): { userId: string; githubUsername: string } | n
  */
 export function formatDisplayName(githubUsername: string): string {
   if (!githubUsername) return 'User';
-  
+
   console.log('🔍 Formatting GitHub username:', githubUsername);
-  
+
   // Handle common patterns in GitHub usernames
   let name = githubUsername.toLowerCase();
-  
+
   // Remove common suffixes (numbers, common words)
   name = name.replace(/(\d+|dev|007|123|_dev|developer|coding|code)$/g, '');
-  
+
   // Split by common separators
   const parts = name.split(/[-_\.]/);
-  
+
   if (parts.length >= 2) {
     // If we have multiple parts, assume first is first name, second is last name
     const firstName = capitalizeFirst(parts[0]);
@@ -87,31 +90,75 @@ export function formatDisplayName(githubUsername: string): string {
   } else if (parts.length === 1) {
     // Single part - try to extract first name and last initial
     const singleName = parts[0];
-    
+
     // Common patterns like "marekbednar" or "johnsmith"
     if (singleName.length > 6) {
       // Look for common name patterns - extended list
       const commonFirstNames = [
-        'alex', 'john', 'mike', 'david', 'chris', 'matt', 'paul', 'mark', 
-        'eric', 'kyle', 'marek', 'tom', 'joe', 'dan', 'sam', 'ben', 'max', 
-        'ryan', 'adam', 'jack', 'james', 'robert', 'michael', 'william', 
-        'richard', 'charles', 'joseph', 'thomas', 'christopher', 'daniel',
-        'matthew', 'anthony', 'donald', 'steven', 'andrew', 'kenneth',
-        'joshua', 'kevin', 'brian', 'george', 'edward', 'ronald', 'timothy',
-        'jason', 'jeffrey', 'frank', 'gary', 'stephen', 'eric'
+        'alex',
+        'john',
+        'mike',
+        'david',
+        'chris',
+        'matt',
+        'paul',
+        'mark',
+        'eric',
+        'kyle',
+        'marek',
+        'tom',
+        'joe',
+        'dan',
+        'sam',
+        'ben',
+        'max',
+        'ryan',
+        'adam',
+        'jack',
+        'james',
+        'robert',
+        'michael',
+        'william',
+        'richard',
+        'charles',
+        'joseph',
+        'thomas',
+        'christopher',
+        'daniel',
+        'matthew',
+        'anthony',
+        'donald',
+        'steven',
+        'andrew',
+        'kenneth',
+        'joshua',
+        'kevin',
+        'brian',
+        'george',
+        'edward',
+        'ronald',
+        'timothy',
+        'jason',
+        'jeffrey',
+        'frank',
+        'gary',
+        'stephen',
+        'eric',
       ];
-      
+
       for (const firstName of commonFirstNames) {
         if (singleName.startsWith(firstName)) {
           const remainder = singleName.substring(firstName.length);
           if (remainder.length > 0) {
-            const result = `${capitalizeFirst(firstName)} ${remainder.charAt(0).toUpperCase()}.`;
+            const result = `${capitalizeFirst(firstName)} ${remainder
+              .charAt(0)
+              .toUpperCase()}.`;
             console.log('✅ Single-part matched name result:', result);
             return result;
           }
         }
       }
-      
+
       // Special handling for specific known patterns
       if (singleName === 'eshankman') {
         return 'Eric S.';
@@ -123,15 +170,17 @@ export function formatDisplayName(githubUsername: string): string {
         return 'Marek B.';
       }
     }
-    
+
     // Fallback: just capitalize the name
     const result = `${capitalizeFirst(singleName)}`;
     console.log('✅ Fallback single name result:', result);
     return result;
   }
-  
+
   // Ultimate fallback
-  const result = capitalizeFirst(githubUsername.split(/[^a-zA-Z]/)[0] || 'User');
+  const result = capitalizeFirst(
+    githubUsername.split(/[^a-zA-Z]/)[0] || 'User'
+  );
   console.log('✅ Ultimate fallback result:', result);
   return result;
 }

@@ -1,142 +1,43 @@
 import React, { useEffect, useState } from 'react';
+import { getUserOrgs } from '../../api'; // adjust path as needed
 
-type Org = {
-  id: number;
-  login: string;
-};
+type Org = { id: number; login: string };
 
-const OrgSelector: React.FC<{
-  onSelect: (org: string) => void;
-}> = ({ onSelect }) => {
+const OrgSelector: React.FC<{ onSelect: (org: string) => void }> = ({
+  onSelect,
+}) => {
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [loadingMessage, setLoadingMessage] = useState(
-    'Loading organizations...'
-  );
+  // const [loadingMessage, setLoadingMessage] = useState(
+  //   'Loading organizations...'
+  // );
 
   useEffect(() => {
-    let isMounted = true; // Prevent state updates if component unmounts
-    let fetchPromise: Promise<void> | null = null; // Deduplicate requests
-    let timeoutId: NodeJS.Timeout;
-
-    const fetchOrgs = async (retryCount = 0) => {
-      // Prevent duplicate requests
-      if (fetchPromise) {
-        return fetchPromise;
-      }
-
-      fetchPromise = (async () => {
-        try {
-          if (!isMounted) return;
-
-          setError(null);
-          setLoadingMessage(
-            retryCount > 0
-              ? `Retrying... (${retryCount + 1}/3)`
-              : 'Loading organizations...'
-          );
-          console.log('🌐 Fetching organizations...');
-
-          // Add timeout to prevent hanging requests
-          const controller = new AbortController();
-          timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-
-          const res = await fetch('/api/auth/orgs', {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-              'Cache-Control': 'no-cache',
-            },
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeoutId);
-
-          if (!isMounted) return;
-
-          if (!res.ok) {
-            if (res.status === 401) {
-              throw new Error('Authentication required. Please log in again.');
-            }
-            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          }
-
-          const data = await res.json();
-          console.log('👉 orgs from server:', data);
-
-          if (!isMounted) return;
-
-          if (!Array.isArray(data)) {
-            console.error('Expected array of orgs but got:', data);
-            setOrgs([]);
-            setLoading(false);
-            return;
-          }
-
-          setOrgs(data);
-          setLoading(false);
-
-          // Auto-select if only one organization
-          if (data.length === 1) {
-            console.log(
-              '🎯 Auto-selecting single organization:',
-              data[0].login
-            );
-            onSelect(data[0].login);
-          }
-        } catch (err: any) {
-          clearTimeout(timeoutId);
-          if (!isMounted) return;
-
-          if (err.name === 'AbortError') {
-            console.error('❌ Request timed out');
-            setError('Request timed out. Please try again.');
-          } else {
-            console.error('❌ Failed to fetch organizations:', err);
-
-            // Retry logic for network errors (but not auth errors)
-            if (
-              retryCount < 2 &&
-              !err.message.includes('Authentication') &&
-              err.name !== 'AbortError'
-            ) {
-              console.log(`🔄 Retrying... (${retryCount + 1}/2)`);
-              setTimeout(() => {
-                fetchPromise = null; // Reset promise for retry
-                fetchOrgs(retryCount + 1);
-              }, 1000 * (retryCount + 1));
-              return;
-            }
-
-            setError(err.message || 'Failed to load organizations');
-          }
-          setLoading(false);
-        } finally {
-          fetchPromise = null; // Reset for future calls
+    const fetchOrgs = async () => {
+      try {
+        const orgs = await getUserOrgs(); // No token passed
+        setOrgs(orgs);
+      } catch (err) {
+        setOrgs([]);
+        console.error('Failed to load orgs:', err);
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Unexpected error');
         }
-      })();
-
-      return fetchPromise;
+      } finally {
+        setLoading(false);
+      }
     };
-
     fetchOrgs();
+  }, []);
 
-    return () => {
-      isMounted = false; // Cleanup to prevent state updates
-      clearTimeout(timeoutId); // Clear any pending timeouts
-    };
-  }, []); // No dependencies to prevent re-runs
-
-  if (loading)
-    return (
-      <div className='min-h-screen bg-[#171717] flex items-center justify-center'>
-        <div className='bg-[#212121] border border-[#303030] rounded-2xl shadow-lg p-8 max-w-md mx-auto text-center'>
-          <div className='w-8 h-8 border-2 border-[#5ea9ea] border-t-transparent rounded-full animate-spin mx-auto mb-4'></div>
-          <p className='text-[#888] text-sm'>{loadingMessage}</p>
-        </div>
-      </div>
-    );
+  if (loading) return <div>Loading organizations ...</div>;
+  // if (orgs.length === 1) {
+  //   onSelect(orgs[0].login);
+  //   return null;
+  // }
 
   if (error)
     return (
@@ -168,11 +69,6 @@ const OrgSelector: React.FC<{
         </div>
       </div>
     );
-
-  if (orgs.length === 1) {
-    onSelect(orgs[0].login);
-    return null;
-  }
 
   return (
     <div className='min-h-screen bg-[#171717] flex flex-col items-center justify-center'>

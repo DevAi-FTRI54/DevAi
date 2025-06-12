@@ -14,6 +14,7 @@ import AboutUs from './components/about/aboutus';
 import OrgSelectorWrapper from './wrappers/orgselectorwrapper/orgselectorwrapper';
 import AuthCallback from './components/auth/authcallback'; // adjust if needed
 import UserSettings from './components/settings/settings';
+import ComingSoon from './components/coming soon/featurescoming';
 
 function App() {
   console.log('🏗️ App component rendered at:', new Date().toISOString());
@@ -26,6 +27,8 @@ function App() {
           <Route path="/" element={<AppBarHomeLayout> <MainContent /> </AppBarHomeLayout> } />
           <Route path="/faq"  element={<AppBarHomeLayout> <FAQ /> </AppBarHomeLayout> } />
           <Route path="/about" element={ <AppBarHomeLayout> <AboutUs /> </AppBarHomeLayout> } />
+          <Route path="/solutions" element={ <AppBarHomeLayout> <ComingSoon /> </AppBarHomeLayout> } />
+          <Route path="/pricing" element={ <AppBarHomeLayout> <ComingSoon /> </AppBarHomeLayout> } />
           <Route path="/login" element={<GitHubLogin />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/orgselector" element={<OrgSelectorWrapper /> } />

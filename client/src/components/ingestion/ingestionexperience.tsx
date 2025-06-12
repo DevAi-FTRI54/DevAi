@@ -35,11 +35,6 @@ const IngestionExperience: React.FC<
   const selectedOrg = context.selectedOrg || org;
   const selectedInstallationId = context.installationId || installationId;
 
-  console.log('--- ingestionexperience.tsx ---------');
-  console.log(compact);
-  console.log(selectedOrg);
-  console.log(selectedInstallationId);
-
   const handleStartIngestion = (jobId: string, repo: Repo) => {
     setJobId(jobId);
     setSelectedRepo(repo);

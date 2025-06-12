@@ -19,7 +19,14 @@ const app = express();
 
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'https://a59d8fd60bb0.ngrok.app'],
+    origin: [
+      'http://localhost:5173',
+      'https://a59d8fd60bb0.ngrok.app',
+      'https://dev-ai.app',
+      'https://www.dev-ai.app',
+      'https://devai-eshankman-devai-app.vercel.app/',
+      'https://devai-devai-app.vercel.app/',
+    ],
     credentials: true,
   })
 );
@@ -105,12 +112,7 @@ app.use((req, res) => {
 });
 
 // --- Global error handler --------------------------------------
-const errorHandler: ErrorRequestHandler = (
-  err: ServerError,
-  _req,
-  res,
-  _next
-) => {
+const errorHandler: ErrorRequestHandler = (err: ServerError, _req, res, _next) => {
   const defaultError: ServerError = {
     log: 'Express error handler caught unknown middleware error',
     status: 500,

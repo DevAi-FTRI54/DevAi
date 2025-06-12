@@ -41,9 +41,9 @@ const UserAvatarMenu: React.FC = () => {
   return (
     <div
       className='absolute right-6 z-50'
-      style={{ 
+      style={{
         pointerEvents: 'auto', // ensure click passes through overlay
-        top: '14px' // Custom positioning between top and file preview line
+        top: '14px', // Custom positioning between top and file preview line
       }}
     >
       <button

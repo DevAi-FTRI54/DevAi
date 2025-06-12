@@ -4,6 +4,8 @@ export interface ChatHistoryEntry {
   file?: string;
   startLine?: number;
   endLine?: number;
+  timestamp: Date;
+  conversationId?: string;
 }
 
 export interface ChatInputProps {

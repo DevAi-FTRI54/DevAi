@@ -1,35 +1,44 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { completeAuth } from '../../api';
 
 const AuthCallback: React.FC = () => {
   console.log(
     '🔄 AuthCallback component mounted at:',
     new Date().toISOString()
   );
-
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔄 AuthCallback effect running at:', new Date().toISOString());
-    // Check if there's an error in the URL params
-    const urlParams = new URLSearchParams(window.location.search);
-    const errorParam = urlParams.get('error');
+    const doAuth = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      if (!code) return;
 
-    if (errorParam) {
-      setError(decodeURIComponent(errorParam));
-      setTimeout(() => navigate('/login'), 3000);
-      return;
-    }
+      try {
+        const data = await completeAuth(code);
 
-    // If no error, the backend should have already redirected us
-    // This component should only show briefly or in case of error
-    const timer = setTimeout(() => {
-      console.log('AuthCallback timeout - redirecting to login');
-      navigate('/login');
-    }, 5000);
+        if (data.token) localStorage.setItem('jwt', data.token);
+        if (data.githubToken)
+          localStorage.setItem('githubToken', data.githubToken);
 
-    return () => clearTimeout(timer);
+        if (data.installed === false || data.needsInstall === true) {
+          navigate('/install-github-app');
+        } else {
+          navigate('/orgselector');
+        }
+      } catch (err: any) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Unexpected error during authentication.');
+        }
+        console.error(err);
+      }
+    };
+
+    doAuth();
   }, [navigate]);
 
   return (

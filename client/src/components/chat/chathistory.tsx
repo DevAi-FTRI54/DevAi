@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { formatDistanceToNow, format } from 'date-fns';
 import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import type { ChatHistoryEntry } from '../../types';
 import type { ChatInputProps, Repo } from '../../types';
+import { getChatHistory } from '../../api';
 
 const REPO_KEY = 'devai_repo';
 
@@ -12,8 +14,10 @@ const COLUMNS = [
   { key: 'file', label: 'File Name' },
   { key: 'startLine', label: 'Start Line' },
   { key: 'endLine', label: 'End Line' },
-];
-type ColumnKey = (typeof COLUMNS)[number]['key']; // "userPrompt" | "answer" | "file" | "startLine" | "endLine"
+  { key: 'timestamp', label: 'Date' }, // ✅ Add timestamp column
+] as const;
+
+type ColumnKey = (typeof COLUMNS)[number]['key'];
 
 const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({
   repoUrl,
@@ -24,11 +28,68 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({
   // --- Filter states ---
   const [search, setSearch] = useState('');
   const [fileFilter, setFileFilter] = useState('');
-  // (Removed start line range)
+  // ✅ Add date filter states
+  const [dateFilter, setDateFilter] = useState<
+    'all' | 'today' | 'week' | 'month' | 'custom'
+  >('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   // --- Sorting states ---
-  const [sortKey, setSortKey] = useState<ColumnKey>('startLine');
+  const [sortKey, setSortKey] = useState<ColumnKey>('timestamp');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  // ✅ Helper function to check if date falls within filter range
+  const isDateInRange = (timestamp: Date | string) => {
+    const date = new Date(timestamp);
+
+    switch (dateFilter) {
+      case 'today': {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return date >= today;
+      }
+
+      case 'week': {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return date >= weekAgo;
+      }
+
+      case 'month': {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        return date >= monthAgo;
+      }
+
+      case 'custom': {
+        if (!customStartDate && !customEndDate) return true;
+        const start = customStartDate
+          ? new Date(customStartDate)
+          : new Date('1900-01-01');
+        const end = customEndDate
+          ? new Date(customEndDate)
+          : new Date('2100-12-31');
+        end.setHours(23, 59, 59, 999); // Include entire end date
+        return date >= start && date <= end;
+      }
+
+      default: // 'all'
+        return true;
+    }
+  };
+
+  const formatTimestamp = (timestamp: Date | string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return formatDistanceToNow(date, { addSuffix: true });
+    } else {
+      return format(date, 'MMM d, yyyy h:mm a');
+    }
+  };
 
   // Try to find the full repo object by repoUrl from localStorage
   const repo: Repo | null = useMemo(() => {
@@ -47,18 +108,7 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({
     let didCancel = false;
     const fetchHistory = async () => {
       try {
-        const res = await fetch(
-          'https://a59d8fd60bb0.ngrok.app/api/chat/history/flat',
-          {
-            method: 'GET',
-            credentials: 'include',
-          }
-        );
-        if (!res.ok)
-          throw new Error(`Request failed with status ${res.status}`);
-        const data = await res.json();
-        if (!Array.isArray(data))
-          throw new Error('Invalid response format: expected an array');
+        const data = await getChatHistory();
         if (!didCancel) setLogs(data);
       } catch (err: unknown) {
         console.error('❌ Error fetching history:', err);
@@ -78,7 +128,7 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({
     };
   }, []);
 
-  // --- Filter & Sort logic ---
+  // --- Updated Filter & Sort logic ---
   const filteredLogs = useMemo(() => {
     let filtered = logs;
 
@@ -90,16 +140,31 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({
           log.answer.toLowerCase().includes(search.toLowerCase())
       );
     }
+
     // Filter: file name
     if (fileFilter.trim()) {
       filtered = filtered.filter((log) =>
         log.file?.toLowerCase().includes(fileFilter.toLowerCase())
       );
     }
+
+    // ✅ Filter: date range
+    if (dateFilter !== 'all') {
+      filtered = filtered.filter(
+        (log) => log.timestamp && isDateInRange(log.timestamp)
+      );
+    }
+
     // Sort by key/direction
     filtered = [...filtered].sort((a, b) => {
       const aValue = a[sortKey as keyof ChatHistoryEntry];
       const bValue = b[sortKey as keyof ChatHistoryEntry];
+
+      if (sortKey === 'timestamp') {
+        const aTime = new Date(aValue as string | Date).getTime();
+        const bTime = new Date(bValue as string | Date).getTime();
+        return sortDir === 'asc' ? aTime - bTime : bTime - aTime;
+      }
 
       if (typeof aValue === 'number' && typeof bValue === 'number') {
         return sortDir === 'asc' ? aValue - bValue : bValue - aValue;
@@ -110,9 +175,19 @@ const ChatHistory: React.FC<Pick<ChatInputProps, 'repoUrl'>> = ({
       else return bStr.localeCompare(aStr);
     });
     return filtered;
-  }, [logs, search, fileFilter, sortKey, sortDir]);
+  }, [
+    logs,
+    search,
+    fileFilter,
+    dateFilter,
+    customStartDate,
+    customEndDate,
+    sortKey,
+    sortDir,
+    isDateInRange,
+  ]);
 
-  function handleHeaderSort(column: string) {
+  function handleHeaderSort(column: ColumnKey) {
     if (sortKey === column) {
       setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
     } else {

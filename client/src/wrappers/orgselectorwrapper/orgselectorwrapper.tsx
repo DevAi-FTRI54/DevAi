@@ -4,8 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { IngestionContext } from '../../components/ingestion/ingestioncontext';
 
 const OrgSelectorWrapper = () => {
-  // Since tokens are in HTTP-only cookies, we don't need to pass token to OrgSelector
-  // The backend will read from cookies directly
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const context = useContext(IngestionContext);
   const navigate = useNavigate();
@@ -15,7 +13,6 @@ const OrgSelectorWrapper = () => {
 
   const handleSelectOrg = (org: string, installationId?: string) => {
     setSelectedOrg(org);
-    // Update context immediately when user selects org
     if (context) {
       context.setSelectedOrg(org);
       if (installationId) {
