@@ -21,7 +21,7 @@ export async function completeAuth(code: string) {
 }
 
 //* orgselector.tsx
-export async function getUserOrgs(token: string): Promise<{ id: number; login: string }[]> {
+export async function getUserOrgs(): Promise<{ id: number; login: string }[]> {
   const res = await fetch(`${API_BASE_URL}/auth/orgs`, {
     method: 'GET',
     credentials: 'include',
