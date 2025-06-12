@@ -20,17 +20,29 @@ export const indexRepo = async (req: Request, res: Response) => {
   console.log('repoUrl: ', repoUrl);
   console.log('sha: ', sha);
 
-  const job = await indexQueue.add('index', { repoUrl, sha });
+  // Get GitHub access token from cookies (for production GitHub API access)
+  const accessToken = req.cookies?.github_access_token;
+  console.log('accessToken available:', !!accessToken);
+
+  const jobData = {
+    repoUrl,
+    sha,
+    ...(accessToken && { accessToken }), // Only include if available
+  };
+
+  const job = await indexQueue.add('index', jobData);
   console.log('--- SENDING TO THE FRONTEND ------------');
   console.log({
     jobId: job.id,
     repoUrl: repoUrl,
     message: 'Repository ingestion started',
+    method: accessToken ? 'GitHub API' : 'Local Clone',
   });
   res.json({
     jobId: job.id,
     repoUrl: repoUrl,
     message: 'Repository ingestion started',
+    method: accessToken ? 'GitHub API' : 'Local Clone',
   });
 };
 

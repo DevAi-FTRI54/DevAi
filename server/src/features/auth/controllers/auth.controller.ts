@@ -17,6 +17,7 @@ import {
 import { findOrCreateUser } from '../services/user.service.js';
 import { generateUserJWTToken } from '../services/jwt.service.js';
 import { handleApiError } from '../utils/error.utils.js';
+import 'dotenv/config';
 
 console.log('Loading auth.controller.ts');
 

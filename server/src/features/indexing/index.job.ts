@@ -1,6 +1,8 @@
 import { Worker, Queue, Job } from 'bullmq';
 import { cloneRepo } from './git.service.js';
 import { TsmorphCodeLoader } from './loader.service.js';
+import { GitHubApiService } from './github-api.service.js';
+import { InMemoryCodeLoader } from './memory-loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import { upsert } from './vector.service.js';
 
@@ -34,14 +36,62 @@ export const indexQueue = new Queue('index', { connection: redisOptions });
 // --- Worker ------------------------------------------------------------
 const worker = new Worker(
   'index',
-  async (job: Job<{ repoUrl: string; sha: string }>) => {
-    const { repoUrl, sha } = job.data;
+  async (job: Job<{ repoUrl: string; sha: string; accessToken?: string }>) => {
+    const { repoUrl, sha, accessToken } = job.data;
+    
+    console.log(`🚀 Starting indexing for ${repoUrl}`);
 
-    const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
-    await job.updateProgress(15);
+    let bigDocs;
+    let repoId;
+    let repoName;
 
-    const loader = new TsmorphCodeLoader(localRepoPath, repoId);
-    const bigDocs = await loader.load();
+    if (accessToken) {
+      // PREFERRED: Use GitHub API (faster, no file system dependencies)
+      console.log('📡 Using GitHub API approach');
+      
+      try {
+        const githubService = new GitHubApiService(accessToken);
+        const { files, repoId: apiRepoId } = await githubService.fetchRepositoryContent(repoUrl, sha);
+        
+        repoId = apiRepoId;
+        repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'unknown';
+        
+        await job.updateProgress(15);
+
+        const loader = new InMemoryCodeLoader(files, repoId, repoName);
+        bigDocs = await loader.load();
+        
+        console.log(`📄 Loaded ${bigDocs.length} documents via GitHub API`);
+      } catch (error) {
+        console.error('❌ GitHub API failed, falling back to local clone:', error);
+        // Fallback to local approach if GitHub API fails
+        const { localRepoPath, repoId: localRepoId } = await cloneRepo(repoUrl, sha);
+        repoId = localRepoId;
+        repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'unknown';
+        
+        await job.updateProgress(15);
+
+        const loader = new TsmorphCodeLoader(localRepoPath, repoId);
+        bigDocs = await loader.load();
+        
+        console.log(`📄 Loaded ${bigDocs.length} documents via fallback local clone`);
+      }
+    } else {
+      // FALLBACK: Use local cloning (when no access token available)
+      console.log('💻 Using local clone approach (no access token available)');
+      
+      const { localRepoPath, repoId: localRepoId } = await cloneRepo(repoUrl, sha);
+      repoId = localRepoId;
+      repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'unknown';
+      
+      await job.updateProgress(15);
+
+      const loader = new TsmorphCodeLoader(localRepoPath, repoId);
+      bigDocs = await loader.load();
+      
+      console.log(`📄 Loaded ${bigDocs.length} documents via local clone`);
+    }
+
     await job.updateProgress(30);
 
     const chunkedDocs = (await chunkDocuments(bigDocs)).map((doc) => {

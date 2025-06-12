@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import jwt from 'jsonwebtoken';
 import { GitHubApiError } from '../utils/error.utils.js';
+import 'dotenv/config';
 import { GITHUB_APP_PRIVATE_KEY } from '../../../config/auth.js';
 
 // GitHub OAuth and App configurations
