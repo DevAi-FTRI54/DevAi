@@ -11,18 +11,17 @@ export default defineConfig({
     hmr: {
       overlay: false,
     },
-    allowedHosts: ['.ngrok.app'], // ✅ wildcard support
+    allowedHosts: ['.ngrok.app', 'dev-ai.app'], // ✅ wildcard support
     cors: {
-      origin: ['https://a59d8fd60bb0.ngrok.app'],
+      origin: ['https://a59d8fd60bb0.ngrok.app', 'https://dev-ai.app'],
       credentials: true,
     },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:4000',
-
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    // proxy: {
+    //   '/api': {
+    //     target: 'http://localhost:4000',
+    //     changeOrigin: true,
+    //     secure: false,
+    //   },
+    // },
   },
 });
