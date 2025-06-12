@@ -33,6 +33,14 @@ app.use(cors({
     },
     credentials: true,
 }));
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin || '')) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    next();
+});
 // app.use(
 //   cors({
 //     origin: allowedOrigins, // your React dev host
