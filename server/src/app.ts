@@ -4,7 +4,7 @@ import 'dotenv/config';
 import { ServerError } from './types/types.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
-import { allowedOrigins } from '../src/config/allowedOrigins.js';
+//import { allowedOrigins } from '../src/config/allowedOrigins.js';
 import mongoose from 'mongoose';
 // import taskController from './controllers/taskController';
 
@@ -23,13 +23,21 @@ const app = express();
 //     credentials: true,
 //   })
 // );
+const allowedOrigins = [
+  'https://devai-three.vercel.app',
+  'https://devai-eshankman-devai-app.vercel.app',
+  'https://devai-devai-app.vercel.app',
+];
+
 app.use(
   cors({
-    origin: [
-      'https://devai-three.vercel.app',
-      'https://devai-eshankman-devai-app.vercel.app',
-      'https://devai-devai-app.vercel.app',
-    ],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('❌ Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
