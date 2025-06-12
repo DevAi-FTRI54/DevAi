@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ChatInputProps } from '../../types';
+import { storeUserMessage, postUserPrompt } from '../../api';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 
@@ -158,29 +159,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   // Store user's message into our DB
-  const storeUserMessage = async (userMessage: string) => {
-    try {
-      const response = await fetch('/api/query/store', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          // userId, // We must get this from somewhere
-          role: 'user',
-          content: userMessage,
-          repoUrl,
-          timestamp: new Date(),
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to store user message');
-      return true;
-    } catch (err) {
-      console.error('❌ Failed to store user message:', err);
-      return false;
-    }
-  };
-
   const handleSubmit = async () => {
     if (!promptText.trim()) return;
 
@@ -190,27 +168,26 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setError(null);
 
     try {
-      await storeUserMessage(userMessage);
+      await storeUserMessage({
+        sessionId,
+        role: 'user',
+        content: userMessage,
+        repoUrl,
+        timestamp: new Date(),
+      });
 
-      console.log('🤔 AI is thinking...');
-      addUserMessage?.(userMessage); // Add user message immediately
-      setIsLoadingResponse?.(true); // Start "thinking" state
+      addUserMessage?.(userMessage);
+      setIsLoadingResponse?.(true);
 
-      console.log('🚀 Starting streaming...');
       setIsStreaming?.(true);
       setStreamingAnswer?.('');
 
-      const response = await fetch('/api/query/question', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: repoUrl,
-          prompt: userMessage,
-          type: promptType,
-          sessionId,
-        }),
+      const response = await postUserPrompt({
+        url: repoUrl,
+        prompt: userMessage,
+        type: promptType,
+        sessionId,
       });
-      if (!response.ok) throw new Error('Failed to submit prompt');
 
       await processStreamingResponse(response);
     } catch (err) {
@@ -221,6 +198,47 @@ const ChatInput: React.FC<ChatInputProps> = ({
       setLoading(false);
     }
   };
+
+  // const handleSubmit = async () => {
+  //   if (!promptText.trim()) return;
+
+  //   const userMessage = promptText;
+  //   setPromptText('');
+  //   setLoading(true);
+  //   setError(null);
+
+  //   try {
+  //     await storeUserMessage(userMessage);
+
+  //     console.log('🤔 AI is thinking...');
+  //     addUserMessage?.(userMessage); // Add user message immediately
+  //     setIsLoadingResponse?.(true); // Start "thinking" state
+
+  //     console.log('🚀 Starting streaming...');
+  //     setIsStreaming?.(true);
+  //     setStreamingAnswer?.('');
+
+  //     const response = await fetch('/api/query/question', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         url: repoUrl,
+  //         prompt: userMessage,
+  //         type: promptType,
+  //         sessionId,
+  //       }),
+  //     });
+  //     if (!response.ok) throw new Error('Failed to submit prompt');
+
+  //     await processStreamingResponse(response);
+  //   } catch (err) {
+  //     console.error('❌ Submit error:', err);
+  //     resetLoadingStates();
+  //     if (err instanceof Error) setError(err.message || 'Something went wrong');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-[#303030] rounded-xl shadow-lg">

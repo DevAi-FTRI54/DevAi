@@ -1,10 +1,14 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
+import { API_BASE_URL } from '../../api';
+
+// Add this debug line here:
+console.log('API_BASE_URL:', API_BASE_URL);
 
 const GitHubLogin: React.FC = () => {
   const handleLogin = () => {
-    window.location.href = 'http://localhost:4000/api/auth/github';
+    window.location.href = `${API_BASE_URL}/auth/github`;
   };
 
   return (

@@ -17,16 +17,11 @@ export const getUserConversations = async (req: Request, res: Response) => {
     });
     res.json(conversations);
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: 'Failed to fetch conversations', error: err });
+    res.status(500).json({ message: 'Failed to fetch conversations', error: err });
   }
 };
 
-export const getSessionConversation = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getSessionConversation = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = (req as any).user.id;
     const { sessionId } = req.query;
@@ -37,9 +32,7 @@ export const getSessionConversation = async (
     }
     res.json(conversation);
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: 'Failed to fetch conversation', error: err });
+    res.status(500).json({ message: 'Failed to fetch conversation', error: err });
   }
 };
 // In chatHistory.controller.ts
@@ -63,6 +56,8 @@ export const getUserMessagesFlat = async (req: Request, res: Response) => {
       file: string;
       startLine: string | number;
       endLine: string | number;
+      timestamp: Date; // Add timestamp field //* ES added 6/11
+      conversationId?: string; //*ES Added 6/11
     }[] = [];
 
     conversations.forEach((conv) => {
@@ -87,11 +82,16 @@ export const getUserMessagesFlat = async (req: Request, res: Response) => {
               file,
               startLine,
               endLine,
+              timestamp: conv.get('createdAt') || new Date(), // Use message timestamp or conversation timestamp //* ES added 6/11
+              conversationId: conv._id?.toString(), // Optional: include conversation ID //* ES added 6/11
             });
           }
         }
       }
     });
+
+    // Sort by timestamp (newest first)
+    flatMessages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()); //* ES added 6/11
 
     res.json(flatMessages);
   } catch (err) {

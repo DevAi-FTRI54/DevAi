@@ -112,7 +112,7 @@ const MainContent = () => {
               {/* Main Code Area */}
               <div className="flex-1 bg-[#22212b] rounded-r-lg p-4 text-left text-[#cdd6f4] overflow-auto">
                 <div className="mb-2 text-sm">
-                  <span className="font-bold text-[#bb9af7]">Repository:</span> facebook/react
+                  <span className="font-bold text-[#bb9af7]">Repository:</span> devai/react
                   <br />
                   <span className="font-bold text-[#bb9af7]">Language:</span> JavaScript
                   <br />
