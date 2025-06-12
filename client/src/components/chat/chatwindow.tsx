@@ -20,15 +20,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSelectFile }) => {
   // console.log('🎯 ChatWindow rendering:', messages.length, 'messages');
 
   return (
-    <div>
-      {messages.length === 0 && <div className="text-center text-[#7d8590] py-8">Ready when you are.</div>}
-
+    <div className='space-y-6'>
       {messages
         .filter((msg) => !!msg && typeof msg === 'object' && msg.role) // extra safety
         .map((msg, idx) => (
-          <div key={idx} className="mb-4">
-            <ChatMessage message={msg} onSelectFile={onSelectFile} />
-          </div>
+          <ChatMessage key={idx} message={msg} onSelectFile={onSelectFile} />
         ))}
       <div ref={messagesEndRef} />
     </div>

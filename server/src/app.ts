@@ -1,6 +1,5 @@
 import express, { ErrorRequestHandler } from 'express';
 import cors from 'cors';
-import 'dotenv/config';
 import { ServerError } from './types/types.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -12,6 +11,7 @@ import repoRoutes from './features/indexing/index.routes.js';
 import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
+import trainingRoutes from './features/training/training.routes.js';
 
 const app = express();
 
@@ -80,6 +80,9 @@ app.use('/api/auth', authRoute);
 
 //ChatHistory route
 app.use('/api/chat', chatHistoryRoute);
+
+// Training route (for fine-tuning data export)
+app.use('/api/training', trainingRoutes);
 
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);

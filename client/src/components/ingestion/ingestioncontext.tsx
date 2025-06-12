@@ -2,13 +2,22 @@ import React, { createContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { IngestionContextType, Repo } from '../../types'; // adjust path as needed
 
-const IngestionContext = createContext<IngestionContextType | undefined>(undefined);
+const IngestionContext = createContext<IngestionContextType | undefined>(
+  undefined
+);
 
 interface IngestionProviderProps {
   children: ReactNode;
 }
 
-export const IngestionProvider: React.FC<IngestionProviderProps> = ({ children }) => {
+export const IngestionProvider: React.FC<IngestionProviderProps> = ({
+  children,
+}) => {
+  console.log(
+    '🔧 IngestionProvider initializing at:',
+    new Date().toISOString()
+  );
+
   const [jobId, setJobId] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);

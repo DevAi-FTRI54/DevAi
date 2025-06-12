@@ -39,13 +39,16 @@ export const requireAuth: RequestHandler = (
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    console.log('Decoded JWT in requireAuth:', decoded);
+    // Only log once, not twice
+    console.log(
+      '✅ JWT validated for user:',
+      (decoded as any).githubUsername || 'unknown'
+    );
 
     (req as AuthenticatedRequest).user = decoded;
-    console.log('Decoded JWT in requireAuth:', decoded);
-
     next();
   } catch (err) {
+    console.log('❌ JWT validation failed:', err);
     res.status(403).json({ message: 'Invalid or expired token' });
   }
 };

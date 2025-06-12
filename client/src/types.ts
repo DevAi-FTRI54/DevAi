@@ -40,13 +40,11 @@ export interface ChatWrapProps {
   org?: string;
   installationId?: string | null;
 }
-
 export interface GitHubContentItem {
   name: string;
   path: string;
   type: 'file' | 'dir';
 }
-
 export interface GithubFile {
   name: string;
   path: string;

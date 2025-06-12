@@ -8,6 +8,9 @@ const OrgSelectorWrapper = () => {
   const context = useContext(IngestionContext);
   const navigate = useNavigate();
 
+  // Debug: Track component mount timing
+  console.log('🚀 OrgSelectorWrapper mounted at:', new Date().toISOString());
+
   const handleSelectOrg = (org: string, installationId?: string) => {
     setSelectedOrg(org);
     if (context) {
@@ -16,7 +19,11 @@ const OrgSelectorWrapper = () => {
         context.setInstallationId(installationId);
       }
     }
-    navigate(`/select-repo?org=${org}${installationId ? `&installation_id=${installationId}` : ''}`);
+    navigate(
+      `/select-repo?org=${org}${
+        installationId ? `&installation_id=${installationId}` : ''
+      }`
+    );
   };
 
   return (

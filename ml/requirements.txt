@@ -1,16 +1,29 @@
-# ML/Data Science core
-numpy==1.24.3
-pandas==2.0.3
-scikit-learn==1.3.0
+# RunPod Fine-tuning Requirements
+# Core ML libraries
+torch>=2.0.0
+transformers>=4.30.0
+datasets>=2.14.0
 
-# Deep Learning (if needed)
-torch==2.0.1
-transformers==4.31.0
+# QLoRA and efficient training
+peft>=0.4.0
+accelerate>=0.20.0
+trl>=0.7.0
 
-# Visualization
-matplotlib==3.7.2
-seaborn==0.12.2
+# Data processing
+numpy>=1.24.0
+pandas>=2.0.0
 
 # Utilities
-jupyter==1.0.0
-python-dotenv==1.0.0
+python-dotenv>=1.0.0
+tensorboard
+
+# HTTP requests and model management
+requests==2.31.0
+huggingface-hub==0.26.2
+safetensors==0.4.5
+
+# RunPod integration
+runpod==1.6.0
+
+# Scheduling and automation
+schedule==1.2.0

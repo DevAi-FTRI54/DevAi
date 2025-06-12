@@ -21,15 +21,7 @@ const GitHubAppInstallButton: React.FC = () => {
   return (
     <button
       onClick={handleInstall}
-      className="
-        flex items-center gap-2 
-        bg-[#5ea9ea] text-white 
-        px-5 py-2 rounded-lg 
-        cursor-pointer shadow-md 
-        transition-colors 
-        font-tt-hoves text-[18px] 
-        hover:bg-[#31677a]
-      "
+      className='w-full flex items-center justify-center gap-3 bg-[#5ea9ea] hover:bg-[#4a9ae0] text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl'
     >
       <FontAwesomeIcon icon={faGithub} />
       Install GitHub App

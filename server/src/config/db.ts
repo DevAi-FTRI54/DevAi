@@ -1,6 +1,7 @@
 // Establishes and exports MongoDB connection for use throughout the app.
 import mongoose from 'mongoose';
 
+// Production MongoDB Atlas URI as fallback
 const myURI = 'mongodb://localhost:27017';
 const URI = process.env.MONGO_URI || myURI;
 

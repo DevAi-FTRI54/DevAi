@@ -17,6 +17,8 @@ import UserSettings from './components/settings/settings';
 import ComingSoon from './components/coming soon/featurescoming';
 
 function App() {
+  console.log('🏗️ App component rendered at:', new Date().toISOString());
+
   return (
     <IngestionProvider>
       <Router>

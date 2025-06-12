@@ -10,11 +10,9 @@ interface IngestionExperienceProps {
   compact?: boolean;
 }
 
-const IngestionExperience: React.FC<IngestionExperienceProps & { org?: string; installationId?: string | null }> = ({
-  compact,
-  org,
-  installationId,
-}) => {
+const IngestionExperience: React.FC<
+  IngestionExperienceProps & { org?: string; installationId?: string | null }
+> = ({ compact, org, installationId }) => {
   const [jobId, setJobId] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
   const [completed, setCompleted] = useState(false);
@@ -45,10 +43,27 @@ const IngestionExperience: React.FC<IngestionExperienceProps & { org?: string; i
 
   if (completed) {
     return (
-      <div className="flex flex-col items-start">
-        <div className="mb-2 text-green-500 font-semibold text-xs">Ingestion complete!</div>
+      <div className='bg-[#303030] rounded-lg p-2.5 border border-[#404040]'>
+        <div className='flex items-center gap-2 mb-2'>
+          <div className='w-3 h-3 bg-green-500 rounded-full flex items-center justify-center'>
+            <svg
+              className='w-2 h-2 text-white'
+              fill='currentColor'
+              viewBox='0 0 20 20'
+            >
+              <path
+                fillRule='evenodd'
+                d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+                clipRule='evenodd'
+              />
+            </svg>
+          </div>
+          <span className='text-green-400 font-medium text-xs'>
+            Ingestion Complete!
+          </span>
+        </div>
         <button
-          className="mt-1 px-2 py-1 bg-blue-600 text-white rounded text-xs"
+          className='w-full px-2 py-1.5 bg-[#5ea9ea] hover:bg-[#4a9ae0] text-white rounded-lg text-xs font-medium transition-colors duration-200'
           onClick={() => {
             setJobId(null);
             setSelectedRepo(null);
@@ -79,7 +94,13 @@ const IngestionExperience: React.FC<IngestionExperienceProps & { org?: string; i
       jobId={jobId}
       onComplete={() => {
         setCompleted(true);
-        navigate('/chat', { state: { repo: selectedRepo, org: selectedOrg, installationId: selectedInstallationId } });
+        navigate('/chat', {
+          state: {
+            repo: selectedRepo,
+            org: selectedOrg,
+            installationId: selectedInstallationId,
+          },
+        });
       }}
     />
   );

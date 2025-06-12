@@ -17,6 +17,7 @@
     "@langchain/community": "^0.3.44",
     "@langchain/core": "^0.3.57",
     "@langchain/langgraph": "^0.2.73",
+    "@langchain/ollama": "^0.2.2",
     "@langchain/openai": "^0.5.11",
     "@langchain/qdrant": "^0.1.2",
     "@langchain/textsplitters": "^0.1.0",
@@ -33,6 +34,7 @@
     "langchain": "^0.3.26",
     "mongoose": "^8.15.0",
     "nodemon": "^3.1.10",
+    "octokit": "^5.0.3",
     "simple-git": "^3.27.0"
   },
   "devDependencies": {

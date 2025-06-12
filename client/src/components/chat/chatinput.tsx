@@ -4,35 +4,42 @@ import { storeUserMessage, postUserPrompt } from '../../api';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 
-type PromptType = 'default' | 'Find' | 'Bugs' | 'Debug' | 'WalkThrough' | 'Services';
+type PromptType =
+  | 'default'
+  | 'Find'
+  | 'Bugs'
+  | 'Debug'
+  | 'WalkThrough'
+  | 'Services';
 
-const QUICK_PROMPTS: Array<{ label: string; text: string; type: PromptType }> = [
-  {
-    label: 'Find & Explain',
-    text: 'Find and explain the logic for the following: ',
-    type: 'Find',
-  },
-  {
-    label: 'Common Bugs',
-    text: 'What are the most common bugs or pitfalls in this repo?',
-    type: 'Bugs',
-  },
-  {
-    label: 'Debug',
-    text: 'Where do I start to debug this type of problem?',
-    type: 'Debug',
-  },
-  {
-    label: 'Walkthrough',
-    text: 'Walk me through the data flow for ...',
-    type: 'WalkThrough',
-  },
-  {
-    label: 'Services',
-    text: 'List all the third-party services used in this repo',
-    type: 'Services',
-  },
-];
+const QUICK_PROMPTS: Array<{ label: string; text: string; type: PromptType }> =
+  [
+    {
+      label: 'Find & Explain',
+      text: 'Find and explain the logic for the following: ',
+      type: 'Find',
+    },
+    {
+      label: 'Common Bugs',
+      text: 'What are the most common bugs or pitfalls in this repo?',
+      type: 'Bugs',
+    },
+    {
+      label: 'Debug',
+      text: 'Where do I start to debug this type of problem?',
+      type: 'Debug',
+    },
+    {
+      label: 'Walkthrough',
+      text: 'Walk me through the data flow for ...',
+      type: 'WalkThrough',
+    },
+    {
+      label: 'Services',
+      text: 'List all the third-party services used in this repo',
+      type: 'Services',
+    },
+  ];
 
 const autoGrow = (event: React.FormEvent<HTMLTextAreaElement>) => {
   const textarea = event.currentTarget;
@@ -78,6 +85,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPromptText(event.target.value);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit();
+    }
   };
 
   const resetLoadingStates = () => {
@@ -141,7 +155,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 console.log('--- file ------------');
                 console.log(file);
 
-                setAnswer(accumulatedAnswer.trim(), snippet, file, startLine, endLine);
+                setAnswer(
+                  accumulatedAnswer.trim(),
+                  snippet,
+                  file,
+                  startLine,
+                  endLine
+                );
 
                 break;
               }
@@ -241,54 +261,73 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // };
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 p-4 bg-[#303030] rounded-xl shadow-lg">
+    <div className='w-full'>
       {/* Quick Prompts */}
-      <div className="w-full max-w-3xl mx-auto flex justify-center space-x-2">
-        {QUICK_PROMPTS.map(({ label, text, type }) => (
-          <button
-            key={type}
-            type="button"
-            className="px-2 py-1 rounded bg-[#DEE1FC] text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50"
-            onClick={() => handleQuickPrompt(text, type)}
-            disabled={loading}
-          >
-            {label}
-          </button>
-        ))}
+      <div className='mb-4'>
+        <div className='flex flex-wrap gap-2 justify-center'>
+          {QUICK_PROMPTS.map(({ label, text, type }) => (
+            <button
+              key={type}
+              type='button'
+              className='px-3 py-1.5 text-xs font-medium bg-[#303030] hover:bg-[#404040] text-[#fafafa] rounded-full border border-[#404040] hover:border-[#5ea9ea] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+              onClick={() => handleQuickPrompt(text, type)}
+              disabled={loading}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Input Area */}
-      <div className="relative w-full">
+      <div className='relative bg-[#212121] border border-[#303030] rounded-2xl shadow-lg transition-all duration-200 focus-within:border-[#5ea9ea] focus-within:shadow-xl focus-within:shadow-[#5ea9ea]/10'>
         <textarea
-          id="user-prompt"
-          className="w-full min-h-[48px] resize-none overflow-hidden text-base p-2 pr-20 border border-[#39415a] rounded focus:outline-none focus:ring-2 focus:ring-[#5ea9ea] bg-[#171717] text-[#eaeaea] transition"
-          placeholder="Please type your prompt here"
+          id='user-prompt'
+          className='w-full min-h-[56px] max-h-32 resize-none text-[#fafafa] placeholder-[#888] p-4 pr-14 bg-transparent border-0 rounded-2xl focus:outline-none transition-all duration-200'
+          placeholder='Ask about your codebase...'
           value={promptText}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           onInput={autoGrow}
-          rows={2}
+          rows={1}
           disabled={loading}
         />
         <button
-          type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded bg-[#DEE1FC] text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50"
+          type='button'
+          className='absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#5ea9ea] hover:bg-[#4a9ae0] disabled:bg-[#404040] text-white rounded-lg flex items-center justify-center transition-all duration-200 disabled:cursor-not-allowed'
           onClick={handleSubmit}
           disabled={loading || !promptText.trim()}
         >
-          {loading ? '...' : 'Submit'}
+          {loading ? (
+            <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+          ) : (
+            <svg className='w-4 h-4' fill='currentColor' viewBox='0 0 24 24'>
+              <path
+                d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z'
+                strokeLinejoin='round'
+                strokeLinecap='round'
+              />
+            </svg>
+          )}
         </button>
       </div>
-      {error && <p className="text-red-400">{error}</p>}
 
-      <button
-        type="button"
-        className="mt-2 px-2 py-1 rounded bg-[#DEE1FC] text-[#121629] font-bold hover:bg-gray-400 hover:text-black transition disabled:opacity-50 w-fit"
-        style={{ minWidth: '120px' }}
-        onClick={() => navigate('/chat/history')}
-        disabled={loading}
-      >
-        Go to Chat History
-      </button>
+      {error && (
+        <div className='mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg'>
+          <p className='text-red-400 text-sm'>{error}</p>
+        </div>
+      )}
+
+      <div className='mt-3 flex justify-center'>
+        <button
+          type='button'
+          className='px-4 py-2 text-sm font-medium bg-[#303030] hover:bg-[#404040] text-[#fafafa] rounded-lg border border-[#404040] hover:border-[#5ea9ea] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+          onClick={() => navigate('/chat/history')}
+          disabled={loading}
+        >
+          Chat History
+        </button>
+      </div>
     </div>
   );
 };

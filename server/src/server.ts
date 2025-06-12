@@ -1,8 +1,7 @@
+import 'dotenv/config';
 import app from './app.js';
 import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
-import 'dotenv/config';
-
 import './features/indexing/index.job.js';
 
 console.log('Booting server...');

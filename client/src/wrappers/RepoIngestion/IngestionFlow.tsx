@@ -15,7 +15,7 @@ const IngestionFlow: React.FC = () => {
   };
 
   return (
-    <div className=' text-gray min-h-screen'>
+    <div className='min-h-screen bg-[#171717]'>
       {!jobId ? (
         <RepoSelector onStartIngestion={handleStartIngestion} />
       ) : (
