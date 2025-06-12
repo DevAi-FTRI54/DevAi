@@ -8,17 +8,6 @@ const GitHubLogin: React.FC = () => {
     window.location.href = `${API_BASE_URL}/auth/github`;
   };
 
-  // const GitHubLogin: React.FC = () => {
-  //   const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-
-  //   const handleLogin = () => {
-  //     window.location.href = `${BACKEND_URL}/api/auth/github`;
-  //   };
-
-  // const handleLogin = () => {
-  //   window.location.href = 'http://localhost:4000/api/auth/github';
-  // };
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#23262f]">
       <h1 className="text-2xl text-white mb-6 font-tt-hoves font-normal leading-none tracking-tight text-center">
