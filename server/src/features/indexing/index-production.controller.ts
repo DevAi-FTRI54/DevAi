@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { indexQueue } from './index-production.job.js';
 
 // Using BullMQ Queue & Worker with production support
-export const indexRepo = async (req: Request, res: Response) => {
+export const indexRepo = async (req: Request, res: Response): Promise<void> => {
   const { repoUrl, sha = 'HEAD' } = req.body;
 
   console.log('\n--- indexRepo (Production Ready) ------');
@@ -14,10 +14,11 @@ export const indexRepo = async (req: Request, res: Response) => {
   const accessToken = req.cookies?.github_access_token;
 
   if (process.env.NODE_ENV === 'production' && !accessToken) {
-    return res.status(401).json({
+    res.status(401).json({
       error: 'GitHub access token required for production indexing',
       message: 'Please ensure you are logged in with GitHub',
     });
+    return;
   }
 
   const jobData = {

@@ -1,5 +1,7 @@
 import express from 'express';
-import { indexRepo, getJobStatus } from './index.controller.js';
+import { indexRepo, getJobStatus } from './index-production.controller.js';
+
+console.log('🔧 Using production indexing controller (Octokit-based)');
 
 const router = express.Router();
 router.post('/ingest', indexRepo);

@@ -14,9 +14,31 @@ const redisOptions = {
 
 export const indexQueue = new Queue('index', { connection: redisOptions });
 
-// Determine if we're in production or development
-const isProduction =
-  process.env.NODE_ENV === 'production' || process.env.RENDER;
+// Environment detection
+const isProduction = process.env.NODE_ENV === 'production';
+const isRenderDeployment = !!process.env.RENDER;
+
+// Indexing method selection - prefer GitHub API when:
+// 1. USE_LOCAL_MODEL is 'false' (your current setting), OR
+// 2. We're in production environment, OR
+// 3. We're deployed on Render, OR
+// 4. Default to GitHub API for better reliability
+const preferGitHubAPI =
+  process.env.USE_LOCAL_MODEL === 'false' ||
+  isProduction ||
+  isRenderDeployment ||
+  true; // Default to GitHub API
+
+console.log(
+  `🔧 Indexing mode: ${
+    preferGitHubAPI ? 'GitHub API (Octokit)' : 'Local Clone'
+  }`
+);
+console.log(`🏗️ Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+console.log(`📍 Platform: ${isRenderDeployment ? 'Render' : 'Local/Other'}`);
+console.log(
+  `⚙️ USE_LOCAL_MODEL: ${process.env.USE_LOCAL_MODEL || 'undefined'}`
+);
 
 // --- Worker ------------------------------------------------------------
 const worker = new Worker(
@@ -26,16 +48,18 @@ const worker = new Worker(
 
     console.log(`🚀 Starting indexing job for ${repoUrl}`);
     console.log(
-      `🏗️ Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`
+      `🔧 Method: ${
+        preferGitHubAPI && accessToken ? 'GitHub API' : 'Local Clone'
+      }`
     );
 
     let bigDocs;
     let repoId;
     let repoName;
 
-    if (isProduction && accessToken) {
-      // PRODUCTION: Use GitHub API (no local cloning)
-      console.log('📡 Using GitHub API approach (production)');
+    if (preferGitHubAPI && accessToken) {
+      // GITHUB API: Use Octokit (preferred method)
+      console.log('📡 Using GitHub API approach (Octokit)');
 
       const githubService = new GitHubApiService(accessToken);
       const { files, repoId: apiRepoId } =
@@ -51,8 +75,11 @@ const worker = new Worker(
 
       console.log(`📄 Loaded ${bigDocs.length} documents via GitHub API`);
     } else {
-      // DEVELOPMENT: Use local cloning (fallback)
-      console.log('💻 Using local clone approach (development)');
+      // FALLBACK: Use local cloning (when no access token or explicitly requested)
+      const reason = !accessToken
+        ? 'no access token available'
+        : 'local mode requested';
+      console.log(`💻 Using local clone approach (${reason})`);
 
       const { localRepoPath, repoId: localRepoId } = await cloneRepo(
         repoUrl,
