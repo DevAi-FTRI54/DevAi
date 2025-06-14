@@ -6,7 +6,8 @@ import type { ChatHistoryEntry } from './types';
 // api.ts or apiHelpers.ts
 
 // SINGLE consistent variable at the top
-export const API_BASE_URL = 'https://devai-b2ui.onrender.com/api'; //|| 'http://localhost:4000/';
+export const API_BASE_URL = 'VITE_API_BASE_URL'; //|| 'http://localhost:4000/';
+// export const API_BASE_URL = 'https://devai-b2ui.onrender.com/api'; //|| 'http://localhost:4000/';
 // export const API_BASE_URL = 'https://a59d8fd60bb0.ngrok.app/api'; //|| 'http://localhost:4000/';
 
 //* AuthCallback.tsx get

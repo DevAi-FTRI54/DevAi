@@ -3,22 +3,10 @@ import { Link } from 'react-router-dom';
 import Eric_Shankman from '../../assets/Eric_Shankman.jpeg';
 import Kyle_Headley from '../../assets/kyle_Headley.jpeg';
 import Marek_Bednar from '../../assets/marek_bednar.png';
-<Link to="/about">About</Link>;
+import type { TeamProps } from '../../types';
 <Link to="/about">About</Link>;
 
 import { FaLinkedin, FaGithub } from 'react-icons/fa';
-
-interface TeamProps {
-  imageUrl: string;
-  firstName: string;
-  lastName: string;
-  positions: string[];
-  socialNetworks: SocialNetworkProps[];
-}
-interface SocialNetworkProps {
-  name: string;
-  url: string;
-}
 
 const AboutUs = () => {
   const teamList: TeamProps[] = [
@@ -55,6 +43,7 @@ const AboutUs = () => {
   ];
 
   const socialIcon = (socialName: string) => {
+    //Switch - case used to display which icon will be displayed for each case.
     switch (socialName) {
       case 'LinkedIn':
         return <FaLinkedin className="w-5 h-5 inline-block" />;
@@ -66,7 +55,9 @@ const AboutUs = () => {
   };
 
   return (
+    //min-h-screen determines screen height and is at least as tall as the browser window.
     <div className="bg-[#171717]  min-h-screen">
+      {/* mx-auto centers element left and right (margin x access) py- & px are padding on x axis and y axis*/}
       <section className="container mx-auto py-20 px-4 bg-[#171717]">
         <div className="text-center space-y-4 mb-12">
           <span className="inline-block bg-blue-100 text-blue-800 text-sm font-medium mt-20 px-3 py-1 rounded-full">
