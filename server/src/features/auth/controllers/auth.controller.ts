@@ -164,6 +164,7 @@ export const handleGitHubCallback = async (req: Request, res: Response) => {
 //     handleApiError(err, res, 'Authentication completion failed');
 //   }
 // };
+
 export const completeAuth = async (
   req: Request,
   res: Response
