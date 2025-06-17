@@ -11,9 +11,17 @@ const AuthCallback: React.FC = () => {
     const doAuth = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
+
+      // ✅ ADD THESE DEBUG LOGS
+      console.log('🔐 AuthCallback - Current URL:', window.location.href);
+      console.log('🔐 AuthCallback - Code from URL:', code);
+      console.log('🔐 AuthCallback - API_BASE_URL:', API_BASE_URL);
+      console.log('🔐 AuthCallback - Environment var:', import.meta.env.VITE_API_BASE_URL);
+
       if (!code) return;
 
       try {
+        console.log('🔐 AuthCallback - Calling completeAuth with code:', code);
         const data = await completeAuth(code);
 
         if (data.token) localStorage.setItem('jwt', data.token);
@@ -30,7 +38,7 @@ const AuthCallback: React.FC = () => {
         } else {
           setError('Unexpected error during authentication.');
         }
-        console.error(err);
+        console.error('🔐 AuthCallback - Error:', err);
       }
     };
 
