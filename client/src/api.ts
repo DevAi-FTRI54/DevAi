@@ -10,6 +10,13 @@ export const API_BASE_URL = 'VITE_API_BASE_URL'; //|| 'http://localhost:4000/';
 // export const API_BASE_URL = 'https://devai-b2ui.onrender.com/api'; //|| 'http://localhost:4000/';
 // export const API_BASE_URL = 'https://a59d8fd60bb0.ngrok.app/api'; //|| 'http://localhost:4000/';
 
+// client/src/api.ts
+console.log('🔧 Environment check:', {
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  NODE_ENV: import.meta.env.NODE_ENV,
+  all_env: import.meta.env,
+});
+
 //* AuthCallback.tsx get
 export async function completeAuth(code: string) {
   const res = await fetch(`${API_BASE_URL}/auth/complete`, {
