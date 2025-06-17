@@ -12,12 +12,7 @@ function getQueryParam(name: string) {
   return params.get(name) || '';
 }
 
-const RepoSelector: React.FC<RepoSelectorProps> = ({
-  onStartIngestion,
-  compact = false,
-  org,
-  installationId,
-}) => {
+const RepoSelector: React.FC<RepoSelectorProps> = ({ onStartIngestion, compact = false, org, installationId }) => {
   // Context (optional, may be undefined)
   const context = useContext(IngestionContext);
   const contextOrg = context?.selectedOrg;
@@ -35,17 +30,11 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
   if (compact) {
     // In compact mode, always use context (which should be updated globally on org select)
     selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
-    effectiveInstallationId =
-      installationId ??
-      contextInstallationId ??
-      getQueryParam('installation_id');
+    effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
   } else {
     // In standard mode, use props if provided, else context/query
     selectedOrgToUse = org ?? contextOrg ?? getQueryParam('org');
-    effectiveInstallationId =
-      installationId ??
-      contextInstallationId ??
-      getQueryParam('installation_id');
+    effectiveInstallationId = installationId ?? contextInstallationId ?? getQueryParam('installation_id');
   }
 
   const [repos, setRepos] = useState<Repo[]>([]);
@@ -144,24 +133,29 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
       setAutoRetryAttempts(0);
       setLoading(false);
       setInitializing(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage: string;
-      if (err.status === 401)
-        errorMessage = 'Authentication required. Please log in again.';
-      else if (err.status === 400)
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        'status' in err &&
+        typeof (err as { status?: number }).status === 'number'
+      ) {
+        const status = (err as { status: number }).status;
+        if (status === 401) errorMessage = 'Authentication required. Please log in again.';
+        else if (status === 400) errorMessage = 'Github App installation not found. Please install the app first.';
+        else if (status === 503) errorMessage = 'Service temporarily unavailable. Retrying...';
+        else errorMessage = (err as { message?: string }).message || 'Failed to load repositories.';
+      } else {
         errorMessage =
-          'Github App installation not found. Please install the app first.';
-      else if (err.status === 503)
-        errorMessage = 'Service temporarily unavailable. Retrying...';
-      else errorMessage = err.message || 'Failed to load repositories.';
+          typeof err === 'object' && err !== null && 'message' in err
+            ? (err as { message?: string }).message || 'Failed to load repositories.'
+            : 'Failed to load repositories.';
+      }
 
       setError(errorMessage);
       if (attempt < 3) {
-        console.log(
-          `Retrying in ${(attempt + 1) * 1000}ms... (attempt ${
-            attempt + 1
-          } / 3)`
-        );
+        console.log(`Retrying in ${(attempt + 1) * 1000}ms... (attempt ${attempt + 1} / 3)`);
         setTimeout(() => {
           fetchRepos(attempt + 1);
         }, (attempt + 1) * 1000);
@@ -183,12 +177,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
   }, [selectedOrgToUse, effectiveInstallationId]);
 
   useEffect(() => {
-    console.log(
-      'RepoSelector using org:',
-      selectedOrgToUse,
-      'installationId:',
-      effectiveInstallationId
-    );
+    console.log('RepoSelector using org:', selectedOrgToUse, 'installationId:', effectiveInstallationId);
   }, [selectedOrgToUse, effectiveInstallationId]);
 
   const handleSelect = async () => {
@@ -235,47 +224,25 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
   // };
 
   return (
-    <div
-      className={
-        compact
-          ? 'w-full'
-          : 'min-h-screen w-full bg-[#171717] flex items-center justify-center'
-      }
-    >
+    <div className={compact ? 'w-full' : 'min-h-screen w-full bg-[#171717] flex items-center justify-center'}>
       <div
         className={
-          compact
-            ? 'w-full'
-            : 'bg-[#212121] border border-[#303030] rounded-2xl shadow-lg p-8 max-w-md mx-auto'
+          compact ? 'w-full' : 'bg-[#212121] border border-[#303030] rounded-2xl shadow-lg p-8 max-w-md mx-auto'
         }
       >
         {!compact && (
-          <div className='text-center mb-6'>
-            <div className='w-12 h-12 bg-gradient-to-br from-[#5ea9ea] to-[#4a9ae0] rounded-xl flex items-center justify-center mx-auto mb-4'>
-              <svg
-                className='w-6 h-6 text-white'
-                fill='currentColor'
-                viewBox='0 0 20 20'
-              >
-                <path d='M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z' />
+          <div className="text-center mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-[#5ea9ea] to-[#4a9ae0] rounded-xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
               </svg>
             </div>
-            <h2 className='text-lg font-semibold text-[#fafafa] mb-2'>
-              Select Repository
-            </h2>
-            <p className='text-[#888] text-sm'>
-              Select a repository to index and analyze
-            </p>
+            <h2 className="text-lg font-semibold text-[#fafafa] mb-2">Select Repository</h2>
+            <p className="text-[#888] text-sm">Select a repository to index and analyze</p>
           </div>
         )}
 
-        <h3
-          className={
-            compact
-              ? 'text-xs font-medium text-[#888] uppercase tracking-wider mb-2'
-              : 'sr-only'
-          }
-        >
+        <h3 className={compact ? 'text-xs font-medium text-[#888] uppercase tracking-wider mb-2' : 'sr-only'}>
           {compact ? 'Repository Selection' : 'Select a repository to index'}
         </h3>
 
@@ -297,9 +264,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
             <span className={compact ? 'text-xs' : 'text-sm'}>
               {initializing ? 'Initializing...' : 'Loading repositories...'}
             </span>
-            {autoRetryAttempts > 0 && (
-              <span>(retry {autoRetryAttempts}/3)</span>
-            )}
+            {autoRetryAttempts > 0 && <span>(retry {autoRetryAttempts}/3)</span>}
           </div>
         )}
 
@@ -311,7 +276,7 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
                 : 'p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg mb-4 text-sm'
             }
           >
-            <p className='font-medium'>Error: {error}</p>
+            <p className="font-medium">Error: {error}</p>
           </div>
         )}
 
@@ -329,9 +294,9 @@ const RepoSelector: React.FC<RepoSelectorProps> = ({
                 setRepo(repo ?? null);
               }}
             >
-              <option value=''>Select a repository</option>
+              <option value="">Select a repository</option>
               {repos.map((repo: Repo) => (
-                <option key={repo.id} value={repo.id} className='bg-[#303030]'>
+                <option key={repo.id} value={repo.id} className="bg-[#303030]">
                   {repo.full_name}
                 </option>
               ))}
