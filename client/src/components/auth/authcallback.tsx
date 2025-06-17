@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { completeAuth } from '../../api';
+import { API_BASE_URL } from '../../api';
 
 const AuthCallback: React.FC = () => {
   console.log('🔄 AuthCallback component mounted at:', new Date().toISOString());
