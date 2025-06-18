@@ -46,8 +46,15 @@ export class GitHubApiService {
       });
 
       // Filter for TypeScript/JavaScript files
-      const codeFiles = tree.tree.filter(
-        (item) =>
+      interface GitHubTreeItem {
+        path?: string;
+        type?: string;
+        sha?: string;
+        size?: number;
+      }
+
+      const codeFiles: GitHubTreeItem[] = tree.tree.filter(
+        (item: GitHubTreeItem) =>
           item.type === 'blob' &&
           item.path &&
           /\.(ts|tsx|js|jsx)$/.test(item.path) &&
