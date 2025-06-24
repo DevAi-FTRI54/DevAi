@@ -6,8 +6,16 @@ import type { ChatHistoryEntry } from './types';
 // api.ts or apiHelpers.ts
 
 // SINGLE consistent variable at the top
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; //|| 'http://localhost:4000/';
 // export const API_BASE_URL = 'https://devai-b2ui.onrender.com/api'; //|| 'http://localhost:4000/';
-export const API_BASE_URL = 'https://a59d8fd60bb0.ngrok.app/api'; //|| 'http://localhost:4000/';
+// export const API_BASE_URL = 'https://a59d8fd60bb0.ngrok.app/api'; //|| 'http://localhost:4000/';
+
+// client/src/api.ts
+console.log('🔧 Environment check:', {
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  NODE_ENV: import.meta.env.NODE_ENV,
+  all_env: import.meta.env,
+});
 
 //* AuthCallback.tsx get
 export async function completeAuth(code: string) {
@@ -45,33 +53,21 @@ export async function getUserOrgs(): Promise<{ id: number; login: string }[]> {
 }
 
 //* promptbaringestion
-export async function getIngestionStatus(
-  jobId: string
-): Promise<IngestionStatusData> {
+export async function getIngestionStatus(jobId: string): Promise<IngestionStatusData> {
   const res = await fetch(`${API_BASE_URL}/index/status/${jobId}`);
-  if (!res.ok)
-    throw new Error(`Failed to fetch ingestion status: ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to fetch ingestion status: ${res.statusText}`);
   return res.json();
 }
 
 //* repo-selector:
-export async function getReposForOrg(opts: {
-  org?: string;
-  installation_id?: string;
-}): Promise<Repo[]> {
+export async function getReposForOrg(opts: { org?: string; installation_id?: string }): Promise<Repo[]> {
   const params = new URLSearchParams();
   if (opts.org) params.append('org', opts.org);
-  if (opts.installation_id)
-    params.append('installation_id', opts.installation_id);
+  if (opts.installation_id) params.append('installation_id', opts.installation_id);
 
-  const res = await fetch(
-    `${API_BASE_URL}/auth/repos${
-      params.toString() ? '?' + params.toString() : ''
-    }`,
-    {
-      credentials: 'include',
-    }
-  );
+  const res = await fetch(`${API_BASE_URL}/auth/repos${params.toString() ? '?' + params.toString() : ''}`, {
+    credentials: 'include',
+  });
 
   if (!res.ok) {
     throw res;
@@ -94,17 +90,10 @@ export async function startRepoIngestion(opts: {
 }
 
 // Fetch file content from GitHub, decode base64
-export async function getRepoFileContent(
-  repoUrl: string,
-  filePath: string,
-  token: string
-): Promise<string> {
-  const res = await fetch(
-    `https://api.github.com/repos/${repoUrl}/contents/${filePath}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+export async function getRepoFileContent(repoUrl: string, filePath: string, token: string): Promise<string> {
+  const res = await fetch(`https://api.github.com/repos/${repoUrl}/contents/${filePath}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) throw new Error('Failed to fetch file');
   const data = await res.json();
   // GitHub returns content as base64
@@ -118,12 +107,8 @@ export async function getRepoContents(
   path: string = '',
   token?: string
 ): Promise<GitHubContentItem[]> {
-  const headers: HeadersInit = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents${
-    path ? '/' + path : ''
-  }`;
+  const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents${path ? '/' + path : ''}`;
   const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`GitHub fetch failed: ${res.statusText}`);
   return res.json();
@@ -137,8 +122,7 @@ export async function getChatHistory(): Promise<ChatHistoryEntry[]> {
   });
   if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
   const data = await res.json();
-  if (!Array.isArray(data))
-    throw new Error('Invalid response format: expected an array');
+  if (!Array.isArray(data)) throw new Error('Invalid response format: expected an array');
   return data;
 }
 

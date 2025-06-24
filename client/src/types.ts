@@ -132,6 +132,19 @@ export interface SidebarProps {
   installationId?: string | null;
 }
 
+export interface SocialNetworkProps {
+  name: string;
+  url: string;
+}
+
+export interface TeamProps {
+  imageUrl: string;
+  firstName: string;
+  lastName: string;
+  positions: string[];
+  socialNetworks: SocialNetworkProps[];
+}
+
 export interface TreeNodeProps {
   name: string;
   path: string;
