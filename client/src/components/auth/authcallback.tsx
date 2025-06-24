@@ -13,7 +13,7 @@ const AuthCallback: React.FC = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
 
-      // ✅ ADD THESE DEBUG LOGS
+      //* ✅ Added for Error Handling
       console.log('🔐 AuthCallback - Current URL:', window.location.href);
       console.log('🔐 AuthCallback - Code from URL:', code);
       console.log('🔐 AuthCallback - API_BASE_URL:', API_BASE_URL);

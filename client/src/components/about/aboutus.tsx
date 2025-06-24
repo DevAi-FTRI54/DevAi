@@ -43,7 +43,7 @@ const AboutUs = () => {
   ];
 
   const socialIcon = (socialName: string) => {
-    //Switch - case used to display which icon will be displayed for each case.
+    //* Switch - case used to display which icon will be displayed for each case.
     switch (socialName) {
       case 'LinkedIn':
         return <FaLinkedin className="w-5 h-5 inline-block" />;
