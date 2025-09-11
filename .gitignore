@@ -1,0 +1,33 @@
+.DS_Store
+.env
+server/.env
+server/src/config/.env
+client/.env
+client/node_modules
+server/node_modules
+node_modules
+.cache
+**.pem
+
+#####################################
+#  Python (ml/)
+#####################################
+# virtual-envs
+ml/venv/
+
+# data & models (handled elsewhere)
+ml/data/*
+ml/models/*
+./venv/
+
+# byte-code
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+./venv/
+
+**.pem
+.pem
+*.pem

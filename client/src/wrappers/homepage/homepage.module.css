@@ -1,0 +1,2332 @@
+/* Home page */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 32px 0px 0px;
+
+position: relative;
+width: 1440px;
+height: 1072px;
+
+/* Background */
+background: #171717;
+
+/* Nav */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 24px 32px;
+gap: 32px;
+
+width: 1224px;
+height: 72px;
+
+background: rgba(255, 255, 255, 0.05);
+/* Gray 2 (Srtoke) */
+border: 1px solid #41423e;
+border-radius: 24px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Frame 1686556745 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 10px;
+
+margin: 0 auto;
+width: 386.67px;
+height: 23px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+/* DevAI */
+
+width: 48px;
+height: 23px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 18px;
+line-height: 23px;
+/* identical to box height */
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Frame 1686556634 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 24px;
+
+margin: 0 auto;
+width: 386.67px;
+height: 20px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 1;
+
+/* About */
+
+width: 44px;
+height: 20px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 20px;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Solutions */
+
+width: 66px;
+height: 20px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 20px;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Pricing */
+
+width: 50px;
+height: 20px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 20px;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 1686556746 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: flex-end;
+padding: 0px;
+gap: 10px;
+
+margin: 0 auto;
+width: 386.67px;
+height: 40px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 1;
+
+/* CTA */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 8px 24px;
+gap: 8px;
+
+width: 110px;
+height: 40px;
+
+/* Background 3 */
+background: #303030;
+/* Gray 2 (Srtoke) */
+border: 0.5px solid #41423e;
+border-radius: 60px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Sign up */
+
+width: 62px;
+height: 24px;
+
+/* Desktop/Body 18 */
+font-family: 'DM Sans';
+font-style: normal;
+font-weight: 400;
+font-size: 18px;
+line-height: 24px;
+/* identical to box height, or 133% */
+
+color: #ffffff;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* 3 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 24px 0px;
+isolation: isolate;
+
+width: 1440px;
+height: 968px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+/* Ellipse 1 */
+
+position: absolute;
+display: none;
+width: 540px;
+height: 540px;
+right: -270px;
+top: 966px;
+
+background: #cfe4f7;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+z-index: 2;
+
+/* Frame 1686556742 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 96px;
+
+width: 1440px;
+height: 920px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+z-index: 1;
+
+/* Frame 1686556736 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 48px 100px;
+gap: 48px;
+isolation: isolate;
+
+width: 1440px;
+height: 920px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame 1686556735 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: flex-end;
+padding: 0px;
+gap: 40px;
+
+width: 676px;
+height: 243px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+z-index: 1;
+
+/* A Code Reader Built for Developers */
+
+width: 676px;
+height: 148px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 64px;
+line-height: 74px;
+/* or 116% */
+text-align: center;
+letter-spacing: -0.02em;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* An AI assistant that instantly reads, understands, and explains your codebase—so you can spend less time digging and more time building. */
+
+width: 676px;
+height: 55px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 18px;
+line-height: 26px;
+/* or 144% */
+text-align: center;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame 1686556743 */
+
+width: 1243px;
+height: 533px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+z-index: 0;
+
+/* Ellipse 2 */
+
+position: absolute;
+width: 522px;
+height: 522px;
+left: 722px;
+top: -158px;
+
+background: #7730b5;
+filter: blur(300px);
+
+/* Ellipse 3 */
+
+position: absolute;
+width: 472px;
+height: 472px;
+left: -57.5px;
+top: 177px;
+
+background: #621ea9;
+filter: blur(300px);
+
+/* Frame 1686556744 */
+
+position: absolute;
+width: 916px;
+height: 515px;
+left: calc(50% - 916px / 2 + 1.5px);
+top: calc(50% - 515px / 2);
+
+background: #ffffff;
+box-shadow: 0px 0px 250px -50px rgba(255, 255, 255, 0.33);
+
+/* 5 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+isolation: isolate;
+
+position: absolute;
+width: 917px;
+height: 652px;
+left: calc(50% - 917px / 2 - 0.5px);
+top: 0px;
+
+/* Frame 427319065 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+
+width: 917px;
+height: 515px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+z-index: 0;
+
+/* Frame 427319055 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10.1778px 0px;
+gap: 8.91px;
+
+width: 161.57px;
+height: 515px;
+
+/* Background */
+background: #171717;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame 427319052 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+width: 161.57px;
+height: 162.61px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame 427319056 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 2.54444px 0px 2.54444px 7.63333px;
+gap: 2.54px;
+
+width: 161.57px;
+height: 17.81px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame */
+
+width: 12.72px;
+height: 12.72px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 25%;
+right: 25%;
+top: 37.5%;
+bottom: 37.5%;
+
+/* Base Secondary */
+border: 0.954167px solid #c7c8c3;
+
+/* PROJECT_TITLE */
+
+width: 66px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 600;
+font-size: 8.90556px;
+line-height: 11px;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame 427319041 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px 2.54444px 20.3556px;
+gap: 2.54px;
+
+width: 161.57px;
+height: 16.09px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 37.5%;
+right: 37.5%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 6.25%;
+right: 6.25%;
+top: 12.5%;
+bottom: 12.5%;
+
+background: #1e5ee8;
+
+/* client */
+
+width: 23px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 427319041 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px 2.54444px 20.3556px;
+gap: 2.54px;
+
+width: 161.57px;
+height: 16.09px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 37.5%;
+right: 37.5%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 6.25%;
+right: 6.25%;
+top: 12.5%;
+bottom: 12.5%;
+
+background: #1e5ee8;
+
+/* client */
+
+width: 23px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 427319041 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px 2.54444px 20.3556px;
+gap: 2.54px;
+
+width: 161.57px;
+height: 16.09px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 25%;
+right: 25%;
+top: 37.5%;
+bottom: 37.5%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 6.25%;
+right: 6.25%;
+top: 12.5%;
+bottom: 12.5%;
+
+background: #1e5ee8;
+
+/* client */
+
+width: 59px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 427319051 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px 0px 0px 25.4444px;
+isolation: isolate;
+
+width: 161.57px;
+height: 96.53px;
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+align-self: stretch;
+flex-grow: 0;
+
+/* Line 3 */
+
+width: 96.53px;
+height: 0px;
+
+/* Gray 2 (Srtoke) */
+border: 0.318056px solid #41423e;
+transform: rotate(90deg);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+z-index: 1;
+
+/* Frame 427319050 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+width: 136.13px;
+height: 96.53px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 1;
+z-index: 0;
+
+/* Frame 427319041 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px;
+gap: 2.54px;
+
+width: 136.13px;
+height: 16.09px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 37.5%;
+right: 37.5%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 6.25%;
+right: 6.25%;
+top: 12.5%;
+bottom: 12.5%;
+
+background: #1e5ee8;
+
+/* client */
+
+width: 23px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 427319050 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px;
+gap: 2.54px;
+
+width: 136.13px;
+height: 16.09px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 37.5%;
+right: 37.5%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 6.25%;
+right: 6.25%;
+top: 12.5%;
+bottom: 12.5%;
+
+background: #1e5ee8;
+
+/* client */
+
+width: 59px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 427319051 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px;
+gap: 2.54px;
+
+width: 136.13px;
+height: 16.09px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 37.5%;
+right: 37.5%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 6.25%;
+right: 6.25%;
+top: 12.5%;
+bottom: 12.5%;
+
+background: #1e5ee8;
+
+/* client */
+
+width: 23px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 427319052 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px;
+gap: 2.54px;
+
+width: 136.13px;
+height: 16.09px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 37.5%;
+right: 37.5%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 6.25%;
+right: 6.25%;
+top: 12.5%;
+bottom: 12.5%;
+
+background: #1e5ee8;
+
+/* client */
+
+width: 59px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 427319053 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px;
+gap: 2.54px;
+
+width: 136.13px;
+height: 16.09px;
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 37.5%;
+right: 37.5%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 6.25%;
+right: 6.25%;
+top: 12.5%;
+bottom: 12.5%;
+
+background: #1e5ee8;
+
+/* client */
+
+width: 23px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 427319054 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px;
+gap: 2.54px;
+
+width: 136.13px;
+height: 16.09px;
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 37.5%;
+right: 37.5%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 6.25%;
+right: 6.25%;
+top: 12.5%;
+bottom: 12.5%;
+
+background: #1e5ee8;
+
+/* client */
+
+width: 59px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Frame 427319080 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+isolation: isolate;
+
+width: 755.43px;
+height: 517.57px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 1;
+
+/* Frame 427319061 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+
+width: 755.43px;
+height: 21.18px;
+
+/* Background 3 */
+background: #303030;
+border-bottom: 0.318056px solid rgba(87, 103, 118, 0.5);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+z-index: 1;
+
+/* Frame 427319063 */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+
+width: 96.89px;
+height: 21.18px;
+
+/* Background */
+background: #171717;
+border-right: 0.318056px solid rgba(87, 103, 118, 0.5);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Frame 427319063 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 5.08889px 7.63333px;
+gap: 5.09px;
+
+width: 76.53px;
+height: 21.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* chat */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 8.33%;
+right: 12.47%;
+top: 12.47%;
+bottom: 8.33%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Vector */
+
+position: absolute;
+left: 33.32%;
+right: 66.63%;
+top: 50%;
+bottom: 50%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Vector */
+
+position: absolute;
+left: 50%;
+right: 49.96%;
+top: 50%;
+bottom: 50%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Vector */
+
+position: absolute;
+left: 66.67%;
+right: 33.29%;
+top: 50%;
+bottom: 50%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* MyPorject */
+
+width: 46px;
+min-width: 38.17px;
+max-width: 95.42px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame 427319062 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 5.08889px;
+gap: 3.18px;
+
+width: 20.36px;
+height: 20.36px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 25%;
+right: 25%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Vector */
+
+position: absolute;
+left: 25%;
+right: 25%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Frame 427319061 */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+
+width: 98.89px;
+height: 21.18px;
+
+/* Background 2 */
+background: #212121;
+border-right: 0.318056px solid rgba(87, 103, 118, 0.5);
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame 427319067 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 5.08889px 7.63333px;
+gap: 5.09px;
+
+width: 78.53px;
+height: 21.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* code */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 66.67%;
+right: 8.33%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* Vector */
+
+position: absolute;
+left: 8.33%;
+right: 66.67%;
+top: 25%;
+bottom: 25%;
+
+/* Base Secondary */
+border: 0.636111px solid #c7c8c3;
+
+/* MyPorject */
+
+width: 48px;
+min-width: 38.17px;
+max-width: 95.42px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Secondary */
+color: #c7c8c3;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame 427319062 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 5.08889px;
+gap: 3.18px;
+
+width: 20.36px;
+height: 20.36px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame */
+
+display: none;
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Frame 427319079 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+
+width: 755.43px;
+height: 496.39px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+z-index: 0;
+
+/* Frame 427319037 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 40.7111px 0px;
+
+width: 745.25px;
+height: 496.39px;
+
+/* Background 2 */
+background: #212121;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+/* Frame 427319076 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 15.27px;
+
+width: 445.28px;
+max-width: 445.28px;
+height: 331px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* Repository: facebook/react Language: JavaScript Description: A declarative, component-based UI library for building interactive web apps. React’s virtual DOM and hooks API make it easy to manage state and side effects in complex applications. Key Features: Virtual DOM diffing for high-performance updates Hooks (useState, useEffect, useContext) for stateful logic JSX syntax sugar for expressive UI definitions */
+
+width: 445.28px;
+height: 163px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 600;
+font-size: 10.1778px;
+line-height: 15px;
+/* or 150% */
+letter-spacing: 0.01em;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame 427319075 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+width: 445.28px;
+max-width: 445.28px;
+height: 468.8px;
+
+border-radius: 7.63333px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame 427319074 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 10.1778px;
+gap: 6.36px;
+
+width: 445.28px;
+height: 25.44px;
+
+/* Background 3 */
+background: #303030;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* js */
+
+width: 408.38px;
+height: 16px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 10.1778px;
+line-height: 15px;
+/* identical to box height, or 150% */
+letter-spacing: 0.01em;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+/* Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 19.75%;
+right: 21.92%;
+top: 31.15%;
+bottom: 10.52%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Vector */
+
+position: absolute;
+left: -5.25%;
+right: 46.92%;
+top: 6.15%;
+bottom: 35.52%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Frame 427319073 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 10.1778px;
+gap: 6.36px;
+
+width: 445.28px;
+height: 443.36px;
+
+/* Background */
+background: #171717;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+/* // pages/index.tsx import { GetStaticProps } from 'next' type Props = { posts: { id: string; title: string }[] } export default function Home({ posts }: Props) { return ( <main> <h1>blog posts</h1> <ul> {posts.map(post => ( <li key={post.id}> <a href={`/posts/${post.id}`}>{post.title}</a> </li> ))} </ul> </main> ) } // runs at build time export const getStaticProps: GetStaticProps<Props> = async () => { const posts = await fetch('https://api.example.com/posts').then(r => r.json()) return { props: { posts } } } */
+
+width: 424.92px;
+height: 423px;
+
+font-family: 'Fira Code';
+font-style: normal;
+font-weight: 400;
+font-size: 10.1778px;
+line-height: 13px;
+/* or 125% */
+letter-spacing: 0.01em;
+
+color: #80858e;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame 427319077 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 5.08889px;
+gap: 5.09px;
+
+width: 445.28px;
+max-width: 445.28px;
+height: 83.97px;
+
+/* Background 3 */
+background: #303030;
+border-radius: 10.1778px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame 427319078 */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 5.08889px;
+gap: 6.36px;
+
+width: 435.1px;
+height: 45.8px;
+
+/* Gray 2 (Srtoke) */
+border: 0.318056px solid #41423e;
+border-radius: 7.63333px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* This is when a user starts typing (the field is now in focus) */
+
+width: 424.92px;
+height: 35.62px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 400;
+font-size: 10.1778px;
+line-height: 13px;
+letter-spacing: 0.01em;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 1;
+
+/* Frame 427319071 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 2.54444px 5.08889px;
+gap: 15.27px;
+
+width: 435.1px;
+height: 22.9px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+/* Frame 427319072 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 10.18px;
+
+width: 391.84px;
+height: 17.81px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 1;
+
+/* Frame 427319069 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 2.54px;
+
+width: 39.72px;
+height: 17.81px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Frame 427319057/Frame 427319041/Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 50%;
+right: 50%;
+top: 12.5%;
+bottom: 37.5%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Vector */
+
+position: absolute;
+left: 29.17%;
+right: 29.16%;
+top: 12.5%;
+bottom: 66.67%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Vector */
+
+position: absolute;
+left: 12.5%;
+right: 12.5%;
+top: 62.5%;
+bottom: 12.5%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Action */
+
+width: 27px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 500;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame 427319071 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 2.54px;
+
+width: 39.72px;
+height: 17.81px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame 427319057/Frame 427319041/Frame */
+
+width: 10.18px;
+height: 10.18px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 50%;
+right: 50%;
+top: 12.5%;
+bottom: 37.5%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Vector */
+
+position: absolute;
+left: 29.17%;
+right: 29.16%;
+top: 12.5%;
+bottom: 66.67%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Vector */
+
+position: absolute;
+left: 12.5%;
+right: 12.5%;
+top: 62.5%;
+bottom: 12.5%;
+
+/* Base Primary */
+border: 0.636111px solid #fafafa;
+
+/* Action */
+
+width: 27px;
+height: 11px;
+
+font-family: 'TT Hoves Pro Trial';
+font-style: normal;
+font-weight: 500;
+font-size: 8.90556px;
+line-height: 11px;
+letter-spacing: 0.01em;
+
+/* Base Primary */
+color: #fafafa;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame 427319068 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 5.24px;
+
+width: 17.81px;
+height: 17.81px;
+
+/* Base Secondary */
+background: #c7c8c3;
+border-radius: 31.4314px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+/* Frame */
+
+width: 15.27px;
+height: 15.27px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Vector */
+
+position: absolute;
+left: 17.56%;
+right: 24.11%;
+top: 20.83%;
+bottom: 50%;
+
+/* Background 3 */
+border: 0.954167px solid #303030;
+
+/* Vector */
+
+position: absolute;
+left: 46.73%;
+right: 53.27%;
+top: 20.83%;
+bottom: 20.83%;
+
+/* Background 3 */
+border: 0.954167px solid #303030;
+
+/* Frame 427319077 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 6.36111px 2.54444px;
+gap: 6.36px;
+
+width: 10.18px;
+height: 496.39px;
+
+background: #191d23;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+/* Rectangle 1 */
+
+width: 5.09px;
+height: 72.52px;
+
+/* Gray 2 (Srtoke) */
+background: #41423e;
+border-radius: 19.0833px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+/* Frame 1686556715 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+
+display: none;
+width: 1440px;
+height: 577px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+z-index: 0;
+
+/* ChatGPT Image Apr 3, 2025, 08_41_31 PM 1 */
+
+width: 720px;
+height: 577px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+/* Frame 1686556601 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 72px 100px;
+gap: 56px;
+
+width: 720px;
+height: 577px;
+
+background: #17222e;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 1;
+
+/* Frame 1686556698 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 0px;
+gap: 40px;
+
+width: 520px;
+height: 296px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* Free Your Feet */
+
+width: 520px;
+height: 88px;
+
+font-family: 'Futura Std';
+font-style: normal;
+font-weight: 400;
+font-size: 64px;
+line-height: 88px;
+/* identical to box height, or 138% */
+text-align: center;
+letter-spacing: -0.02em;
+
+color: #ffffff;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+/* Transform foot care from a chore to a ritual with lunavia — trusted by thousands, and backed by science for healthier, fungus-free feet every step of the way. */
+
+width: 520px;
+height: 72px;
+
+/* Desktop/Body 18 */
+font-family: 'DM Sans';
+font-style: normal;
+font-weight: 400;
+font-size: 18px;
+line-height: 24px;
+/* or 133% */
+text-align: center;
+
+color: #ffffff;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+/* CTA */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 16px 88px;
+gap: 8px;
+
+width: 271px;
+height: 56px;
+
+border: 1px solid #ffffff;
+border-radius: 60px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+/* Learn more */
+
+width: 95px;
+height: 24px;
+
+/* Desktop/Body 18 */
+font-family: 'DM Sans';
+font-style: normal;
+font-weight: 400;
+font-size: 18px;
+line-height: 24px;
+/* identical to box height, or 133% */
+
+color: #ffffff;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
