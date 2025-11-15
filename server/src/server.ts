@@ -3,7 +3,8 @@ import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
 import 'dotenv/config';
 
-//import './features/indexing/index.job.js';
+// CHANGE: Uncommented worker import so the BullMQ worker actually starts processing jobs
+import './features/indexing/index.job.js';
 
 console.log('Booting server...');
 console.log('Start of server.ts');
