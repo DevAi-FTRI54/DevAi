@@ -50,13 +50,32 @@ export const getJobStatus = async (
     const state = await job.getState();
     const progress = job.progress || 0;
     
-    // Get the error message if job failed so we can show it to the user
+    // Get the error message if job failed - check multiple places where BullMQ might store it
     let failedReason = null;
     if (state === 'failed') {
       try {
-        failedReason = await job.getFailedReason();
-        console.log('--- JOB FAILED - Error Details ---');
-        console.log('Failed reason:', failedReason);
+        const jobData = job as any;
+        
+        // Log what properties the job has so we can see what's available
+        console.log('--- JOB FAILED - Inspecting job object ---');
+        console.log('Job keys:', Object.keys(jobData));
+        console.log('Job failedReason property:', jobData.failedReason);
+        console.log('Job returnvalue:', jobData.returnvalue);
+        console.log('Job opts:', jobData.opts);
+        
+        // Try to get error from different possible locations
+        if (jobData.failedReason) {
+          failedReason = jobData.failedReason;
+        } else if (jobData.returnvalue) {
+          const returnValue = jobData.returnvalue;
+          if (returnValue && typeof returnValue === 'object' && returnValue.message) {
+            failedReason = returnValue.message;
+          } else {
+            failedReason = String(returnValue);
+          }
+        }
+        
+        console.log('Extracted failed reason:', failedReason);
       } catch (err) {
         console.error('Error getting failed reason:', err);
       }
