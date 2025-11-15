@@ -101,6 +101,58 @@ export async function createCodeRetriever(repoId: string, k = 8) {
 // Vector Search Tutorial: https://qdrant.tech/articles/vector-search-filtering/
 export async function ensureQdrantIndexes() {
   try {
+    // First, check if collection exists and create it if it doesn't
+    try {
+      const collectionInfo = await client.getCollection(COLLECTION);
+      console.log(`✅ Collection '${COLLECTION}' already exists`);
+    } catch (err: any) {
+      // Collection doesn't exist, create it
+      // Check for various error formats that indicate collection doesn't exist
+      const errorMessage = err?.message || err?.status?.error || '';
+      const isNotFoundError =
+        errorMessage.includes("doesn't exist") ||
+        errorMessage.includes('Not found') ||
+        errorMessage.includes('not found') ||
+        err?.status === 404 ||
+        err?.statusCode === 404;
+
+      if (isNotFoundError) {
+        console.log(
+          `🔄 Collection '${COLLECTION}' doesn't exist, creating it...`
+        );
+
+        // text-embedding-3-large produces 3072-dimensional vectors
+        try {
+          await client.createCollection(COLLECTION, {
+            vectors: {
+              size: 3072,
+              distance: 'Cosine',
+            },
+          });
+          console.log(`✅ Collection '${COLLECTION}' created successfully`);
+        } catch (createErr: any) {
+          // Handle race condition where collection might have been created between check and creation
+          const createErrorMessage =
+            createErr?.message || createErr?.status?.error || '';
+          if (
+            createErrorMessage.includes('already exists') ||
+            createErrorMessage.includes('already exist')
+          ) {
+            console.log(
+              `✅ Collection '${COLLECTION}' was created by another process`
+            );
+          } else {
+            throw createErr;
+          }
+        }
+      } else {
+        // Re-throw if it's a different error
+        console.error('❌ Unexpected error checking collection:', err);
+        throw err;
+      }
+    }
+
+    // Now create the index on the collection (whether it existed or was just created)
     console.log('Creating index for metadata.repoId...');
     await client.createPayloadIndex(COLLECTION, {
       field_name: 'metadata.repoId',
