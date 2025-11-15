@@ -6,6 +6,7 @@ import { chunkDocuments } from './chunk.service.js';
 import { upsert } from './vector.service.js';
 
 console.log('🔍 REDIS_URL:', process.env.REDIS_URL);
+console.log('🚀 Initializing BullMQ worker...');
 
 const redisClient = new IORedis(process.env.REDIS_URL!, {
   maxRetriesPerRequest: null,
@@ -15,23 +16,37 @@ export const indexQueue = new Queue('index', {
   connection: redisClient,
 });
 
-const worker = new Worker(
+console.log('✅ Index queue created');
+
+// Wrap worker creation in try-catch to catch initialization errors
+let worker;
+try {
+  console.log('🔧 Creating BullMQ worker...');
+  worker = new Worker(
   'index',
   async (job: Job<{ repoUrl: string; sha: string }>) => {
-    // CHANGE: Added try-catch wrapper for better error handling
+    // Log when job starts processing
+    console.log(`\n🎯 WORKER: Job ${job.id} started processing`);
+    console.log(`📋 Job data:`, JSON.stringify(job.data, null, 2));
+    
+    // Wrap everything in try-catch to catch and log all errors
     try {
       const { repoUrl, sha } = job.data;
+      
+      console.log(`📍 Step 1: Cloning repository ${repoUrl}...`);
 
       const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
+      console.log(`✅ Repository cloned to: ${localRepoPath}`);
       await job.updateProgress(15);
 
+      console.log(`📍 Step 2: Loading documents with TsmorphCodeLoader...`);
       const loader = new TsmorphCodeLoader(localRepoPath, repoId);
       const bigDocs = await loader.load();
+      console.log(`✅ Loader completed`);
       
-      // CHANGE: Added logging and validation for loaded documents
       console.log(`📄 Loaded ${bigDocs?.length || 0} documents`);
       
-      // Validate bigDocs before chunking
+      // Validate documents before proceeding
       if (!bigDocs || !Array.isArray(bigDocs)) {
         throw new Error(`Invalid documents array: ${typeof bigDocs}`);
       }
@@ -40,9 +55,17 @@ const worker = new Worker(
         throw new Error('No documents loaded from repository');
       }
 
-      await job.updateProgress(30);
+      // Update progress and start chunking - wrapped in try-catch since jobs were failing here
+      console.log(`📍 Step 3: Updating progress to 30% and starting chunking...`);
+      try {
+        await job.updateProgress(30);
+        console.log(`✅ Progress updated to 30%`);
+      } catch (progressError: any) {
+        console.error('❌ Failed to update progress to 30%:', progressError);
+        throw new Error(`Progress update failed: ${progressError.message}`);
+      }
 
-      // CHANGE: Added error handling around chunkDocuments call
+      // Chunk documents with error handling
       let chunkedDocs;
       try {
         console.log('🔄 Starting to chunk documents...');
@@ -70,7 +93,7 @@ const worker = new Worker(
       const total = chunkedDocs.length;
       console.log(`📊 Total documents to process: ${total}`);
 
-      // CHANGE: Added error handling around upsert operations
+      // Upsert each document with error handling to identify which one fails
       for (let i = 0; i < total; i++) {
         try {
           await upsert([chunkedDocs[i]]);
@@ -82,7 +105,7 @@ const worker = new Worker(
         }
       }
     } catch (error: any) {
-      // CHANGE: Added comprehensive error logging
+      // Log full error details before re-throwing
       console.error('❌ Job failed with error:', error);
       console.error('Error stack:', error.stack);
       throw error; // Re-throw to mark job as failed
@@ -92,11 +115,37 @@ const worker = new Worker(
     connection: redisClient,
   }
 )
+  // Worker event listeners for visibility into worker lifecycle
+  .on('ready', () => {
+    console.log('✅ BullMQ Worker is ready and listening for jobs');
+  })
+  .on('active', (job) => {
+    console.log(`🟢 Worker: Job ${job.id} is now active`);
+  })
   .on('completed', (job) => {
-    console.log(`${job.id} has completed!`);
+    console.log(`✅ Job ${job.id} has completed!`);
   })
   .on('failed', (job, err) => {
-    // CHANGE: Enhanced error logging in failed handler
-    console.error(`❌ Job ${job?.id} has failed with error:`, err.message);
-    console.error('Full error:', err);
+    // Enhanced error logging for failed jobs
+    console.error(`\n❌❌❌ JOB FAILED ❌❌❌`);
+    console.error(`Job ID: ${job?.id}`);
+    console.error(`Error message: ${err.message}`);
+    console.error(`Error name: ${err.name}`);
+    console.error(`Full error object:`, err);
+    if (err.stack) {
+      console.error(`Error stack:\n${err.stack}`);
+    }
+  })
+  .on('error', (err) => {
+    // Catch worker-level errors (Redis connection issues, etc.)
+    console.error('❌ Worker error:', err);
   });
+  
+  console.log('✅ BullMQ Worker created and configured');
+} catch (workerError: any) {
+  // If worker creation fails, log and re-throw to prevent silent failures
+  console.error('❌❌❌ CRITICAL: Failed to create BullMQ worker!');
+  console.error('Worker creation error:', workerError);
+  console.error('Error stack:', workerError.stack);
+  throw workerError;
+}

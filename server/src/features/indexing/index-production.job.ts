@@ -23,10 +23,11 @@ const isProduction =
   process.env.NODE_ENV === 'production' || process.env.RENDER;
 
 // --- Worker ------------------------------------------------------------
+// Production worker with error handling - supports both GitHub API and local cloning
 const worker = new Worker(
   'index',
   async (job: Job<{ repoUrl: string; sha: string; accessToken?: string }>) => {
-    // CHANGE: Added try-catch wrapper for better error handling
+    // Wrap everything in try-catch to catch and log all errors
     try {
       const { repoUrl, sha, accessToken } = job.data;
 
@@ -75,7 +76,7 @@ const worker = new Worker(
         console.log(`📄 Loaded ${bigDocs.length} documents via local clone`);
       }
 
-      // CHANGE: Added validation for loaded documents
+      // Validate documents before proceeding
       if (!bigDocs || !Array.isArray(bigDocs)) {
         throw new Error(`Invalid documents array: ${typeof bigDocs}`);
       }
@@ -86,7 +87,7 @@ const worker = new Worker(
 
       await job.updateProgress(30);
 
-      // CHANGE: Added error handling around chunkDocuments call
+      // Chunk documents with error handling
       let chunkedDocs;
       try {
         console.log('🔄 Starting to chunk documents...');
@@ -172,7 +173,7 @@ const worker = new Worker(
         `🎉 Successfully processed all ${total} documents for ${repoName}!`
       );
     } catch (error: any) {
-      // CHANGE: Added comprehensive error logging
+      // Log full error details before re-throwing
       console.error('❌ Job failed with error:', error);
       console.error('Error stack:', error.stack);
       throw error; // Re-throw to mark job as failed
@@ -183,7 +184,7 @@ const worker = new Worker(
     console.log(`${job.id} has completed!`);
   })
   .on('failed', (job, err) => {
-    // CHANGE: Enhanced error logging in failed handler
+    // Enhanced error logging for failed jobs
     console.error(`❌ Job ${job?.id} has failed with error:`, err.message);
     console.error('Full error:', err);
   });
