@@ -10,12 +10,31 @@ import { TsmorphCodeLoader } from './loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import { upsert } from './vector.service.js';
 
-console.log('🔍 REDIS_URL:', process.env.REDIS_URL);
+console.log('🔍 REDIS_URL:', process.env.REDIS_URL ? 'Set' : 'Missing');
 console.log('🚀 Initializing BullMQ worker...');
 
-const redisClient = new IORedis(process.env.REDIS_URL!, {
-  maxRetriesPerRequest: null,
-});
+// Create Redis client - use lazy connect so it doesn't block server startup
+let redisClient: IORedis;
+if (!process.env.REDIS_URL) {
+  console.error('⚠️ REDIS_URL not set - worker will not function');
+  // Create a dummy client that will fail gracefully
+  redisClient = new IORedis('redis://localhost:6379', {
+    lazyConnect: true,
+    maxRetriesPerRequest: null,
+    retryStrategy: () => null, // Don't retry if connection fails
+  });
+} else {
+  redisClient = new IORedis(process.env.REDIS_URL, {
+    maxRetriesPerRequest: null,
+    retryStrategy: (times) => {
+      // Retry with exponential backoff
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
+    lazyConnect: true, // Don't connect immediately, wait for first use
+  });
+  console.log('✅ Redis client created (lazy connect)');
+}
 
 export const indexQueue = new Queue('index', {
   connection: redisClient,
@@ -23,7 +42,7 @@ export const indexQueue = new Queue('index', {
 
 console.log('✅ Index queue created');
 
-// Wrap worker creation in try-catch to catch initialization errors
+// Create worker - wrap in try-catch so errors don't crash server startup
 let worker;
 try {
   console.log('🔧 Creating BullMQ worker...');
@@ -148,9 +167,10 @@ try {
   
   console.log('✅ BullMQ Worker created and configured');
 } catch (workerError: any) {
-  // If worker creation fails, log and re-throw to prevent silent failures
-  console.error('❌❌❌ CRITICAL: Failed to create BullMQ worker!');
+  // Log error but don't crash server - worker will just not be available
+  console.error('❌❌❌ Failed to create BullMQ worker!');
   console.error('Worker creation error:', workerError);
   console.error('Error stack:', workerError.stack);
-  throw workerError;
+  console.error('⚠️ Server will continue but jobs will not be processed');
+  // Don't re-throw - let server start even if worker fails
 }
