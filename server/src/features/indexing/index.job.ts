@@ -1,3 +1,8 @@
+// Log when worker file loads so we can verify it's being imported
+console.log('========================================');
+console.log('WORKER FILE: index.job.ts LOADED');
+console.log('========================================');
+
 import IORedis from 'ioredis';
 import { Worker, Queue, Job } from 'bullmq';
 import { cloneRepo } from './git.service.js';

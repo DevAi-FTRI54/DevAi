@@ -49,11 +49,25 @@ export const getJobStatus = async (
 
     const state = await job.getState();
     const progress = job.progress || 0;
+    
+    // Get the error message if job failed so we can show it to the user
+    let failedReason = null;
+    if (state === 'failed') {
+      try {
+        failedReason = await job.getFailedReason();
+        console.log('--- JOB FAILED - Error Details ---');
+        console.log('Failed reason:', failedReason);
+      } catch (err) {
+        console.error('Error getting failed reason:', err);
+      }
+    }
+    
     const jobProgress = {
       id: job.id,
       status: state,
       progress,
       data: job.data,
+      failedReason, // Send error message to frontend
     };
     console.log('--- jobProgress ---------');
     console.log(jobProgress);
@@ -63,8 +77,10 @@ export const getJobStatus = async (
       status: state,
       progress,
       data: job.data,
+      failedReason, // Include error message in response
     });
   } catch (error) {
+    console.error('Error getting job status:', error);
     res.status(500).json({ error: 'Failed to get job status' });
   }
 };
