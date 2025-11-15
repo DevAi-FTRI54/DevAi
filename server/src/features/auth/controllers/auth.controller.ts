@@ -236,17 +236,18 @@ export const getGitHubUserOrgs = async (
 
     console.log('🔐 Using GitHub token:', githubToken.slice(0, 6), '...');
 
-    // Fetch orgs from GitHub API
-    const response = await fetch('https://api.github.com/user/orgs', {
-      headers: {
-        Authorization: `Bearer ${githubToken}`,
-        'User-Agent': 'devAI-app',
-        Accept: 'application/vnd.github+json',
-      },
+    const headers = {
+      Authorization: `Bearer ${githubToken}`,
+      'User-Agent': 'devAI-app',
+      Accept: 'application/vnd.github+json',
+    };
+
+    // Fetch user's personal account info
+    const userResponse = await fetch('https://api.github.com/user', {
+      headers,
     });
 
-    // Handle expired or invalid token
-    if (response.status === 401) {
+    if (userResponse.status === 401) {
       console.warn('⚠️ GitHub token is invalid or expired — clearing cookie');
       res.clearCookie('github_access_token', {
         httpOnly: true,
@@ -259,26 +260,68 @@ export const getGitHubUserOrgs = async (
       return;
     }
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      console.error('❌ GitHub user fetch failed:', errorText);
+      res.status(500).json({ error: 'Failed to fetch GitHub user' });
+      return;
+    }
+
+    const user = await userResponse.json();
+
+    // Fetch orgs from GitHub API
+    const orgsResponse = await fetch('https://api.github.com/user/orgs', {
+      headers,
+    });
+
+    if (!orgsResponse.ok) {
+      const errorText = await orgsResponse.text();
       console.error('❌ GitHub orgs fetch failed:', errorText);
       res.status(500).json({ error: 'Failed to fetch GitHub orgs' });
       return;
     }
 
-    const orgs = (await response.json()) as {
+    const orgs = (await orgsResponse.json()) as {
       id: number;
       login: string;
       avatar_url: string;
     }[];
 
-    res.json(
-      orgs.map(({ id, login, avatar_url }) => ({
+    // Check if user has personal installation of the app
+    const installations = await getAppInstallations(githubToken);
+    const installationsList = Array.isArray(installations)
+      ? installations
+      : installations.installations || [];
+    
+    // Find personal installation (where account.login matches user.login)
+    const personalInstallation = installationsList.find(
+      (inst: any) => inst.account && inst.account.login === user.login
+    );
+
+    // Build result: include personal account first, then orgs
+    const result = [];
+
+    // Add personal account if app is installed on it
+    if (personalInstallation) {
+      result.push({
+        id: user.id,
+        login: user.login,
+        avatar_url: user.avatar_url,
+        isPersonal: true, // Flag to identify personal account
+      });
+    }
+
+    // Add organizations
+    result.push(
+      ...orgs.map(({ id, login, avatar_url }) => ({
         id,
         login,
         avatar_url,
+        isPersonal: false,
       }))
     );
+
+    res.json(result);
   } catch (err: any) {
     console.error('🔥 Error in getGitHubUserOrgs:', err.message);
     res
@@ -319,7 +362,7 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
     //   return;
     // }
 
-    // Read org login from query
+    // Read org/login from query - can be organization or personal account
     const org = req.query.org as string | undefined;
     let installationId = req.cookies.installation_id;
 
@@ -339,6 +382,7 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
         res.status(404).json({ error: 'No installations found for this user' });
         return;
       }
+      // Find installation matching the selected org/login (works for both orgs and personal accounts)
       const match = installations.find(
         (inst: any) =>
           inst.account &&
@@ -346,7 +390,7 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
           inst.account.login.toLowerCase() === org.toLowerCase()
       );
       if (!match) {
-        res.status(404).json({ error: 'App not installed on this org' });
+        res.status(404).json({ error: 'App not installed on this account or organization' });
         return;
       }
       installationId = match.id;
