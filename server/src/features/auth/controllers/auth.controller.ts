@@ -236,13 +236,23 @@ export const completeAuth = async (
       });
     }
 
-    res.status(200).json({
+    const responseData = {
       token,
       githubToken,
       installed: isInstalled,
       installationId,
       needsInstall: !isInstalled,
+    };
+
+    console.log('✅ completeAuth: Sending response with tokens:', {
+      hasToken: !!token,
+      hasGithubToken: !!githubToken,
+      tokenLength: token?.length || 0,
+      githubTokenLength: githubToken?.length || 0,
+      installed: isInstalled,
     });
+
+    res.status(200).json(responseData);
   } catch (err: any) {
     console.error('❌ Error in completeAuth:', err);
     handleApiError(err, res, 'Authentication completion failed');
