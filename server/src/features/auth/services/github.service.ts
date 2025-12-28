@@ -71,10 +71,15 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
   console.log('[GitHub Token Exchange] Full response:', data);
 
   if (!data.access_token) {
-    throw new Error(
-      'GitHub API Error: ' +
-        (data.error_description || 'Failed to obtain access token')
-    );
+    const errorMsg = data.error_description || data.error || 'Failed to obtain access token';
+    console.error('❌ GitHub token exchange failed:', errorMsg);
+    
+    // Check for specific error types
+    if (errorMsg.includes('expired') || errorMsg.includes('invalid') || data.error === 'bad_verification_code') {
+      throw new Error('Authorization code expired or already used. Please try logging in again.');
+    }
+    
+    throw new Error('GitHub API Error: ' + errorMsg);
   }
 
   return data.access_token;

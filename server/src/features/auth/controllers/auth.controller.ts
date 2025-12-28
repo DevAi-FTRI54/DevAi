@@ -171,10 +171,31 @@ export const completeAuth = async (
 ): Promise<any> => {
   try {
     const code = req.body.code as string;
-    if (!code) return res.status(400).send('Missing code');
+    if (!code) {
+      console.error('❌ completeAuth: Missing authorization code');
+      return res.status(400).json({ error: 'Missing authorization code' });
+    }
 
+    console.log('🔐 completeAuth: Exchanging code for token...');
+    
     // ✅ Only here: exchange the code
-    const githubToken = await exchangeCodeForToken(code);
+    let githubToken: string;
+    try {
+      githubToken = await exchangeCodeForToken(code);
+      console.log('✅ Token exchange successful');
+    } catch (tokenError: any) {
+      console.error('❌ Token exchange failed:', tokenError.message);
+      
+      // Check if code expired
+      if (tokenError.message?.includes('expired') || tokenError.message?.includes('invalid')) {
+        return res.status(400).json({ 
+          error: 'Authorization code expired or invalid. Please try logging in again.' 
+        });
+      }
+      
+      // Re-throw other errors
+      throw tokenError;
+    }
 
     res.cookie('github_access_token', githubToken, {
       httpOnly: true,
