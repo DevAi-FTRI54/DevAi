@@ -180,7 +180,8 @@ export const completeAuth = async (
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      domain: req.hostname.endsWith('.vercel.app') ? '.vercel.app' : undefined,
+      path: '/', // Safari requires explicit path
+      // Remove domain setting - let browser handle it for better Safari compatibility
     });
 
     const githubData = await getGitHubUserProfile(githubToken);
@@ -195,6 +196,7 @@ export const completeAuth = async (
       httpOnly: true,
       secure: true,
       sameSite: 'none',
+      path: '/', // Safari requires explicit path
     });
 
     const installations = await getAppInstallations(githubToken);
@@ -205,6 +207,7 @@ export const completeAuth = async (
         httpOnly: true,
         secure: true,
         sameSite: 'none',
+        path: '/', // Safari requires explicit path
       });
     }
 
@@ -253,6 +256,7 @@ export const getGitHubUserOrgs = async (
         httpOnly: true,
         secure: true,
         sameSite: 'none',
+        path: '/', // Must match the path used when setting the cookie
       });
       res.status(401).json({
         error: 'GitHub token expired or invalid — please reauthenticate',
