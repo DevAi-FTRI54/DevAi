@@ -177,7 +177,7 @@ export const completeAuth = async (
     }
 
     console.log('🔐 completeAuth: Exchanging code for token...');
-    
+
     // ✅ Only here: exchange the code
     let githubToken: string;
     try {
@@ -185,14 +185,18 @@ export const completeAuth = async (
       console.log('✅ Token exchange successful');
     } catch (tokenError: any) {
       console.error('❌ Token exchange failed:', tokenError.message);
-      
+
       // Check if code expired
-      if (tokenError.message?.includes('expired') || tokenError.message?.includes('invalid')) {
-        return res.status(400).json({ 
-          error: 'Authorization code expired or invalid. Please try logging in again.' 
+      if (
+        tokenError.message?.includes('expired') ||
+        tokenError.message?.includes('invalid')
+      ) {
+        return res.status(400).json({
+          error:
+            'Authorization code expired or invalid. Please try logging in again.',
         });
       }
-      
+
       // Re-throw other errors
       throw tokenError;
     }
@@ -251,12 +255,25 @@ export const getGitHubUserOrgs = async (
   res: Response
 ): Promise<void> => {
   try {
-    const githubToken = req.cookies.github_access_token;
+    // Try to get token from Authorization header first (for Safari compatibility)
+    // Fallback to cookie if header not present
+    const authHeader = req.headers.authorization;
+    let githubToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : req.cookies.github_access_token;
 
     if (!githubToken) {
+      console.error(
+        '❌ getGitHubUserOrgs: No GitHub token found in header or cookies'
+      );
       res.status(401).json({ error: 'Missing GitHub token' });
       return;
     }
+
+    console.log(
+      '🔐 Using GitHub token from:',
+      authHeader ? 'Authorization header' : 'cookie'
+    );
 
     console.log('🔐 Using GitHub token:', githubToken.slice(0, 6), '...');
 
@@ -317,7 +334,7 @@ export const getGitHubUserOrgs = async (
     const installationsList = Array.isArray(installations)
       ? installations
       : installations.installations || [];
-    
+
     // Find personal installation (where account.login matches user.login)
     const personalInstallation = installationsList.find(
       (inst: any) => inst.account && inst.account.login === user.login
@@ -389,14 +406,29 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
 
     // Read org/login from query - can be organization or personal account
     const org = req.query.org as string | undefined;
+    // Try to get installation_id from cookie, fallback to header if needed
     let installationId = req.cookies.installation_id;
 
     if (org) {
-      const githubToken = req.cookies.github_access_token;
+      // Try to get token from Authorization header first (for Safari compatibility)
+      // Fallback to cookie if header not present
+      const authHeader = req.headers.authorization;
+      const githubToken = authHeader?.startsWith('Bearer ')
+        ? authHeader.substring(7)
+        : req.cookies.github_access_token;
+
       if (!githubToken) {
+        console.error(
+          '❌ listRepos: No GitHub token found in header or cookies'
+        );
         res.status(401).json({ error: 'Missing GitHub token' });
         return;
       }
+
+      console.log(
+        '🔐 listRepos: Using GitHub token from:',
+        authHeader ? 'Authorization header' : 'cookie'
+      );
       const installationsResult = await getAppInstallations(githubToken);
       console.log('installationsResult:', installationsResult);
       const installations = Array.isArray(installationsResult)
@@ -415,7 +447,9 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
           inst.account.login.toLowerCase() === org.toLowerCase()
       );
       if (!match) {
-        res.status(404).json({ error: 'App not installed on this account or organization' });
+        res
+          .status(404)
+          .json({ error: 'App not installed on this account or organization' });
         return;
       }
       installationId = match.id;
