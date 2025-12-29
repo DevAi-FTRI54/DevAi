@@ -42,8 +42,17 @@ const embeddings = new OpenAIEmbeddings({
 const COLLECTION = 'devai_collection_01';
 
 // Supporting documentation: https://js.langchain.com/docs/integrations/retrievers/self_query/qdrant/
+// Optimized upsert function that batches embeddings efficiently
 export async function upsert(docs: Document[]) {
-  const vectorStore = QdrantVectorStore.fromDocuments(docs, embeddings, {
+  if (!docs || docs.length === 0) {
+    console.warn('⚠️ upsert called with empty documents array');
+    return;
+  }
+
+  // QdrantVectorStore.fromDocuments handles batching internally
+  // It will batch embeddings API calls (OpenAI supports up to 2048 per request)
+  // and batch Qdrant upserts for optimal performance
+  const vectorStore = await QdrantVectorStore.fromDocuments(docs, embeddings, {
     client,
     collectionName: COLLECTION,
   });

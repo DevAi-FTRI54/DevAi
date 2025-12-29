@@ -117,9 +117,11 @@ const worker = new Worker(
       console.log(`📊 Total documents to process: ${total}`);
       await job.updateProgress(36);
 
-      // Batch processing configuration
-      const BATCH_SIZE = 10;
-      const CONCURRENT_BATCHES = 3;
+      // Batch processing configuration - optimized for speed and cost
+      // OpenAI embeddings API supports up to 2048 inputs per request
+      // Using 50 per batch for good balance of speed and error handling
+      const BATCH_SIZE = 50;
+      const CONCURRENT_BATCHES = 5; // Process 5 batches concurrently for speed
 
       const processBatch = async (
         batch: typeof chunkedDocs,

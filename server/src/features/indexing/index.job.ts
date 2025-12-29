@@ -116,18 +116,63 @@ try {
 
       const total = chunkedDocs.length;
       console.log(`📊 Total documents to process: ${total}`);
+      await job.updateProgress(36);
 
-      // Upsert each document with error handling to identify which one fails
-      for (let i = 0; i < total; i++) {
+      // Batch processing configuration - optimized for speed and cost
+      // OpenAI embeddings API supports up to 2048 inputs per request
+      // Using 50 per batch for good balance of speed and error handling
+      const BATCH_SIZE = 50;
+      const CONCURRENT_BATCHES = 5; // Process 5 batches concurrently for speed
+
+      const processBatch = async (
+        batch: typeof chunkedDocs,
+        batchIndex: number
+      ) => {
         try {
-          await upsert([chunkedDocs[i]]);
-          const percentage = 36 + Math.floor(((i + 1) / total) * 64);
-          await job.updateProgress(percentage);
-        } catch (upsertError: any) {
-          console.error(`❌ Failed to upsert document ${i + 1}/${total}:`, upsertError);
-          throw new Error(`Failed to upsert document: ${upsertError.message}`);
+          console.log(
+            `🔄 Processing batch ${batchIndex + 1} with ${batch.length} documents`
+          );
+          await upsert(batch);
+          console.log(`✅ Completed batch ${batchIndex + 1}`);
+          return batch.length;
+        } catch (error) {
+          console.error(`❌ Failed to process batch ${batchIndex + 1}:`, error);
+          throw error;
         }
+      };
+
+      // Split documents into batches
+      const batches = [];
+      for (let i = 0; i < total; i += BATCH_SIZE) {
+        batches.push(chunkedDocs.slice(i, i + BATCH_SIZE));
       }
+
+      console.log(
+        `📦 Split into ${batches.length} batches of up to ${BATCH_SIZE} documents each`
+      );
+
+      // Process batches with limited concurrency for optimal performance
+      let processedCount = 0;
+      const progressRange = 64; // 36% to 100%
+
+      for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
+        const currentBatches = batches.slice(i, i + CONCURRENT_BATCHES);
+
+        const results = await Promise.all(
+          currentBatches.map((batch, index) => processBatch(batch, i + index))
+        );
+
+        processedCount += results.reduce((sum, count) => sum + count, 0);
+        const percentage =
+          36 + Math.floor((processedCount / total) * progressRange);
+
+        console.log(
+          `📈 Progress: ${processedCount}/${total} documents (${percentage}%)`
+        );
+        await job.updateProgress(percentage);
+      }
+
+      console.log(`🎉 Successfully processed all ${total} documents!`);
     } catch (error: any) {
       // Log full error details before re-throwing
       console.error('❌ Job failed with error:', error);
