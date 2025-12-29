@@ -39,14 +39,36 @@ app.use(
       }
     },
     credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Cache-Control',
+      'X-Requested-With',
+    ], // Explicitly allow Authorization header for Safari
+    exposedHeaders: ['Authorization'], // Expose Authorization header in response
   })
 );
 
+// Handle CORS preflight requests (OPTIONS) - Safari requires this for custom headers
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin || '')) {
     res.setHeader('Access-Control-Allow-Origin', origin!);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, Cache-Control, X-Requested-With'
+    ); // Explicitly allow Authorization header
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, DELETE, OPTIONS'
+    );
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
   }
   next();
 });
