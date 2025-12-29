@@ -153,17 +153,23 @@ app.use((req, res) => {
 
 // --- Global error handler --------------------------------------
 const errorHandler: ErrorRequestHandler = (err: ServerError, req, res, _next) => {
+  // Extract error message (could be string or object)
+  const errorMessage = typeof err.message === 'string' 
+    ? err.message 
+    : err.message?.err || 'Unknown error';
+  const errorName = err.name || 'Error';
+  
   // Log actual error details for debugging
   console.error('❌ Express error handler triggered:');
   console.error('→ URL:', req.method, req.originalUrl);
-  console.error('→ Error name:', err.name || 'Unknown');
-  console.error('→ Error message:', err.message || 'No message');
-  if (err.stack) {
-    console.error('→ Stack:', err.stack);
+  console.error('→ Error name:', errorName);
+  console.error('→ Error message:', errorMessage);
+  if ((err as any).stack) {
+    console.error('→ Stack:', (err as any).stack);
   }
   
   // Handle CORS errors gracefully (don't log as critical errors)
-  if (err.message?.includes('CORS') || err.message?.includes('Not allowed by CORS')) {
+  if (errorMessage.includes('CORS') || errorMessage.includes('Not allowed by CORS')) {
     console.warn('⚠️ CORS error (expected for unauthorized origins):', req.headers.origin);
     res.status(403).json({ error: 'CORS: Origin not allowed' });
     return;
@@ -176,9 +182,9 @@ const errorHandler: ErrorRequestHandler = (err: ServerError, req, res, _next) =>
   }
   
   const defaultError: ServerError = {
-    log: err.log || err.message || 'Express error handler caught unknown middleware error',
+    log: err.log || errorMessage || 'Express error handler caught unknown middleware error',
     status: err.status || 500,
-    message: err.message ? { err: err.message } : { err: 'An error occurred' },
+    message: { err: errorMessage },
   };
   const errorObj: ServerError = { ...defaultError, ...err };
   
