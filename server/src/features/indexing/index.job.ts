@@ -42,11 +42,25 @@ export const indexQueue = new Queue('index', {
 
 console.log('✅ Index queue created');
 
-// Create worker - wrap in try-catch so errors don't crash server startup
-let worker;
-try {
-  console.log('🔧 Creating BullMQ worker...');
-  worker = new Worker(
+// Don't create worker immediately - it causes memory issues
+// Worker will be created lazily when first job is processed
+let worker: Worker | null = null;
+
+// Function to get or create worker lazily
+export function getWorker(): Worker | null {
+  if (worker) {
+    return worker;
+  }
+
+  // Only create worker if Redis is configured
+  if (!process.env.REDIS_URL) {
+    console.warn('⚠️ Cannot create worker: REDIS_URL not set');
+    return null;
+  }
+
+  try {
+    console.log('🔧 Creating BullMQ worker (lazy initialization)...');
+    worker = new Worker(
   'index',
   async (job: Job<{ repoUrl: string; sha: string }>) => {
     // Log when job starts processing
@@ -134,43 +148,68 @@ try {
       console.error('Error stack:', error.stack);
       throw error; // Re-throw to mark job as failed
     }
-  },
-  {
-    connection: redisClient,
   }
-)
-  // Worker event listeners for visibility into worker lifecycle
-  .on('ready', () => {
-    console.log('✅ BullMQ Worker is ready and listening for jobs');
-  })
-  .on('active', (job) => {
-    console.log(`🟢 Worker: Job ${job.id} is now active`);
-  })
-  .on('completed', (job) => {
-    console.log(`✅ Job ${job.id} has completed!`);
-  })
-  .on('failed', (job, err) => {
-    // Enhanced error logging for failed jobs
-    console.error(`\n❌❌❌ JOB FAILED ❌❌❌`);
-    console.error(`Job ID: ${job?.id}`);
-    console.error(`Error message: ${err.message}`);
-    console.error(`Error name: ${err.name}`);
-    console.error(`Full error object:`, err);
-    if (err.stack) {
-      console.error(`Error stack:\n${err.stack}`);
-    }
-  })
-  .on('error', (err) => {
-    // Catch worker-level errors (Redis connection issues, etc.)
-    console.error('❌ Worker error:', err);
-  });
-  
-  console.log('✅ BullMQ Worker created and configured');
-} catch (workerError: any) {
-  // Log error but don't crash server - worker will just not be available
-  console.error('❌❌❌ Failed to create BullMQ worker!');
-  console.error('Worker creation error:', workerError);
-  console.error('Error stack:', workerError.stack);
-  console.error('⚠️ Server will continue but jobs will not be processed');
-  // Don't re-throw - let server start even if worker fails
+};
+
+// Function to initialize worker lazily (only when needed)
+export function initializeWorker(): Worker | null {
+  if (worker) {
+    return worker; // Already initialized
+  }
+
+  if (!process.env.REDIS_URL) {
+    console.warn('⚠️ Cannot create worker: REDIS_URL not set');
+    return null;
+  }
+
+  try {
+    console.log('🔧 Creating BullMQ worker (lazy initialization)...');
+    worker = new Worker('index', processJob, {
+      connection: redisClient,
+    })
+      // Worker event listeners for visibility into worker lifecycle
+      .on('ready', () => {
+        console.log('✅ BullMQ Worker is ready and listening for jobs');
+      })
+      .on('active', (job) => {
+        console.log(`🟢 Worker: Job ${job.id} is now active`);
+      })
+      .on('completed', (job) => {
+        console.log(`✅ Job ${job.id} has completed!`);
+      })
+      .on('failed', (job, err) => {
+        // Enhanced error logging for failed jobs
+        console.error(`\n❌❌❌ JOB FAILED ❌❌❌`);
+        console.error(`Job ID: ${job?.id}`);
+        console.error(`Error message: ${err.message}`);
+        console.error(`Error name: ${err.name}`);
+        console.error(`Full error object:`, err);
+        if (err.stack) {
+          console.error(`Error stack:\n${err.stack}`);
+        }
+      })
+      .on('error', (err) => {
+        // Catch worker-level errors (Redis connection issues, etc.)
+        console.error('❌ Worker error:', err);
+      });
+
+    console.log('✅ BullMQ Worker created and configured');
+    return worker;
+  } catch (workerError: any) {
+    // Log error but don't crash server - worker will just not be available
+    console.error('❌❌❌ Failed to create BullMQ worker!');
+    console.error('Worker creation error:', workerError);
+    console.error('Error stack:', workerError.stack);
+    console.error('⚠️ Server will continue but jobs will not be processed');
+    return null;
+  }
 }
+
+// Auto-initialize worker after a delay to avoid startup memory issues
+// This gives the server time to start and Render to detect the port
+setTimeout(() => {
+  if (process.env.REDIS_URL) {
+    console.log('⏰ Auto-initializing worker after startup delay...');
+    initializeWorker();
+  }
+}, 10000); // Wait 10 seconds after module load

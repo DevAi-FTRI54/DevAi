@@ -54,15 +54,14 @@ async function startServer() {
     // Don't exit - server can still run without Qdrant for health checks
   }
 
-  // Import worker lazily after server is running to avoid memory issues
-  // This prevents the worker from consuming memory during server startup
+  // Import worker module (but it won't create worker immediately)
+  // The worker will auto-initialize after a delay to avoid memory issues
   try {
-    console.log('📦 Starting worker in background...');
-    // Use dynamic import to load worker asynchronously
+    console.log('📦 Loading worker module (worker will start after delay)...');
     await import('./features/indexing/index.job.js');
-    console.log('✅ Worker started successfully');
+    console.log('✅ Worker module loaded (will auto-start in 10 seconds)');
   } catch (error) {
-    console.error('⚠️ Worker failed to start (server will continue):', error);
+    console.error('⚠️ Worker module failed to load (server will continue):', error);
     // Don't exit - server can still run without worker (jobs just won't process)
   }
 }
