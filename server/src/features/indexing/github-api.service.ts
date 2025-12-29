@@ -33,7 +33,7 @@ export class GitHubApiService {
   ): Promise<RepositoryContent> {
     const { owner, repo } = this.parseRepoUrl(repoUrl);
     const repoId = this.generateUniqueRepoId(repoUrl);
-    
+
     console.log(`🔍 Fetching content for ${owner}/${repo} at ${sha}`);
 
     try {
@@ -46,8 +46,15 @@ export class GitHubApiService {
       });
 
       // Filter for TypeScript/JavaScript files
-      const codeFiles = tree.tree.filter(
-        (item) =>
+      interface GitHubTreeItem {
+        path?: string;
+        type?: string;
+        sha?: string;
+        size?: number;
+      }
+
+      const codeFiles: GitHubTreeItem[] = tree.tree.filter(
+        (item: GitHubTreeItem) =>
           item.type === 'blob' &&
           item.path &&
           /\.(ts|tsx|js|jsx)$/.test(item.path) &&
@@ -69,7 +76,9 @@ export class GitHubApiService {
             });
 
             // Decode base64 content
-            const content = Buffer.from(blob.content, 'base64').toString('utf-8');
+            const content = Buffer.from(blob.content, 'base64').toString(
+              'utf-8'
+            );
 
             return {
               path: file.path!,
@@ -86,8 +95,10 @@ export class GitHubApiService {
       );
 
       // Filter out failed fetches
-      const validFiles = fileResults.filter((file): file is GitHubFile => file !== null);
-      
+      const validFiles = fileResults.filter(
+        (file): file is GitHubFile => file !== null
+      );
+
       console.log(`✅ Successfully fetched ${validFiles.length} files`);
 
       return {
@@ -106,7 +117,7 @@ export class GitHubApiService {
     // https://github.com/owner/repo.git
     // git@github.com:owner/repo.git
     const match = url.match(/github\.com[/:]([\w-]+)\/([\w-]+)(?:\.git)?/);
-    
+
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }

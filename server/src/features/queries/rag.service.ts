@@ -13,27 +13,18 @@ import { RUN_KEY } from '@langchain/core/outputs';
 import { SYSTEM_PROMPTS } from './prompts.js';
 import Conversation from '../../models/conversation.model.js';
 import { Message } from '../../models/conversation.model.js';
-import { Ollama } from '@langchain/ollama';
 
 // --- Structured Output for ChatOpenAI --------------------------------------
 // https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html
 // Create a new instance of ChatOpenAI, include required options
-const useLocalModel = process.env.USE_LOCAL_MODEL === 'true';
-
-const llm = useLocalModel
-  ? new Ollama({
-      model: 'devai-assistant:starcoder', // Use our fine-tuned DevAI model based on StarCoder2
-      baseUrl: 'http://localhost:11434',
-      temperature: 0.7, // Slightly higher for more natural responses
-    })
-  : new ChatOpenAI({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      maxTokens: undefined,
-      timeout: undefined,
-      maxRetries: 2,
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+const llm = new ChatOpenAI({
+  model: 'gpt-4o-mini',
+  temperature: 0,
+  maxTokens: undefined,
+  timeout: undefined,
+  maxRetries: 2,
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Define response schema such that we handle multiple queries (multiple responses)
 const qa = z.object({
@@ -48,24 +39,10 @@ const qa = z.object({
   ),
 });
 
-// Type for the structured response
-type QAResponse = z.infer<typeof qa>;
-
-// Type for Ollama's raw response
-type OllamaResponse = {
-  content?: string;
-  text?: string;
-  answer?: string;
-  [key: string]: any;
-};
-
-// Only use structured output with OpenAI (Ollama doesn't support it yet)
-const structuredLlm = useLocalModel
-  ? llm // For Ollama, we'll handle JSON parsing manually
-  : (llm as ChatOpenAI).withStructuredOutput(qa, {
-      method: 'jsonSchema',
-      strict: true,
-    });
+const structuredLlm = llm.withStructuredOutput(qa, {
+  method: 'jsonSchema',
+  strict: true,
+});
 
 // --- Helpers ---------------------------------------------------------------
 const MAX_TOKENS = 6_000;
@@ -127,34 +104,7 @@ export async function answerQuestion(
   ${previousContext}`;
 
   // --- USER PROMPT ---------
-  const USERPROMPT = useLocalModel
-    ? `Use the following pieces of context to answer the question at the end.
-
-    Context: {context}\n\n
-
-    Question: {question}
-    
-    CRITICAL: You MUST respond with a valid JSON object in this EXACT format. Do not include any text before or after the JSON:
-    {{
-      "answer": "your detailed answer here explaining the code and concepts",
-      "citations": [
-        {{
-          "file": "path/to/file.ts",
-          "startLine": 10,
-          "endLine": 20,
-          "snippet": "relevant code snippet"
-        }}
-      ]
-    }}
-    
-    Remember: 
-    - Include the complete file path in citations
-    - Use actual line numbers from the context
-    - Include relevant code snippets
-    - Answer should be comprehensive and technical
-    
-    JSON Response:`
-    : `Use the following pieces of context to answer the question at the end.
+  const USERPROMPT = `Use the following pieces of context to answer the question at the end.
 
     Context: {context}\n\n
 
@@ -192,17 +142,10 @@ export async function answerQuestion(
       console.log(`Attempting to retrieve docs for repo: ${repoId}`);
 
       const retrievedDocs = await retriever.invoke(state.question);
-      
-      // Check if we got empty results (Qdrant connection failed)
-      if (!retrievedDocs || retrievedDocs.length === 0) {
-        console.warn('⚠️ No documents retrieved - vector database may be unavailable');
-        return { context: [] }; // Return empty context
-      }
 
       return { context: retrievedDocs }; // merges into  WorkingState, thus the WorkingState has now access to both question + context
     } catch (err) {
-      console.warn('⚠️ Vector database connection failed, continuing without context');
-      return { context: [] }; // Return empty context instead of throwing
+      throw new Error('VECTOR_DB_DOWN');
     }
   };
 
@@ -251,19 +194,20 @@ export async function answerQuestion(
   };
 
   const generate = async (state: typeof WorkingState.State) => {
-    // Handle case where no context is available
+    // // Option #1: Generate context for the prompt
+    // const docsContent = state.context
+    //   .map(
+    //     (d) =>
+    //       `FILE NAME: ${d.metadata.declarationName} \nFILE: ${d.metadata.filePath} (lines ${d.metadata.startLine}-${d.metadata.endLine})\n---\n${d.pageContent}\n====`
+    //   )
+    //   .join('\n');
+
+    // Option #2: Avoid $50+ API calls by limiting the numbre of tokens allowed to be spend on the prompt
     let promptBody = '';
-    
-    if (!state.context || state.context.length === 0) {
-      console.warn('⚠️ No context available - generating response without code context');
-      promptBody = 'No code context available from the repository. Please provide a general answer based on common development practices.';
-    } else {
-      // Option #2: Avoid $50+ API calls by limiting the number of tokens allowed to be spent on the prompt
-      for (const doc of state.context) {
-        const nextChunk = formatDoc(doc);
-        if (roughTokens(promptBody + nextChunk) > MAX_TOKENS) break;
-        promptBody += nextChunk;
-      }
+    for (const doc of state.context) {
+      const nextChunk = formatDoc(doc);
+      if (roughTokens(promptBody + nextChunk) > MAX_TOKENS) break;
+      promptBody += nextChunk;
     }
     /* Example format:
 
@@ -280,90 +224,12 @@ export async function answerQuestion(
 
     // pipe: https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html#pipe
     // Create a new runnable sequence that runs each individual runnable in series, piping the output of one runnable into another runnable or runnable-like.
-    const answerChain = promptTemplate.pipe(structuredLlm as any);
-    const rawResponse = await answerChain.invoke({
+    const answerChain = promptTemplate.pipe(structuredLlm);
+    const response = await answerChain.invoke({
       question: state.question,
       context: promptBody,
     });
-
-    console.log('--- rawResponse ------------');
-    console.log(rawResponse);
-
-    // Handle different response formats based on model type
-    let response: QAResponse;
-    if (useLocalModel) {
-      // For Ollama, parse JSON response manually
-      const answerText =
-        typeof rawResponse === 'string'
-          ? rawResponse
-          : (rawResponse as any).content ||
-            (rawResponse as any).text ||
-            (rawResponse as any).answer ||
-            String(rawResponse);
-
-      try {
-        // Enhanced JSON extraction with multiple parsing strategies
-        let parsedResponse: Partial<QAResponse> | null = null;
-
-        // Strategy 1: Look for complete JSON object
-        const jsonMatch = answerText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            parsedResponse = JSON.parse(jsonMatch[0]) as QAResponse;
-          } catch (e) {
-            console.warn('JSON match found but failed to parse:', e);
-          }
-        }
-
-        // Strategy 2: Look for structured markers if JSON parsing failed
-        if (!parsedResponse || !parsedResponse.answer) {
-          const answerMatch =
-            answerText.match(/(?:answer|response):\s*"([^"]+)"/i) ||
-            answerText.match(/(?:answer|response):\s*([^\n]+)/i);
-          const citationsMatch = answerText.match(/citations:\s*\[(.*?)\]/is);
-
-          if (answerMatch) {
-            parsedResponse = {
-              answer: answerMatch[1].trim(),
-              citations: citationsMatch
-                ? (citationsMatch[1]
-                    .split(',')
-                    .map((c: string) => c.trim().replace(/['"]/g, '')) as any[])
-                : [],
-            };
-          }
-        }
-
-        if (parsedResponse && parsedResponse.answer) {
-          response = {
-            answer: parsedResponse.answer,
-            citations: Array.isArray(parsedResponse.citations)
-              ? parsedResponse.citations
-              : [],
-          };
-        } else {
-          // Fallback if no structured data found
-          response = {
-            answer: answerText,
-            citations: [],
-          };
-        }
-      } catch (parseError) {
-        console.warn(
-          'Failed to parse Ollama response, using raw text:',
-          parseError
-        );
-        response = {
-          answer: answerText,
-          citations: [],
-        };
-      }
-    } else {
-      // OpenAI with structured output
-      response = rawResponse as unknown as QAResponse;
-    }
-
-    console.log('--- parsed response ------------');
+    console.log('--- response ------------');
     console.log(response);
 
     // --- STEP 5: Store the Result in MongoDB ---------------------------------

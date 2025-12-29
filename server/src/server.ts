@@ -3,8 +3,10 @@ import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
 import 'dotenv/config';
 
-// Don't import worker immediately - it causes memory issues on Render
-// We'll import it lazily after the server starts
+// Import worker so it starts processing jobs from the queue
+console.log('📦 Importing index job worker...');
+import './features/indexing/index.job.js';
+console.log('✅ Index job worker imported');
 
 console.log('Booting server...');
 console.log('Start of server.ts');
@@ -22,47 +24,32 @@ const port = process.env.PORT || 4000;
 // await connectMongo();
 
 async function startServer() {
-  // Start server first so Render can detect the port
-  // Then connect to services in the background
-  const server = app.listen(Number(port), '0.0.0.0', () => {
-    console.log(`✅ App listening on port ${port}`);
-    console.log(`🌐 Server bound to 0.0.0.0:${port}`);
-    console.log(`🏥 Health check: http://localhost:${port}/api/health`);
-  });
-
-  server.on('error', (err) => {
-    console.error('❌ Failed to start server:', err);
-    process.exit(1);
-  });
-
-  // Connect to services in the background (don't block server startup)
   try {
     console.log('🔄 Connecting to MongoDB...');
     await connectMongo();
     console.log('✅ MongoDB connected');
-  } catch (error) {
-    console.error('⚠️ MongoDB connection failed (server will continue):', error);
-    // Don't exit - server can still run without MongoDB for health checks
-  }
 
-  try {
     console.log('🔄 Setting up Qdrant indexes...');
     await ensureQdrantIndexes();
     console.log('✅ Qdrant indexes ready');
-  } catch (error) {
-    console.error('⚠️ Qdrant setup failed (server will continue):', error);
-    // Don't exit - server can still run without Qdrant for health checks
-  }
 
-  // Import worker module (but it won't create worker immediately)
-  // The worker will auto-initialize after a delay to avoid memory issues
-  try {
-    console.log('📦 Loading worker module (worker will start after delay)...');
-    await import('./features/indexing/index.job.js');
-    console.log('✅ Worker module loaded (will auto-start in 10 seconds)');
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    app
+      .listen(Number(port), '0.0.0.0', () => {
+        console.log(`✅ App listening on port ${port}`);
+        console.log(`🏥 Health check: http://localhost:${port}/api/health`);
+      })
+      .on('error', (err) => {
+        console.error('❌ Failed to start server:', err);
+        process.exit(1);
+      });
   } catch (error) {
-    console.error('⚠️ Worker module failed to load (server will continue):', error);
-    // Don't exit - server can still run without worker (jobs just won't process)
+    console.error(
+      '❌ Failed during initialization:',
+      error instanceof Error ? error.message : error
+    );
+    process.exit(1);
   }
 }
 

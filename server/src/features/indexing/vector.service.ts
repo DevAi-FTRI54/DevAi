@@ -20,22 +20,10 @@ dotenv.config({
 });
 
 // Why Qdrant over Pinecone - https://qdrant.tech/blog/comparing-qdrant-vs-pinecone-vector-databases
-// Lazy client initialization to avoid module-level environment access
-let client: QdrantClient | null = null;
-
-function getQdrantClient(): QdrantClient {
-  if (!client) {
-    console.log('🔍 Initializing Qdrant client...');
-    console.log('🔍 Qdrant URL being used:', process.env.QDRANT_URL);
-    console.log('🔍 Qdrant API Key set:', !!process.env.QDRANT_API_KEY);
-
-    client = new QdrantClient({
-      url: process.env.QDRANT_URL!,
-      apiKey: process.env.QDRANT_API_KEY,
-    });
-  }
-  return client;
-}
+const client = new QdrantClient({
+  url: process.env.QDRANT_URL!,
+  apiKey: process.env.QDRANT_API_KEY,
+});
 
 const llm = new ChatOpenAI({
   model: 'gpt-4o-mini',
@@ -53,14 +41,10 @@ const embeddings = new OpenAIEmbeddings({
 // --- A Single Collection For All Users ------------------------------
 const COLLECTION = 'devai_collection_01';
 
-// Index creation state tracking
-let indexCreationAttempted = false;
-let indexCreationSuccessful = false;
-
 // Supporting documentation: https://js.langchain.com/docs/integrations/retrievers/self_query/qdrant/
 export async function upsert(docs: Document[]) {
   const vectorStore = QdrantVectorStore.fromDocuments(docs, embeddings, {
-    client: getQdrantClient(),
+    client,
     collectionName: COLLECTION,
   });
 
@@ -71,30 +55,12 @@ export async function upsert(docs: Document[]) {
 // Factory asRetriever so chat can pull retriever later
 // https://js.langchain.com/docs/how_to/vectorstore_retriever/
 export async function createRetriever(repoId: string, k = 8) {
-  // Ensure index exists (only try once per server session)
-  if (!indexCreationAttempted) {
-    indexCreationAttempted = true;
-    try {
-      console.log('🔄 Creating Qdrant index on first query...');
-      await ensureQdrantIndexes();
-      indexCreationSuccessful = true;
-      console.log('✅ Qdrant index created successfully on first query');
-    } catch (err) {
-      console.warn(
-        '⚠️ Failed to create Qdrant index on first query, continuing without index:',
-        err instanceof Error ? err.message : err
-      );
-      // Continue without index - filtering will still work, just slower
-    }
-  }
-
   const store = await QdrantVectorStore.fromExistingCollection(embeddings, {
-    client: getQdrantClient(),
+    client,
     collectionName: COLLECTION,
   });
 
   try {
-    const client = getQdrantClient();
     const points = await client.scroll(COLLECTION, {
       filter: { must: [{ key: 'metadata.repoId', match: { value: repoId } }] },
       limit: 5,
@@ -132,10 +98,62 @@ export async function createCodeRetriever(repoId: string, k = 8) {
 
 // Filtering: https://qdrant.tech/documentation/concepts/filtering/
 // Indexing: https://qdrant.tech/documentation/concepts/indexing/
+// Vector Search Tutorial: https://qdrant.tech/articles/vector-search-filtering/
 export async function ensureQdrantIndexes() {
   try {
+    // First, check if collection exists and create it if it doesn't
+    try {
+      const collectionInfo = await client.getCollection(COLLECTION);
+      console.log(`✅ Collection '${COLLECTION}' already exists`);
+    } catch (err: any) {
+      // Collection doesn't exist, create it
+      // Check for various error formats that indicate collection doesn't exist
+      const errorMessage = err?.message || err?.status?.error || '';
+      const isNotFoundError =
+        errorMessage.includes("doesn't exist") ||
+        errorMessage.includes('Not found') ||
+        errorMessage.includes('not found') ||
+        err?.status === 404 ||
+        err?.statusCode === 404;
+
+      if (isNotFoundError) {
+        console.log(
+          `🔄 Collection '${COLLECTION}' doesn't exist, creating it...`
+        );
+
+        // text-embedding-3-large produces 3072-dimensional vectors
+        try {
+          await client.createCollection(COLLECTION, {
+            vectors: {
+              size: 3072,
+              distance: 'Cosine',
+            },
+          });
+          console.log(`✅ Collection '${COLLECTION}' created successfully`);
+        } catch (createErr: any) {
+          // Handle race condition where collection might have been created between check and creation
+          const createErrorMessage =
+            createErr?.message || createErr?.status?.error || '';
+          if (
+            createErrorMessage.includes('already exists') ||
+            createErrorMessage.includes('already exist')
+          ) {
+            console.log(
+              `✅ Collection '${COLLECTION}' was created by another process`
+            );
+          } else {
+            throw createErr;
+          }
+        }
+      } else {
+        // Re-throw if it's a different error
+        console.error('❌ Unexpected error checking collection:', err);
+        throw err;
+      }
+    }
+
+    // Now create the index on the collection (whether it existed or was just created)
     console.log('Creating index for metadata.repoId...');
-    const client = getQdrantClient();
     await client.createPayloadIndex(COLLECTION, {
       field_name: 'metadata.repoId',
       field_schema: 'keyword',
