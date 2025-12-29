@@ -3,7 +3,7 @@ console.log('========================================');
 console.log('WORKER FILE: index.job.ts LOADED');
 console.log('========================================');
 
-import IORedis from 'ioredis';
+import IORedis, { Redis } from 'ioredis';
 import { Worker, Queue, Job } from 'bullmq';
 import { cloneRepo } from './git.service.js';
 import { TsmorphCodeLoader } from './loader.service.js';
@@ -14,7 +14,7 @@ console.log('🔍 REDIS_URL:', process.env.REDIS_URL ? 'Set' : 'Missing');
 console.log('🚀 Initializing BullMQ worker...');
 
 // Create Redis client - use lazy connect so it doesn't block server startup
-let redisClient: IORedis;
+let redisClient: Redis;
 if (!process.env.REDIS_URL) {
   console.error('⚠️ REDIS_URL not set - worker will not function');
   // Create a dummy client that will fail gracefully
@@ -26,7 +26,7 @@ if (!process.env.REDIS_URL) {
 } else {
   redisClient = new IORedis(process.env.REDIS_URL, {
     maxRetriesPerRequest: null,
-    retryStrategy: (times) => {
+    retryStrategy: (times: number) => {
       // Retry with exponential backoff
       const delay = Math.min(times * 50, 2000);
       return delay;
@@ -43,111 +43,95 @@ export const indexQueue = new Queue('index', {
 console.log('✅ Index queue created');
 
 // Don't create worker immediately - it causes memory issues
-// Worker will be created lazily when first job is processed
+// Worker will be created lazily after a delay
 let worker: Worker | null = null;
 
-// Function to get or create worker lazily
-export function getWorker(): Worker | null {
-  if (worker) {
-    return worker;
-  }
-
-  // Only create worker if Redis is configured
-  if (!process.env.REDIS_URL) {
-    console.warn('⚠️ Cannot create worker: REDIS_URL not set');
-    return null;
-  }
-
+// Job processor function (extracted so it can be reused)
+const processJob = async (job: Job<{ repoUrl: string; sha: string }>) => {
+  // Log when job starts processing
+  console.log(`\n🎯 WORKER: Job ${job.id} started processing`);
+  console.log(`📋 Job data:`, JSON.stringify(job.data, null, 2));
+  
+  // Wrap everything in try-catch to catch and log all errors
   try {
-    console.log('🔧 Creating BullMQ worker (lazy initialization)...');
-    worker = new Worker(
-  'index',
-  async (job: Job<{ repoUrl: string; sha: string }>) => {
-    // Log when job starts processing
-    console.log(`\n🎯 WORKER: Job ${job.id} started processing`);
-    console.log(`📋 Job data:`, JSON.stringify(job.data, null, 2));
+    const { repoUrl, sha } = job.data;
     
-    // Wrap everything in try-catch to catch and log all errors
-    try {
-      const { repoUrl, sha } = job.data;
-      
-      console.log(`📍 Step 1: Cloning repository ${repoUrl}...`);
+    console.log(`📍 Step 1: Cloning repository ${repoUrl}...`);
 
-      const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
-      console.log(`✅ Repository cloned to: ${localRepoPath}`);
-      await job.updateProgress(15);
+    const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
+    console.log(`✅ Repository cloned to: ${localRepoPath}`);
+    await job.updateProgress(15);
 
-      console.log(`📍 Step 2: Loading documents with TsmorphCodeLoader...`);
-      const loader = new TsmorphCodeLoader(localRepoPath, repoId);
-      const bigDocs = await loader.load();
-      console.log(`✅ Loader completed`);
-      
-      console.log(`📄 Loaded ${bigDocs?.length || 0} documents`);
-      
-      // Validate documents before proceeding
-      if (!bigDocs || !Array.isArray(bigDocs)) {
-        throw new Error(`Invalid documents array: ${typeof bigDocs}`);
-      }
-      
-      if (bigDocs.length === 0) {
-        throw new Error('No documents loaded from repository');
-      }
-
-      // Update progress and start chunking - wrapped in try-catch since jobs were failing here
-      console.log(`📍 Step 3: Updating progress to 30% and starting chunking...`);
-      try {
-        await job.updateProgress(30);
-        console.log(`✅ Progress updated to 30%`);
-      } catch (progressError: any) {
-        console.error('❌ Failed to update progress to 30%:', progressError);
-        throw new Error(`Progress update failed: ${progressError.message}`);
-      }
-
-      // Chunk documents with error handling
-      let chunkedDocs;
-      try {
-        console.log('🔄 Starting to chunk documents...');
-        chunkedDocs = await chunkDocuments(bigDocs);
-        console.log(`✅ Chunked into ${chunkedDocs.length} documents`);
-      } catch (chunkError: any) {
-        console.error('❌ Error during chunking:', chunkError);
-        throw new Error(`Failed to chunk documents: ${chunkError.message}`);
-      }
-
-      chunkedDocs = chunkedDocs.map((doc) => {
-        if (!doc.pageContent || doc.pageContent.trim().length === 0) {
-          return {
-            ...doc,
-            pageContent: 'Empty file',
-            metaData: {
-              ...doc.metadata,
-              isEmpty: true,
-            },
-          };
-        }
-        return doc;
-      });
-
-      const total = chunkedDocs.length;
-      console.log(`📊 Total documents to process: ${total}`);
-
-      // Upsert each document with error handling to identify which one fails
-      for (let i = 0; i < total; i++) {
-        try {
-          await upsert([chunkedDocs[i]]);
-          const percentage = 36 + Math.floor(((i + 1) / total) * 64);
-          await job.updateProgress(percentage);
-        } catch (upsertError: any) {
-          console.error(`❌ Failed to upsert document ${i + 1}/${total}:`, upsertError);
-          throw new Error(`Failed to upsert document: ${upsertError.message}`);
-        }
-      }
-    } catch (error: any) {
-      // Log full error details before re-throwing
-      console.error('❌ Job failed with error:', error);
-      console.error('Error stack:', error.stack);
-      throw error; // Re-throw to mark job as failed
+    console.log(`📍 Step 2: Loading documents with TsmorphCodeLoader...`);
+    const loader = new TsmorphCodeLoader(localRepoPath, repoId);
+    const bigDocs = await loader.load();
+    console.log(`✅ Loader completed`);
+    
+    console.log(`📄 Loaded ${bigDocs?.length || 0} documents`);
+    
+    // Validate documents before proceeding
+    if (!bigDocs || !Array.isArray(bigDocs)) {
+      throw new Error(`Invalid documents array: ${typeof bigDocs}`);
     }
+    
+    if (bigDocs.length === 0) {
+      throw new Error('No documents loaded from repository');
+    }
+
+    // Update progress and start chunking - wrapped in try-catch since jobs were failing here
+    console.log(`📍 Step 3: Updating progress to 30% and starting chunking...`);
+    try {
+      await job.updateProgress(30);
+      console.log(`✅ Progress updated to 30%`);
+    } catch (progressError: any) {
+      console.error('❌ Failed to update progress to 30%:', progressError);
+      throw new Error(`Progress update failed: ${progressError.message}`);
+    }
+
+    // Chunk documents with error handling
+    let chunkedDocs;
+    try {
+      console.log('🔄 Starting to chunk documents...');
+      chunkedDocs = await chunkDocuments(bigDocs);
+      console.log(`✅ Chunked into ${chunkedDocs.length} documents`);
+    } catch (chunkError: any) {
+      console.error('❌ Error during chunking:', chunkError);
+      throw new Error(`Failed to chunk documents: ${chunkError.message}`);
+    }
+
+    chunkedDocs = chunkedDocs.map((doc) => {
+      if (!doc.pageContent || doc.pageContent.trim().length === 0) {
+        return {
+          ...doc,
+          pageContent: 'Empty file',
+          metaData: {
+            ...doc.metadata,
+            isEmpty: true,
+          },
+        };
+      }
+      return doc;
+    });
+
+    const total = chunkedDocs.length;
+    console.log(`📊 Total documents to process: ${total}`);
+
+    // Upsert each document with error handling to identify which one fails
+    for (let i = 0; i < total; i++) {
+      try {
+        await upsert([chunkedDocs[i]]);
+        const percentage = 36 + Math.floor(((i + 1) / total) * 64);
+        await job.updateProgress(percentage);
+      } catch (upsertError: any) {
+        console.error(`❌ Failed to upsert document ${i + 1}/${total}:`, upsertError);
+        throw new Error(`Failed to upsert document: ${upsertError.message}`);
+      }
+    }
+  } catch (error: any) {
+    // Log full error details before re-throwing
+    console.error('❌ Job failed with error:', error);
+    console.error('Error stack:', error.stack);
+    throw error; // Re-throw to mark job as failed
   }
 };
 
