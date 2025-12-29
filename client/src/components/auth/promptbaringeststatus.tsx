@@ -8,6 +8,7 @@ export interface IngestionStatusData {
     repoUrl: string;
     sha: string;
   };
+  failedReason?: string | null; // Show error message when job fails
 }
 
 interface ProgressBarProps {
@@ -25,6 +26,13 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ jobId, onComplete }) => {
       const res = await fetch(`/api/index/status/${jobId}`);
       if (res.ok) {
         const data: IngestionStatusData = await res.json();
+        
+        // Log response to console so we can see errors in browser dev tools
+        console.log('Job status response:', data);
+        if (data.status === 'failed' && data.failedReason) {
+          console.error('Job failed with error:', data.failedReason);
+        }
+        
         setStatus(data);
 
         if (data.progress >= 100 || data.status === 'completed') {
@@ -69,6 +77,12 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ jobId, onComplete }) => {
       <p className={getStatusColor(status.status)}>
         <strong>Status:</strong> {status.status.toUpperCase()}
       </p>
+      {/* Show error message if job failed */}
+      {status.status === 'failed' && status.failedReason && (
+        <div className="mt-2 p-2 bg-red-100 border border-red-400 rounded text-red-700 text-sm">
+          <strong>Error:</strong> {status.failedReason}
+        </div>
+      )}
       {/* <p>
         <strong>Chunks:</strong> {status.chunkCount}
       </p> */}

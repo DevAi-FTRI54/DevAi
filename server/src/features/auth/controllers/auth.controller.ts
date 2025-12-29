@@ -265,16 +265,37 @@ export const getGitHubUserOrgs = async (
   res: Response
 ): Promise<void> => {
   try {
+    // Debug: Log all headers to see what we're receiving
+    console.log('🔍 getGitHubUserOrgs - Request headers:', {
+      authorization: req.headers.authorization ? 'Present' : 'Missing',
+      authorizationValue: req.headers.authorization?.substring(0, 30) || 'none',
+      cookie: req.headers.cookie ? 'Present' : 'Missing',
+      origin: req.headers.origin,
+    });
+
     // Try to get token from Authorization header first (for Safari compatibility)
     // Fallback to cookie if header not present
     const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies.github_access_token;
+
+    console.log('🔍 Token sources:', {
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader?.substring(0, 20) || 'none',
+      hasCookieToken: !!cookieToken,
+      cookieTokenPrefix: cookieToken?.substring(0, 10) || 'none',
+    });
+
     let githubToken = authHeader?.startsWith('Bearer ')
       ? authHeader.substring(7)
-      : req.cookies.github_access_token;
+      : cookieToken;
 
     if (!githubToken) {
       console.error(
-        '❌ getGitHubUserOrgs: No GitHub token found in header or cookies'
+        '❌ getGitHubUserOrgs: No GitHub token found in header or cookies',
+        {
+          authHeader: authHeader ? 'present but invalid format' : 'missing',
+          cookieToken: cookieToken ? 'present' : 'missing',
+        }
       );
       res.status(401).json({ error: 'Missing GitHub token' });
       return;
@@ -282,7 +303,11 @@ export const getGitHubUserOrgs = async (
 
     console.log(
       '🔐 Using GitHub token from:',
-      authHeader ? 'Authorization header' : 'cookie'
+      authHeader ? 'Authorization header' : 'cookie',
+      {
+        tokenLength: githubToken.length,
+        tokenPrefix: githubToken.substring(0, 10),
+      }
     );
 
     console.log('🔐 Using GitHub token:', githubToken.slice(0, 6), '...');
