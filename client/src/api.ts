@@ -98,13 +98,32 @@ export async function getIngestionStatus(jobId: string): Promise<IngestionStatus
 
 //* repo-selector:
 export async function getReposForOrg(opts: { org?: string; installation_id?: string }): Promise<Repo[]> {
+  // Get token from localStorage for Safari compatibility
+  const githubToken = localStorage.getItem('githubToken');
+  
   const params = new URLSearchParams();
   if (opts.org) params.append('org', opts.org);
   if (opts.installation_id) params.append('installation_id', opts.installation_id);
 
+  const headers: HeadersInit = {};
+  
+  // Send token in Authorization header for Safari compatibility
+  if (githubToken) {
+    headers.Authorization = `Bearer ${githubToken}`;
+  }
+
   const res = await fetch(`${API_BASE_URL}/auth/repos${params.toString() ? '?' + params.toString() : ''}`, {
-    credentials: 'include',
+    credentials: 'include', // Still try to send cookies as fallback
+    headers,
   });
+
+  if (res.status === 401) {
+    console.warn('🔁 Token expired, redirecting to login...');
+    localStorage.removeItem('githubToken');
+    localStorage.removeItem('jwt');
+    window.location.href = `/login?expired=true`;
+    throw new Error('GitHub token expired — reauth required');
+  }
 
   if (!res.ok) {
     throw res;

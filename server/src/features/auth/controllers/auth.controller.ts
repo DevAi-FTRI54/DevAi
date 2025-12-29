@@ -528,9 +528,25 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
     const org = req.query.org as string | undefined;
     let installationId = req.cookies.installation_id;
 
+    // Try to get token from Authorization header first (for Safari compatibility)
+    // Fallback to cookie if header not present
+    const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies.github_access_token;
+    let githubToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : cookieToken;
+
+    console.log('🔍 listRepos - Token sources:', {
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader?.substring(0, 20) || 'none',
+      hasCookieToken: !!cookieToken,
+      cookieTokenPrefix: cookieToken?.substring(0, 10) || 'none',
+      usingTokenFrom: authHeader ? 'Authorization header' : 'cookie',
+    });
+
     if (org) {
-      const githubToken = req.cookies.github_access_token;
       if (!githubToken) {
+        console.error('❌ listRepos: No GitHub token found in header or cookies');
         res.status(401).json({ error: 'Missing GitHub token' });
         return;
       }
