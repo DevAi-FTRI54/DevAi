@@ -20,7 +20,9 @@ router.get('/github', getGitHubLoginURL);
 router.get('/callback', handleGitHubCallback);
 router.get('/repos', listRepos);
 router.get('/github-token', getGithubToken);
-router.get('/orgs', requireAuth, getGitHubUserOrgs);
+// /orgs doesn't need requireAuth - it uses GitHub token, not JWT
+// getGitHubUserOrgs handles its own authentication
+router.get('/orgs', getGitHubUserOrgs);
 //Logout/ remove all three cookie instances
 router.post('/logout', logout);
 // Redirect after Github App install:

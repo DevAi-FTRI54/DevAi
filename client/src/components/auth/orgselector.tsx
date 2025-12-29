@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { getUserOrgs } from '../../api'; // adjust path as needed
 
-type Org = { id: number; login: string };
+type Org = {
+  id: number;
+  login: string;
+  isPersonal?: boolean; // Flag to identify personal account
+};
 
 const OrgSelector: React.FC<{ onSelect: (org: string) => void }> = ({
   onSelect,
@@ -109,10 +113,10 @@ const OrgSelector: React.FC<{ onSelect: (org: string) => void }> = ({
           onChange={(e) => onSelect(e.target.value)}
           className='w-full bg-[#303030] border border-[#404040] text-[#fafafa] px-4 py-3 rounded-lg focus:outline-none focus:border-[#5ea9ea] transition-colors'
         >
-          <option value=''>Select Organization</option>
+          <option value=''>Select Organization or Personal Account</option>
           {orgs.map((org) => (
             <option key={org.id} value={org.login} className='bg-[#303030]'>
-              {org.login}
+              {org.isPersonal ? `${org.login} (Personal)` : org.login}
             </option>
           ))}
         </select>

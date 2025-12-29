@@ -189,13 +189,44 @@ export const completeAuth = async (
   res: Response
 ): Promise<any> => {
   try {
-    let githubToken = req.cookies.github_access_token;
-    console.log('🍪 GitHub token from cookie:', githubToken);
-    // ❌ Don't re-use code to get another token
-    if (!githubToken) {
-      return res.status(401).send('Missing GitHub token');
+    const code = req.body.code as string;
+    if (!code) {
+      return res.status(400).json({ error: 'Missing authorization code' });
     }
-    console.log('📤 Calling getGitHubUserProfile() with token:', githubToken);
+
+    console.log('🔐 completeAuth: Exchanging code for token...');
+
+    // Exchange code for GitHub token
+    let githubToken: string;
+    try {
+      githubToken = await exchangeCodeForToken(code);
+      console.log('✅ Token exchange successful');
+    } catch (tokenError: any) {
+      console.error('❌ Token exchange failed:', tokenError.message);
+
+      // Check if code expired
+      if (
+        tokenError.message?.includes('expired') ||
+        tokenError.message?.includes('invalid')
+      ) {
+        return res.status(400).json({
+          error:
+            'Authorization code expired or invalid. Please try logging in again.',
+        });
+      }
+
+      // Re-throw other errors
+      throw tokenError;
+    }
+
+    // Set cookies with Safari-compatible settings
+    res.cookie('github_access_token', githubToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/', // Safari requires explicit path
+    });
+
     const githubData = await getGitHubUserProfile(githubToken);
     console.log(
       '✅ GitHub user profile fetched:',
@@ -211,7 +242,8 @@ export const completeAuth = async (
     res.cookie('token', token, {
       httpOnly: true,
       secure: true,
-      sameSite: 'lax',
+      sameSite: 'none', // Changed to 'none' for cross-origin Safari compatibility
+      path: '/', // Safari requires explicit path
     });
 
     const installations = await getAppInstallations(githubToken);
@@ -228,17 +260,27 @@ export const completeAuth = async (
         httpOnly: true,
         sameSite: 'none',
         secure: true,
-        // domain: '.ngrok.app', //! es removed 6/8
+        path: '/', // Safari requires explicit path
       });
     }
 
-    res.json({
+    const responseData = {
       token,
       githubToken,
       installed: isInstalled,
       installationId,
       needsInstall: !isInstalled,
+    };
+
+    console.log('✅ completeAuth: Sending response with tokens:', {
+      hasToken: !!token,
+      hasGithubToken: !!githubToken,
+      tokenLength: token?.length || 0,
+      githubTokenLength: githubToken?.length || 0,
+      installed: isInstalled,
     });
+
+    res.json(responseData);
   } catch (err: any) {
     console.error('❌ Error in completeAuth:', err);
     handleApiError(err, res, 'Authentication completion failed');
@@ -261,12 +303,50 @@ export const getGitHubUserOrgs = async (
   console.log('⏱️ [ORGS] Request started at:', new Date().toISOString());
 
   try {
-    const githubToken = req.cookies.github_access_token;
+    // Debug: Log all headers to see what we're receiving
+    console.log('🔍 getGitHubUserOrgs - Request headers:', {
+      authorization: req.headers.authorization ? 'Present' : 'Missing',
+      authorizationValue: req.headers.authorization?.substring(0, 30) || 'none',
+      cookie: req.headers.cookie ? 'Present' : 'Missing',
+      origin: req.headers.origin,
+    });
+
+    // Try to get token from Authorization header first (for Safari compatibility)
+    // Fallback to cookie if header not present
+    const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies.github_access_token;
+
+    console.log('🔍 Token sources:', {
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader?.substring(0, 20) || 'none',
+      hasCookieToken: !!cookieToken,
+      cookieTokenPrefix: cookieToken?.substring(0, 10) || 'none',
+    });
+
+    let githubToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : cookieToken;
+
     if (!githubToken) {
+      console.error(
+        '❌ getGitHubUserOrgs: No GitHub token found in header or cookies',
+        {
+          authHeader: authHeader ? 'present but invalid format' : 'missing',
+          cookieToken: cookieToken ? 'present' : 'missing',
+        }
+      );
       res.status(401).json({ error: 'Missing GitHub token' });
       return;
     }
-    console.log('🔐 Using GitHub token:', githubToken.slice(0, 6), '...');
+
+    console.log(
+      '🔐 Using GitHub token from:',
+      authHeader ? 'Authorization header' : 'cookie',
+      {
+        tokenLength: githubToken.length,
+        tokenPrefix: githubToken.substring(0, 10),
+      }
+    );
 
     const cacheKey = githubToken.slice(0, 10); // Use token prefix as cache key
 
@@ -299,31 +379,91 @@ export const getGitHubUserOrgs = async (
       console.log('🌐 [ORGS] Making fresh GitHub API call...');
       const apiStartTime = Date.now();
 
-      const response = await fetch('https://api.github.com/user/orgs', {
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-          'User-Agent': 'YourAppName',
-          Accept: 'application/vnd.github+json',
-        },
+      const headers = {
+        Authorization: `Bearer ${githubToken}`,
+        'User-Agent': 'devAI-app',
+        Accept: 'application/vnd.github+json',
+      };
+
+      // Fetch user's personal account info
+      const userResponse = await fetch('https://api.github.com/user', {
+        headers,
+      });
+
+      if (userResponse.status === 401) {
+        console.warn('⚠️ GitHub token is invalid or expired — clearing cookie');
+        res.clearCookie('github_access_token', {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+          path: '/', // Must match the path used when setting the cookie
+        });
+        throw new Error('GitHub token expired or invalid — please reauthenticate');
+      }
+
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text();
+        console.error('❌ GitHub user fetch failed:', errorText);
+        throw new Error('Failed to fetch GitHub user');
+      }
+
+      const user = await userResponse.json();
+
+      // Fetch orgs from GitHub API
+      const orgsResponse = await fetch('https://api.github.com/user/orgs', {
+        headers,
       });
 
       console.log(
         `📡 [ORGS] GitHub API responded in ${Date.now() - apiStartTime}ms`
       );
 
-      if (!response.ok) throw new Error('Failed to fetch orgs');
-      const orgs = (await response.json()) as {
+      if (!orgsResponse.ok) {
+        const errorText = await orgsResponse.text();
+        console.error('❌ GitHub orgs fetch failed:', errorText);
+        throw new Error('Failed to fetch GitHub orgs');
+      }
+
+      const orgs = (await orgsResponse.json()) as {
         id: number;
         login: string;
         avatar_url: string;
       }[];
 
-      // Process and cache the data
-      const processedOrgs = orgs.map(({ id, login, avatar_url }) => ({
-        id,
-        login,
-        avatar_url,
-      }));
+      // Check if user has personal installation of the app
+      const installations = await getAppInstallations(githubToken);
+      const installationsList = Array.isArray(installations)
+        ? installations
+        : installations.installations || [];
+
+      // Find personal installation (where account.login matches user.login)
+      const personalInstallation = installationsList.find(
+        (inst: any) => inst.account && inst.account.login === user.login
+      );
+
+      // Build result: include personal account first, then orgs
+      const processedOrgs = [];
+
+      // Add personal account if app is installed on it
+      if (personalInstallation) {
+        processedOrgs.push({
+          id: user.id,
+          login: user.login,
+          avatar_url: user.avatar_url,
+          isPersonal: true, // Flag to identify personal account
+        });
+      }
+
+      // Add organizations
+      processedOrgs.push(
+        ...orgs.map(({ id, login, avatar_url }) => ({
+          id,
+          login,
+          avatar_url,
+          isPersonal: false,
+        }))
+      );
+
       orgCache.set(cacheKey, { data: processedOrgs, timestamp: Date.now() });
 
       console.log(`✅ [ORGS] Processed ${processedOrgs.length} organizations`);
