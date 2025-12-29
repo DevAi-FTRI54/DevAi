@@ -3,10 +3,8 @@ import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
 import 'dotenv/config';
 
-// Import worker so it starts processing jobs from the queue
-console.log('📦 Importing index job worker...');
-import './features/indexing/index.job.js';
-console.log('✅ Index job worker imported');
+// Don't import worker immediately - it causes memory issues on Render
+// We'll import it lazily after the server starts
 
 console.log('Booting server...');
 console.log('Start of server.ts');
@@ -54,6 +52,18 @@ async function startServer() {
   } catch (error) {
     console.error('⚠️ Qdrant setup failed (server will continue):', error);
     // Don't exit - server can still run without Qdrant for health checks
+  }
+
+  // Import worker lazily after server is running to avoid memory issues
+  // This prevents the worker from consuming memory during server startup
+  try {
+    console.log('📦 Starting worker in background...');
+    // Use dynamic import to load worker asynchronously
+    await import('./features/indexing/index.job.js');
+    console.log('✅ Worker started successfully');
+  } catch (error) {
+    console.error('⚠️ Worker failed to start (server will continue):', error);
+    // Don't exit - server can still run without worker (jobs just won't process)
   }
 }
 
