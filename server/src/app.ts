@@ -95,9 +95,19 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
 app.use(express.static('assets')); // serve files in assets
 
+// Root route - return API info instead of trying to serve missing HTML file
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../views/index.html'), {
-    headers: { 'Content-Type': 'text/html' },
+  res.json({
+    message: 'DevAI API Server',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      index: '/api/index',
+      query: '/api/query',
+      auth: '/api/auth',
+      chat: '/api/chat',
+      training: '/api/training',
+    },
   });
 });
 
