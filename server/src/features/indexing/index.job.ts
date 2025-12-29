@@ -118,12 +118,13 @@ try {
       console.log(`📊 Total documents to process: ${total}`);
       await job.updateProgress(36);
 
-      // Batch processing configuration - optimized for speed and cost
-      // OpenAI embeddings API supports up to 2048 inputs per request
-      // Using 50 per batch for good balance of speed and error handling
-      const BATCH_SIZE = 50;
-      const CONCURRENT_BATCHES = 5; // Process 5 batches concurrently for speed
+      // Batch processing: Instead of processing one document at a time (slow and expensive),
+      // we process 50 documents together. This is much faster and reduces API costs.
+      // Processing 5 batches at the same time speeds things up even more.
+      const BATCH_SIZE = 50; // Documents per batch
+      const CONCURRENT_BATCHES = 5; // How many batches to process simultaneously
 
+      // Process a batch of documents together (faster than one-by-one)
       const processBatch = async (
         batch: typeof chunkedDocs,
         batchIndex: number
@@ -141,7 +142,7 @@ try {
         }
       };
 
-      // Split documents into batches
+      // Split all documents into smaller batches
       const batches = [];
       for (let i = 0; i < total; i += BATCH_SIZE) {
         batches.push(chunkedDocs.slice(i, i + BATCH_SIZE));
@@ -151,11 +152,13 @@ try {
         `📦 Split into ${batches.length} batches of up to ${BATCH_SIZE} documents each`
       );
 
-      // Process batches with limited concurrency for optimal performance
+      // Process multiple batches at the same time for speed
+      // This processes CONCURRENT_BATCHES batches simultaneously instead of waiting for each one
       let processedCount = 0;
-      const progressRange = 64; // 36% to 100%
+      const progressRange = 64; // Progress from 36% to 100%
 
       for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
+        // Process CONCURRENT_BATCHES batches at once
         const currentBatches = batches.slice(i, i + CONCURRENT_BATCHES);
 
         const results = await Promise.all(
