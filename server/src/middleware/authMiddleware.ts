@@ -30,22 +30,49 @@ export const requireAuth: RequestHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  // Get token from cookie instead of header!
-  const token = req.cookies.token;
+  // Try to get JWT token from Authorization header first (for Safari compatibility)
+  // Fallback to cookie if header not present
+  const authHeader = req.headers.authorization;
+  let token = authHeader?.startsWith('Bearer ')
+    ? authHeader.substring(7)
+    : req.cookies.token;
+
+  // For /orgs endpoint, we're using GitHub token, not JWT
+  // So we need to be more lenient - let the route handler check for GitHub token
   if (!token) {
+    // Special case: if this is the /orgs endpoint, allow it through
+    // The route handler will check for GitHub token in Authorization header
+    if (req.path.includes('/orgs') || req.originalUrl.includes('/orgs')) {
+      console.log(
+        '⚠️ requireAuth: No JWT token, but allowing /orgs through to check GitHub token'
+      );
+      next();
+      return;
+    }
     res.status(401).json({ message: 'Missing auth token' });
     return;
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    console.log('Decoded JWT in requireAuth:', decoded);
+    console.log(
+      '✅ requireAuth: JWT verified from',
+      authHeader ? 'Authorization header' : 'cookie'
+    );
 
     (req as AuthenticatedRequest).user = decoded;
-    console.log('Decoded JWT in requireAuth:', decoded);
-
     next();
   } catch (err) {
+    // If JWT verification fails but this is /orgs, allow through
+    // The route handler will check for GitHub token
+    if (req.path.includes('/orgs') || req.originalUrl.includes('/orgs')) {
+      console.log(
+        '⚠️ requireAuth: JWT verification failed, but allowing /orgs through to check GitHub token'
+      );
+      next();
+      return;
+    }
+    console.error('❌ requireAuth: JWT verification failed:', err);
     res.status(403).json({ message: 'Invalid or expired token' });
   }
 };
