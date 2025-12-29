@@ -3,7 +3,7 @@ console.log('========================================');
 console.log('WORKER FILE: index.job.ts LOADED');
 console.log('========================================');
 
-import IORedis, { Redis } from 'ioredis';
+import { Redis } from 'ioredis';
 import { Worker, Queue, Job } from 'bullmq';
 import { cloneRepo } from './git.service.js';
 import { TsmorphCodeLoader } from './loader.service.js';
@@ -18,13 +18,13 @@ let redisClient: Redis;
 if (!process.env.REDIS_URL) {
   console.error('⚠️ REDIS_URL not set - worker will not function');
   // Create a dummy client that will fail gracefully
-  redisClient = new IORedis('redis://localhost:6379', {
+  redisClient = new Redis('redis://localhost:6379', {
     lazyConnect: true,
     maxRetriesPerRequest: null,
     retryStrategy: () => null, // Don't retry if connection fails
   });
 } else {
-  redisClient = new IORedis(process.env.REDIS_URL, {
+  redisClient = new Redis(process.env.REDIS_URL, {
     maxRetriesPerRequest: null,
     retryStrategy: (times: number) => {
       // Retry with exponential backoff
