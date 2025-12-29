@@ -22,7 +22,9 @@ router.get('/callback', handleGitHubCallback);
 router.post('/complete', completeAuth);
 router.get('/repos', listRepos);
 router.get('/github-token', getGithubToken);
-router.get('/orgs', requireAuth, getGitHubUserOrgs);
+// /orgs doesn't need requireAuth - it uses GitHub token, not JWT
+// getGitHubUserOrgs handles its own authentication
+router.get('/orgs', getGitHubUserOrgs);
 
 // Redirect after Github App install:
 router.get('/app/install/callback', requireAuth, saveInstallationId);
