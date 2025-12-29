@@ -629,8 +629,24 @@ export const getGithubToken = async (
     return;
   }
 
-  const githubToken = req.cookies.github_access_token;
+  // Try to get token from Authorization header first (for Safari compatibility)
+  // Fallback to cookie if header not present
+  const authHeader = req.headers.authorization;
+  const cookieToken = req.cookies.github_access_token;
+  let githubToken = authHeader?.startsWith('Bearer ')
+    ? authHeader.substring(7)
+    : cookieToken;
+
+  console.log('🔍 getGithubToken - Token sources:', {
+    hasAuthHeader: !!authHeader,
+    authHeaderPrefix: authHeader?.substring(0, 20) || 'none',
+    hasCookieToken: !!cookieToken,
+    cookieTokenPrefix: cookieToken?.substring(0, 10) || 'none',
+    usingTokenFrom: authHeader ? 'Authorization header' : 'cookie',
+  });
+
   if (!githubToken) {
+    console.error('❌ getGithubToken: No GitHub token found in header or cookies');
     res.status(401).json({ error: 'Failed to get Github token' });
     return;
   }

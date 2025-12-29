@@ -226,9 +226,28 @@ export async function logoutUser(): Promise<void> {
 
 //* Chatwrap helper function
 export async function getGithubToken(): Promise<string> {
+  // Get token from localStorage for Safari compatibility
+  const githubToken = localStorage.getItem('githubToken');
+  
+  const headers: HeadersInit = {};
+  
+  // Send token in Authorization header for Safari compatibility
+  if (githubToken) {
+    headers.Authorization = `Bearer ${githubToken}`;
+  }
+  
   const res = await fetch(`${API_BASE_URL}/auth/github-token`, {
-    credentials: 'include',
+    credentials: 'include', // Still try to send cookies as fallback
+    headers,
   });
+  
+  if (res.status === 401) {
+    console.warn('🔁 Token expired, clearing localStorage...');
+    localStorage.removeItem('githubToken');
+    localStorage.removeItem('jwt');
+    throw new Error('GitHub token expired — reauth required');
+  }
+  
   if (!res.ok) throw new Error('Failed to get token: ' + res.statusText);
   const data = await res.json();
   if (!data.token) throw new Error('No GitHub token in response');
