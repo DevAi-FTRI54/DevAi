@@ -3,8 +3,13 @@ import cors from 'cors';
 import { ServerError } from './types/types.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import { fileURLToPath } from 'url';
 // import { allowedOrigins } from '../src/config/allowedOrigins.js'; // Using local definition for Safari CORS fixes
 import mongoose from 'mongoose';
+
+// ES modules don't have __dirname - need to create it from import.meta.url
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // import taskController from './controllers/taskController';
 
 import repoRoutes from './features/indexing/index.routes.js';
