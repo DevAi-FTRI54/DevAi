@@ -1,11 +1,16 @@
-import 'dotenv/config';
 import app from './app.js';
 import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
+import 'dotenv/config';
+
+// Import worker so it starts processing jobs from the queue
+console.log('📦 Importing index job worker...');
 import './features/indexing/index.job.js';
+console.log('✅ Index job worker imported');
 
 console.log('Booting server...');
 console.log('Start of server.ts');
+console.log('🟡 Fresh deploy loaded');
 
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err);
@@ -31,7 +36,7 @@ async function startServer() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     app
-      .listen(port, () => {
+      .listen(Number(port), '0.0.0.0', () => {
         console.log(`✅ App listening on port ${port}`);
         console.log(`🏥 Health check: http://localhost:${port}/api/health`);
       })
