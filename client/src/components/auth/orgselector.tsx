@@ -22,7 +22,7 @@ const OrgSelector: React.FC<{ onSelect: (org: string) => void }> = ({
       try {
         // Get token from localStorage for Safari compatibility
         // Wait a bit if token isn't available yet (Safari timing issue)
-        let githubToken = localStorage.getItem('githubToken');
+        const githubToken = localStorage.getItem('githubToken');
         
         if (!githubToken && retryCount < 5) {
           console.log(`⏳ Token not found, retrying in 200ms... (attempt ${retryCount + 1}/5)`);
