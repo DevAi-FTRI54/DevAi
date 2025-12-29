@@ -6,9 +6,10 @@ import type { ChatHistoryEntry } from './types';
 // api.ts or apiHelpers.ts
 
 // SINGLE consistent variable at the top
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; //|| 'http://localhost:4000/';
-// export const API_BASE_URL = 'https://devai-b2ui.onrender.com/api'; //|| 'http://localhost:4000/';
-// export const API_BASE_URL = 'https://a59d8fd60bb0.ngrok.app/api'; //|| 'http://localhost:4000/';
+// Use environment variable, fallback to Render URL for production
+const isProduction = import.meta.env.PROD;
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (isProduction ? 'https://devai-b2ui.onrender.com/api' : '');
 
 // client/src/api.ts
 console.log('🔧 Environment check:', {

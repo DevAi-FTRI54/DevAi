@@ -18,16 +18,29 @@ const OrgSelector: React.FC<{ onSelect: (org: string) => void }> = ({
   // );
 
   useEffect(() => {
-    const fetchOrgs = async () => {
+    const fetchOrgs = async (retryCount = 0) => {
       try {
         // Get token from localStorage for Safari compatibility
-        const githubToken = localStorage.getItem('githubToken');
+        // Wait a bit if token isn't available yet (Safari timing issue)
+        let githubToken = localStorage.getItem('githubToken');
+        
+        if (!githubToken && retryCount < 5) {
+          console.log(`⏳ Token not found, retrying in 200ms... (attempt ${retryCount + 1}/5)`);
+          setTimeout(() => fetchOrgs(retryCount + 1), 200);
+          return;
+        }
+        
         console.log('🔍 Fetching orgs with token from localStorage:', {
           hasToken: !!githubToken,
           tokenLength: githubToken?.length || 0,
+          tokenPrefix: githubToken?.substring(0, 10) || 'none',
         });
         
-        const orgs = await getUserOrgs(githubToken || undefined); // Pass token for Safari
+        if (!githubToken) {
+          throw new Error('No GitHub token found. Please log in again.');
+        }
+        
+        const orgs = await getUserOrgs(githubToken); // Pass token for Safari
         setOrgs(orgs);
         console.log('✅ Orgs fetched successfully:', orgs);
       } catch (err) {
@@ -36,7 +49,7 @@ const OrgSelector: React.FC<{ onSelect: (org: string) => void }> = ({
         if (err instanceof Error) {
           setError(err.message);
           // If token expired, redirect to login
-          if (err.message.includes('expired') || err.message.includes('reauth')) {
+          if (err.message.includes('expired') || err.message.includes('reauth') || err.message.includes('No GitHub token')) {
             setTimeout(() => {
               window.location.href = '/login?expired=true';
             }, 2000);
