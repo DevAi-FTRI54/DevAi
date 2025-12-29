@@ -9,7 +9,7 @@ const GITHUB_APP_ID = process.env.GITHUB_APP_ID!;
 const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID!;
 const GITHUB_APP_CLIENT_SECRET = process.env.GITHUB_APP_CLIENT_SECRET!;
 const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI!;
-const REDIRECT_URI = 'https://a59d8fd60bb0.ngrok.app/api/auth/callback';
+const REDIRECT_URI = 'https://devai-b2ui.onrender.com/api/auth/callback';
 // const GITHUB_APP_PRIVATE_KEY = process.env.GITHUB_APP_PRIVATE_KEY!.replace(
 //   /\\n/g,
 //   '\n'
@@ -71,10 +71,15 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
   console.log('[GitHub Token Exchange] Full response:', data);
 
   if (!data.access_token) {
-    throw new Error(
-      'GitHub API Error: ' +
-        (data.error_description || 'Failed to obtain access token')
-    );
+    const errorMsg = data.error_description || data.error || 'Failed to obtain access token';
+    console.error('❌ GitHub token exchange failed:', errorMsg);
+    
+    // Check for specific error types
+    if (errorMsg.includes('expired') || errorMsg.includes('invalid') || data.error === 'bad_verification_code') {
+      throw new Error('Authorization code expired or already used. Please try logging in again.');
+    }
+    
+    throw new Error('GitHub API Error: ' + errorMsg);
   }
 
   return data.access_token;
@@ -144,31 +149,73 @@ export async function getInstallationToken(
   return data.token;
 }
 
-// Fetch repositories for installation
+// Fetch repositories for installation with pagination support
 export async function fetchRepositories(
   installationToken: string
 ): Promise<any[]> {
-  const response = await fetch(
-    'https://api.github.com/installation/repositories',
-    {
-      headers: {
-        Authorization: `token ${installationToken}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    }
-  );
+  const allRepositories: any[] = [];
+  let page = 1;
+  let hasMore = true;
+  const perPage = 100; // Max allowed by GitHub API
 
-  const data = await response.json();
-  if (!response.ok) {
-    throw new GitHubApiError(
-      'Failed to fetch repositories',
-      response.status,
-      data
+  // Fetch all pages of repositories
+  while (hasMore) {
+    const response = await fetch(
+      `https://api.github.com/installation/repositories?per_page=${perPage}&page=${page}`,
+      {
+        headers: {
+          Authorization: `token ${installationToken}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
     );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new GitHubApiError(
+        'Failed to fetch repositories',
+        response.status,
+        data
+      );
+    }
+
+    // Log response structure to debug
+    console.log(`Page ${page} response:`, {
+      hasRepositories: !!data.repositories,
+      repositoriesCount: data.repositories?.length || 0,
+      totalCount: data.total_count,
+      responseKeys: Object.keys(data),
+    });
+
+    // Add repos from this page - GitHub API returns repos in data.repositories array
+    if (data.repositories && data.repositories.length > 0) {
+      allRepositories.push(...data.repositories);
+      console.log(`Added ${data.repositories.length} repos from page ${page}`);
+    }
+
+    // Check if there are more pages by looking at the Link header
+    // Note: node-fetch returns headers as a Headers object
+    const linkHeader = response.headers.get('link') || response.headers.get('Link');
+    console.log(`Page ${page} Link header:`, linkHeader);
+    
+    if (linkHeader && linkHeader.includes('rel="next"')) {
+      page++;
+      console.log(`More pages available, moving to page ${page}`);
+    } else {
+      hasMore = false;
+      console.log(`No more pages, stopping pagination`);
+    }
+
+    // Also stop if we got fewer repos than per_page (means we're on last page)
+    if (!data.repositories || data.repositories.length < perPage) {
+      hasMore = false;
+      console.log(`Got ${data.repositories?.length || 0} repos (less than ${perPage}), stopping`);
+    }
   }
 
-  return data.repositories;
+  console.log(`Fetched ${allRepositories.length} total repositories`);
+  return allRepositories;
 }
 
 // Get commit information for a repository
@@ -212,9 +259,31 @@ export async function getRepositoriesWithMeta(
     const installationToken = await getInstallationToken(installationId);
     const repositories = await fetchRepositories(installationToken);
 
-    return Promise.all(
+    console.log(`Processing ${repositories.length} repositories for commit info...`);
+
+    // Fetch commit info for each repo, but don't fail if some fail
+    const results = await Promise.allSettled(
       repositories.map((repo) => fetchCommitInfo(repo, installationToken))
     );
+
+    // Filter out failed results and log them
+    const successful: RepositoryWithMeta[] = [];
+    const failed: any[] = [];
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        successful.push(result.value);
+      } else {
+        failed.push({
+          repo: repositories[index]?.full_name || 'unknown',
+          error: result.reason,
+        });
+        console.warn(`Failed to get commit info for ${repositories[index]?.full_name}:`, result.reason);
+      }
+    });
+
+    console.log(`Successfully processed ${successful.length} repos, ${failed.length} failed`);
+    return successful;
   } catch (err) {
     console.error('Repository metadata fetch failed:', err);
     throw err;
