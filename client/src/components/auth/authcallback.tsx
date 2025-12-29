@@ -25,12 +25,29 @@ const AuthCallback: React.FC = () => {
         console.log('🔐 AuthCallback - Calling completeAuth with code:', code);
         const data = await completeAuth(code);
 
-        if (data.token) localStorage.setItem('jwt', data.token);
-        if (data.githubToken) localStorage.setItem('githubToken', data.githubToken);
+        // completeAuth now handles localStorage storage with Safari verification
+        // But we still need to check if tokens were received
+        if (!data.githubToken) {
+          setError('Authentication failed: No token received from server');
+          console.error('❌ No GitHub token in response!');
+          setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
+
+        console.log('✅ Auth successful, tokens stored:', {
+          hasToken: !!data.token,
+          hasGithubToken: !!data.githubToken,
+          installed: data.installed,
+        });
+
+        // Small delay to ensure localStorage is written (Safari can be slow)
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         if (data.installed === false || data.needsInstall === true) {
+          console.log('📦 App not installed, redirecting to install page');
           navigate('/install-github-app');
         } else {
+          console.log('✅ App installed, redirecting to org selector');
           navigate('/orgselector');
         }
       } catch (err: unknown) {
@@ -40,6 +57,7 @@ const AuthCallback: React.FC = () => {
           setError('Unexpected error during authentication.');
         }
         console.error('🔐 AuthCallback - Error:', err);
+        setTimeout(() => navigate('/login'), 5000);
       }
     };
 

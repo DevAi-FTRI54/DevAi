@@ -16,13 +16,27 @@ const OrgSelector: React.FC<{ onSelect: (org: string) => void }> = ({
   useEffect(() => {
     const fetchOrgs = async () => {
       try {
-        const orgs = await getUserOrgs(); // No token passed
+        // Get token from localStorage for Safari compatibility
+        const githubToken = localStorage.getItem('githubToken');
+        console.log('🔍 Fetching orgs with token from localStorage:', {
+          hasToken: !!githubToken,
+          tokenLength: githubToken?.length || 0,
+        });
+        
+        const orgs = await getUserOrgs(githubToken || undefined); // Pass token for Safari
         setOrgs(orgs);
+        console.log('✅ Orgs fetched successfully:', orgs);
       } catch (err) {
         setOrgs([]);
-        console.error('Failed to load orgs:', err);
+        console.error('❌ Failed to load orgs:', err);
         if (err instanceof Error) {
           setError(err.message);
+          // If token expired, redirect to login
+          if (err.message.includes('expired') || err.message.includes('reauth')) {
+            setTimeout(() => {
+              window.location.href = '/login?expired=true';
+            }, 2000);
+          }
         } else {
           setError('Unexpected error');
         }

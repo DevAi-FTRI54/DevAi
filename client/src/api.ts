@@ -23,26 +23,62 @@ export async function completeAuth(code: string) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code }),
-    credentials: 'include',
+    credentials: 'include', // Required for Safari to send cookies
   });
-  if (!res.ok) throw new Error('Auth failed');
-  return res.json();
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    // Check for specific error messages
+    if (errorText.includes('expired') || res.status === 401) {
+      throw new Error('Authorization code expired. Please try logging in again.');
+    } else if (res.status === 400) {
+      throw new Error('Invalid authorization code. Please try logging in again.');
+    }
+    throw new Error(`Auth failed: ${res.status} ${errorText}`);
+  }
+  
+  const data = await res.json();
+  
+  // Verify token was stored (Safari sometimes has issues with localStorage)
+  if (data.githubToken) {
+    localStorage.setItem('githubToken', data.githubToken);
+    const stored = localStorage.getItem('githubToken');
+    if (stored !== data.githubToken) {
+      console.error('❌ WARNING: Token was not stored correctly in localStorage!');
+    }
+  }
+  if (data.token) {
+    localStorage.setItem('jwt', data.token);
+  }
+  
+  return data;
 }
 
 //* orgselector.tsx
-export async function getUserOrgs(): Promise<{ id: number; login: string }[]> {
+export async function getUserOrgs(token?: string): Promise<{ id: number; login: string }[]> {
+  // Get token from parameter or localStorage (for Safari compatibility)
+  const githubToken = token || localStorage.getItem('githubToken');
+  
+  const headers: HeadersInit = {
+    'Cache-Control': 'no-cache',
+  };
+  
+  // Send token in Authorization header for Safari compatibility
+  if (githubToken) {
+    headers.Authorization = `Bearer ${githubToken}`;
+  }
+  
   const res = await fetch(`${API_BASE_URL}/auth/orgs`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      'Cache-Control': 'no-cache',
-      // Authorization: `Bearer ${token}`,
-    },
+    credentials: 'include', // Still try to send cookies as fallback
+    headers,
   });
 
   if (res.status === 401) {
     console.warn('🔁 Token expired, redirecting to login...');
-    window.location.href = `https://dev-ai.app/login?expired=true`;
+    localStorage.removeItem('githubToken');
+    localStorage.removeItem('jwt');
+    window.location.href = `/login?expired=true`;
     throw new Error('GitHub token expired — reauth required');
   }
 
