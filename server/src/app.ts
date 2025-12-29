@@ -152,14 +152,36 @@ app.use((req, res) => {
 });
 
 // --- Global error handler --------------------------------------
-const errorHandler: ErrorRequestHandler = (err: ServerError, _req, res, _next) => {
+const errorHandler: ErrorRequestHandler = (err: ServerError, req, res, _next) => {
+  // Log actual error details for debugging
+  console.error('❌ Express error handler triggered:');
+  console.error('→ URL:', req.method, req.originalUrl);
+  console.error('→ Error name:', err.name || 'Unknown');
+  console.error('→ Error message:', err.message || 'No message');
+  if (err.stack) {
+    console.error('→ Stack:', err.stack);
+  }
+  
+  // Handle CORS errors gracefully (don't log as critical errors)
+  if (err.message?.includes('CORS') || err.message?.includes('Not allowed by CORS')) {
+    console.warn('⚠️ CORS error (expected for unauthorized origins):', req.headers.origin);
+    res.status(403).json({ error: 'CORS: Origin not allowed' });
+    return;
+  }
+  
+  // Handle favicon requests (common source of 404s, not real errors)
+  if (req.originalUrl === '/favicon.ico') {
+    res.status(404).end();
+    return;
+  }
+  
   const defaultError: ServerError = {
-    log: 'Express error handler caught unknown middleware error',
-    status: 500,
-    message: { err: 'An error occurred' },
+    log: err.log || err.message || 'Express error handler caught unknown middleware error',
+    status: err.status || 500,
+    message: err.message ? { err: err.message } : { err: 'An error occurred' },
   };
   const errorObj: ServerError = { ...defaultError, ...err };
-  console.log(errorObj.log);
+  
   res.status(errorObj.status).json(errorObj.message);
 };
 app.use(errorHandler);
