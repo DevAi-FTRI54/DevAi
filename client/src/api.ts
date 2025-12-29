@@ -226,30 +226,52 @@ export async function logoutUser(): Promise<void> {
 
 //* Chatwrap helper function
 export async function getGithubToken(): Promise<string> {
-  // Get token from localStorage for Safari compatibility
-  const githubToken = localStorage.getItem('githubToken');
-  
-  const headers: HeadersInit = {};
-  
-  // Send token in Authorization header for Safari compatibility
-  if (githubToken) {
-    headers.Authorization = `Bearer ${githubToken}`;
+  // First, check if we have token in localStorage (fastest path)
+  const cachedToken = localStorage.getItem('githubToken');
+  if (cachedToken) {
+    console.log('✅ Using cached GitHub token from localStorage');
+    return cachedToken;
   }
   
+  // If not in localStorage (Safari might have cleared it), try to get from backend
+  // Backend has it in cookies which Safari preserves better
+  console.log('⚠️ Token not in localStorage, fetching from backend...');
+  
   const res = await fetch(`${API_BASE_URL}/auth/github-token`, {
-    credentials: 'include', // Still try to send cookies as fallback
-    headers,
+    credentials: 'include', // Send cookies (Safari preserves these better)
+    headers: {
+      'Cache-Control': 'no-cache',
+    },
   });
   
   if (res.status === 401) {
     console.warn('🔁 Token expired, clearing localStorage...');
     localStorage.removeItem('githubToken');
     localStorage.removeItem('jwt');
+    // Redirect to login after a short delay to show error message
+    setTimeout(() => {
+      window.location.href = `/login?expired=true`;
+    }, 2000);
     throw new Error('GitHub token expired — reauth required');
   }
   
-  if (!res.ok) throw new Error('Failed to get token: ' + res.statusText);
+  if (!res.ok) {
+    throw new Error('Failed to get token: ' + res.statusText);
+  }
+  
   const data = await res.json();
-  if (!data.token) throw new Error('No GitHub token in response');
+  if (!data.token) {
+    throw new Error('No GitHub token in response');
+  }
+  
+  // Store token in localStorage for future use (Safari might have cleared it)
+  try {
+    localStorage.setItem('githubToken', data.token);
+    console.log('✅ Token retrieved from backend and stored in localStorage');
+  } catch (storageError) {
+    console.warn('⚠️ Failed to store token in localStorage (Safari privacy mode?):', storageError);
+    // Continue anyway - we have the token to use
+  }
+  
   return data.token;
 }
