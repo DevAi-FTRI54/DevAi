@@ -18,6 +18,11 @@ console.log('🔧 Environment check:', {
   all_env: import.meta.env,
 });
 
+// Helper to get JWT token from localStorage
+function getJWTToken(): string | null {
+  return localStorage.getItem('jwt');
+}
+
 //* AuthCallback.tsx get
 export async function completeAuth(code: string) {
   const res = await fetch(`${API_BASE_URL}/auth/complete`, {
@@ -189,14 +194,30 @@ export async function storeUserMessage(data: {
   repoUrl: string;
   timestamp: Date;
 }): Promise<boolean> {
+  const jwtToken = getJWTToken();
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  
+  // Send JWT in Authorization header for Safari compatibility
+  if (jwtToken) {
+    headers.Authorization = `Bearer ${jwtToken}`;
+  }
+  
   const response = await fetch(`${API_BASE_URL}/query/store`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data),
-    credentials: 'include',
+    credentials: 'include', // Still send cookies as fallback
   });
 
-  if (!response.ok) throw new Error('Failed to store user message');
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Token expired, redirect to login
+      localStorage.removeItem('jwt');
+      localStorage.removeItem('githubToken');
+      window.location.href = `/login?expired=true`;
+    }
+    throw new Error('Failed to store user message');
+  }
   return true;
 }
 
@@ -206,13 +227,30 @@ export async function postUserPrompt(data: {
   type: string;
   sessionId: string;
 }): Promise<Response> {
+  const jwtToken = getJWTToken();
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  
+  // Send JWT in Authorization header for Safari compatibility
+  if (jwtToken) {
+    headers.Authorization = `Bearer ${jwtToken}`;
+  }
+  
   const response = await fetch(`${API_BASE_URL}/query/question`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data),
-    credentials: 'include',
+    credentials: 'include', // Still send cookies as fallback
   });
-  if (!response.ok) throw new Error('Failed to submit prompt');
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Token expired, redirect to login
+      localStorage.removeItem('jwt');
+      localStorage.removeItem('githubToken');
+      window.location.href = `/login?expired=true`;
+    }
+    throw new Error('Failed to submit prompt');
+  }
   return response;
 }
 
