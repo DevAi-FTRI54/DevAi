@@ -160,25 +160,25 @@ export async function fetchRepositories(
 
   // Fetch all pages of repositories
   while (hasMore) {
-    const response = await fetch(
+  const response = await fetch(
       `https://api.github.com/installation/repositories?per_page=${perPage}&page=${page}`,
-      {
-        headers: {
-          Authorization: `token ${installationToken}`,
-          Accept: 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      }
-    );
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new GitHubApiError(
-        'Failed to fetch repositories',
-        response.status,
-        data
-      );
+    {
+      headers: {
+        Authorization: `token ${installationToken}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
     }
+  );
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new GitHubApiError(
+      'Failed to fetch repositories',
+      response.status,
+      data
+    );
+  }
 
     // Log response structure to debug
     console.log(`Page ${page} response:`, {

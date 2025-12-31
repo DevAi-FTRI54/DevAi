@@ -52,7 +52,7 @@ export const handleGitHubCallback = async (
   res: Response
 ): Promise<any> => {
   try {
-    const code = req.query.code as string;
+  const code = req.query.code as string;
     if (!code) return res.status(400).send('Missing code');
 
     console.log('[GitHub OAuth] Received code:', code);
@@ -391,11 +391,11 @@ export const getGitHubUserOrgs = async (
       });
 
       if (userResponse.status === 401) {
-        console.warn('⚠️ GitHub token is invalid or expired — clearing cookie');
-        res.clearCookie('github_access_token', {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'none',
+      console.warn('⚠️ GitHub token is invalid or expired — clearing cookie');
+      res.clearCookie('github_access_token', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
           path: '/', // Must match the path used when setting the cookie
         });
         throw new Error('GitHub token expired or invalid — please reauthenticate');
@@ -420,15 +420,15 @@ export const getGitHubUserOrgs = async (
 
       if (!orgsResponse.ok) {
         const errorText = await orgsResponse.text();
-        console.error('❌ GitHub orgs fetch failed:', errorText);
+      console.error('❌ GitHub orgs fetch failed:', errorText);
         throw new Error('Failed to fetch GitHub orgs');
-      }
+    }
 
       const orgs = (await orgsResponse.json()) as {
-        id: number;
-        login: string;
-        avatar_url: string;
-      }[];
+      id: number;
+      login: string;
+      avatar_url: string;
+    }[];
 
       // Check if user has personal installation of the app
       const installations = await getAppInstallations(githubToken);
@@ -457,12 +457,12 @@ export const getGitHubUserOrgs = async (
       // Add organizations
       processedOrgs.push(
         ...orgs.map(({ id, login, avatar_url }) => ({
-          id,
-          login,
-          avatar_url,
+        id,
+        login,
+        avatar_url,
           isPersonal: false,
-        }))
-      );
+      }))
+    );
 
       orgCache.set(cacheKey, { data: processedOrgs, timestamp: Date.now() });
 

@@ -8,7 +8,8 @@ import type { ChatHistoryEntry } from './types';
 // SINGLE consistent variable at the top
 // Use environment variable, fallback to Render URL for production
 const isProduction = import.meta.env.PROD;
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
   (isProduction ? 'https://devai-b2ui.onrender.com/api' : '');
 
 // client/src/api.ts
@@ -31,49 +32,57 @@ export async function completeAuth(code: string) {
     body: JSON.stringify({ code }),
     credentials: 'include', // Required for Safari to send cookies
   });
-  
+
   if (!res.ok) {
     const errorText = await res.text();
     // Check for specific error messages
     if (errorText.includes('expired') || res.status === 401) {
-      throw new Error('Authorization code expired. Please try logging in again.');
+      throw new Error(
+        'Authorization code expired. Please try logging in again.'
+      );
     } else if (res.status === 400) {
-      throw new Error('Invalid authorization code. Please try logging in again.');
+      throw new Error(
+        'Invalid authorization code. Please try logging in again.'
+      );
     }
     throw new Error(`Auth failed: ${res.status} ${errorText}`);
   }
-  
+
   const data = await res.json();
-  
+
   // Verify token was stored (Safari sometimes has issues with localStorage)
   if (data.githubToken) {
     localStorage.setItem('githubToken', data.githubToken);
     const stored = localStorage.getItem('githubToken');
     if (stored !== data.githubToken) {
-      console.error('❌ WARNING: Token was not stored correctly in localStorage!');
+      console.error(
+        '❌ WARNING: Token was not stored correctly in localStorage!'
+      );
     }
   }
   if (data.token) {
     localStorage.setItem('jwt', data.token);
   }
-  
+
   return data;
 }
 
 //* orgselector.tsx
-export async function getUserOrgs(token?: string): Promise<{ id: number; login: string }[]> {
+export async function getUserOrgs(
+  token?: string
+): Promise<{ id: number; login: string }[]> {
   // Get token from parameter or localStorage (for Safari compatibility)
   const githubToken = token || localStorage.getItem('githubToken');
-  
+
   const headers: HeadersInit = {
     'Cache-Control': 'no-cache',
   };
-  
+
   // Send token in Authorization header for Safari compatibility
   if (githubToken) {
     headers.Authorization = `Bearer ${githubToken}`;
   }
-  
+
   const res = await fetch(`${API_BASE_URL}/auth/orgs`, {
     method: 'GET',
     credentials: 'include', // Still try to send cookies as fallback
@@ -95,32 +104,44 @@ export async function getUserOrgs(token?: string): Promise<{ id: number; login: 
 }
 
 //* promptbaringestion
-export async function getIngestionStatus(jobId: string): Promise<IngestionStatusData> {
+export async function getIngestionStatus(
+  jobId: string
+): Promise<IngestionStatusData> {
   const res = await fetch(`${API_BASE_URL}/index/status/${jobId}`);
-  if (!res.ok) throw new Error(`Failed to fetch ingestion status: ${res.statusText}`);
+  if (!res.ok)
+    throw new Error(`Failed to fetch ingestion status: ${res.statusText}`);
   return res.json();
 }
 
 //* repo-selector:
-export async function getReposForOrg(opts: { org?: string; installation_id?: string }): Promise<Repo[]> {
+export async function getReposForOrg(opts: {
+  org?: string;
+  installation_id?: string;
+}): Promise<Repo[]> {
   // Get token from localStorage for Safari compatibility
   const githubToken = localStorage.getItem('githubToken');
-  
+
   const params = new URLSearchParams();
   if (opts.org) params.append('org', opts.org);
-  if (opts.installation_id) params.append('installation_id', opts.installation_id);
+  if (opts.installation_id)
+    params.append('installation_id', opts.installation_id);
 
   const headers: HeadersInit = {};
-  
+
   // Send token in Authorization header for Safari compatibility
   if (githubToken) {
     headers.Authorization = `Bearer ${githubToken}`;
   }
 
-  const res = await fetch(`${API_BASE_URL}/auth/repos${params.toString() ? '?' + params.toString() : ''}`, {
-    credentials: 'include', // Still try to send cookies as fallback
-    headers,
-  });
+  const res = await fetch(
+    `${API_BASE_URL}/auth/repos${
+      params.toString() ? '?' + params.toString() : ''
+    }`,
+    {
+      credentials: 'include', // Still try to send cookies as fallback
+      headers,
+    }
+  );
 
   if (res.status === 401) {
     console.warn('🔁 Token expired, redirecting to login...');
@@ -151,10 +172,17 @@ export async function startRepoIngestion(opts: {
 }
 
 // Fetch file content from GitHub, decode base64
-export async function getRepoFileContent(repoUrl: string, filePath: string, token: string): Promise<string> {
-  const res = await fetch(`https://api.github.com/repos/${repoUrl}/contents/${filePath}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export async function getRepoFileContent(
+  repoUrl: string,
+  filePath: string,
+  token: string
+): Promise<string> {
+  const res = await fetch(
+    `https://api.github.com/repos/${repoUrl}/contents/${filePath}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   if (!res.ok) throw new Error('Failed to fetch file');
   const data = await res.json();
   // GitHub returns content as base64
@@ -168,8 +196,12 @@ export async function getRepoContents(
   path: string = '',
   token?: string
 ): Promise<GitHubContentItem[]> {
-  const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents${path ? '/' + path : ''}`;
+  const headers: HeadersInit = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents${
+    path ? '/' + path : ''
+  }`;
   const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`GitHub fetch failed: ${res.statusText}`);
   return res.json();
@@ -183,7 +215,8 @@ export async function getChatHistory(): Promise<ChatHistoryEntry[]> {
   });
   if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
   const data = await res.json();
-  if (!Array.isArray(data)) throw new Error('Invalid response format: expected an array');
+  if (!Array.isArray(data))
+    throw new Error('Invalid response format: expected an array');
   return data;
 }
 
@@ -196,12 +229,12 @@ export async function storeUserMessage(data: {
 }): Promise<boolean> {
   const jwtToken = getJWTToken();
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  
+
   // Send JWT in Authorization header for Safari compatibility
   if (jwtToken) {
     headers.Authorization = `Bearer ${jwtToken}`;
   }
-  
+
   const response = await fetch(`${API_BASE_URL}/query/store`, {
     method: 'POST',
     headers,
@@ -229,19 +262,19 @@ export async function postUserPrompt(data: {
 }): Promise<Response> {
   const jwtToken = getJWTToken();
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  
+
   // Send JWT in Authorization header for Safari compatibility
   if (jwtToken) {
     headers.Authorization = `Bearer ${jwtToken}`;
   }
-  
+
   const response = await fetch(`${API_BASE_URL}/query/question`, {
     method: 'POST',
     headers,
     body: JSON.stringify(data),
     credentials: 'include', // Still send cookies as fallback
   });
-  
+
   if (!response.ok) {
     if (response.status === 401) {
       // Token expired, redirect to login
@@ -270,18 +303,18 @@ export async function getGithubToken(): Promise<string> {
     console.log('✅ Using cached GitHub token from localStorage');
     return cachedToken;
   }
-  
+
   // If not in localStorage (Safari might have cleared it), try to get from backend
   // Backend has it in cookies which Safari preserves better
   console.log('⚠️ Token not in localStorage, fetching from backend...');
-  
+
   const res = await fetch(`${API_BASE_URL}/auth/github-token`, {
     credentials: 'include', // Send cookies (Safari preserves these better)
     headers: {
       'Cache-Control': 'no-cache',
     },
   });
-  
+
   if (res.status === 401) {
     console.warn('🔁 Token expired, clearing localStorage...');
     localStorage.removeItem('githubToken');
@@ -292,24 +325,27 @@ export async function getGithubToken(): Promise<string> {
     }, 2000);
     throw new Error('GitHub token expired — reauth required');
   }
-  
+
   if (!res.ok) {
     throw new Error('Failed to get token: ' + res.statusText);
   }
-  
+
   const data = await res.json();
   if (!data.token) {
     throw new Error('No GitHub token in response');
   }
-  
+
   // Store token in localStorage for future use (Safari might have cleared it)
   try {
     localStorage.setItem('githubToken', data.token);
     console.log('✅ Token retrieved from backend and stored in localStorage');
   } catch (storageError) {
-    console.warn('⚠️ Failed to store token in localStorage (Safari privacy mode?):', storageError);
+    console.warn(
+      '⚠️ Failed to store token in localStorage (Safari privacy mode?):',
+      storageError
+    );
     // Continue anyway - we have the token to use
   }
-  
+
   return data.token;
 }

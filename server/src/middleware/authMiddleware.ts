@@ -33,7 +33,7 @@ export const requireAuth: RequestHandler = (
   // Check Authorization header first (Safari compatibility)
   const authHeader = req.headers.authorization;
   let token: string | undefined;
-  
+
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.substring(7);
     console.log('🔑 Using JWT from Authorization header');
@@ -44,7 +44,7 @@ export const requireAuth: RequestHandler = (
       console.log('🍪 Using JWT from cookie');
     }
   }
-  
+
   if (!token) {
     console.log('❌ No JWT token found in header or cookie');
     res.status(401).json({ message: 'Missing auth token' });
@@ -64,9 +64,9 @@ export const requireAuth: RequestHandler = (
     console.log('❌ JWT validation failed:', err.message);
     // If token expired, provide more helpful error
     if (err.name === 'TokenExpiredError') {
-      res.status(401).json({ 
-        message: 'Token expired', 
-        expiredAt: err.expiredAt 
+      res.status(401).json({
+        message: 'Token expired',
+        expiredAt: err.expiredAt,
       });
     } else {
       res.status(403).json({ message: 'Invalid or expired token' });

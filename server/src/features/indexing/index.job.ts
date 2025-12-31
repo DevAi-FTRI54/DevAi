@@ -25,7 +25,7 @@ if (!process.env.REDIS_URL) {
   });
 } else {
   redisClient = new IORedis(process.env.REDIS_URL, {
-    maxRetriesPerRequest: null,
+  maxRetriesPerRequest: null,
     retryStrategy: (times) => {
       // Retry with exponential backoff
       const delay = Math.min(times * 50, 2000);
@@ -55,17 +55,17 @@ try {
     
     // Wrap everything in try-catch to catch and log all errors
     try {
-      const { repoUrl, sha } = job.data;
+    const { repoUrl, sha } = job.data;
       
       console.log(`📍 Step 1: Cloning repository ${repoUrl}...`);
 
-      const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
+    const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
       console.log(`✅ Repository cloned to: ${localRepoPath}`);
-      await job.updateProgress(15);
+    await job.updateProgress(15);
 
       console.log(`📍 Step 2: Loading documents with TsmorphCodeLoader...`);
-      const loader = new TsmorphCodeLoader(localRepoPath, repoId);
-      const bigDocs = await loader.load();
+    const loader = new TsmorphCodeLoader(localRepoPath, repoId);
+    const bigDocs = await loader.load();
       console.log(`✅ Loader completed`);
       
       console.log(`📄 Loaded ${bigDocs?.length || 0} documents`);
@@ -82,7 +82,7 @@ try {
       // Update progress and start chunking - wrapped in try-catch since jobs were failing here
       console.log(`📍 Step 3: Updating progress to 30% and starting chunking...`);
       try {
-        await job.updateProgress(30);
+    await job.updateProgress(30);
         console.log(`✅ Progress updated to 30%`);
       } catch (progressError: any) {
         console.error('❌ Failed to update progress to 30%:', progressError);
@@ -101,20 +101,20 @@ try {
       }
 
       chunkedDocs = chunkedDocs.map((doc) => {
-        if (!doc.pageContent || doc.pageContent.trim().length === 0) {
-          return {
-            ...doc,
-            pageContent: 'Empty file',
-            metaData: {
-              ...doc.metadata,
-              isEmpty: true,
-            },
-          };
-        }
-        return doc;
-      });
+      if (!doc.pageContent || doc.pageContent.trim().length === 0) {
+        return {
+          ...doc,
+          pageContent: 'Empty file',
+          metaData: {
+            ...doc.metadata,
+            isEmpty: true,
+          },
+        };
+      }
+      return doc;
+    });
 
-      const total = chunkedDocs.length;
+    const total = chunkedDocs.length;
       console.log(`📊 Total documents to process: ${total}`);
       await job.updateProgress(36);
 
@@ -172,7 +172,7 @@ try {
         console.log(
           `📈 Progress: ${processedCount}/${total} documents (${percentage}%)`
         );
-        await job.updateProgress(percentage);
+      await job.updateProgress(percentage);
       }
 
       console.log(`🎉 Successfully processed all ${total} documents!`);
