@@ -46,7 +46,7 @@ import { z, ZodError, ZodSchema } from 'zod';
  * ```
  */
 export function validateBody(schema: ZodSchema) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Parse and validate the request body against our schema
       // Zod will throw an error if validation fails
@@ -56,7 +56,7 @@ export function validateBody(schema: ZodSchema) {
     } catch (error) {
       if (error instanceof ZodError) {
         // Validation failed - return helpful error details
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Validation error',
           message: 'The request body does not match the expected format.',
           details: error.errors.map((err) => ({
@@ -64,6 +64,7 @@ export function validateBody(schema: ZodSchema) {
             message: err.message, // What's wrong with it (e.g., "Invalid email format")
           })),
         });
+        return;
       }
       // If it's not a Zod error, something unexpected happened - pass it to error handler
       next(error);
@@ -91,7 +92,7 @@ export function validateBody(schema: ZodSchema) {
  * ```
  */
 export function validateQuery(schema: ZodSchema) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Parse and validate query parameters
       // Zod automatically handles type conversion (string "123" -> number 123)
@@ -100,7 +101,7 @@ export function validateQuery(schema: ZodSchema) {
     } catch (error) {
       if (error instanceof ZodError) {
         // Return helpful error with details about which query params are wrong
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Query validation error',
           message: 'The URL query parameters are invalid.',
           details: error.errors.map((err) => ({
@@ -108,6 +109,7 @@ export function validateQuery(schema: ZodSchema) {
             message: err.message, // What's wrong (e.g., "Expected number, received string")
           })),
         });
+        return;
       }
       next(error);
     }
@@ -136,7 +138,7 @@ export function validateQuery(schema: ZodSchema) {
  * ```
  */
 export function validateParams(schema: ZodSchema) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Parse and validate route parameters
       req.params = schema.parse(req.params);
@@ -144,7 +146,7 @@ export function validateParams(schema: ZodSchema) {
     } catch (error) {
       if (error instanceof ZodError) {
         // Return helpful error about which route param is invalid
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Parameter validation error',
           message: 'The URL parameters are invalid.',
           details: error.errors.map((err) => ({
@@ -152,6 +154,7 @@ export function validateParams(schema: ZodSchema) {
             message: err.message, // What's wrong (e.g., "Expected number, received string")
           })),
         });
+        return;
       }
       next(error);
     }
