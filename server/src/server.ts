@@ -19,7 +19,21 @@ process.on('unhandledRejection', (reason) => {
   console.error('💥 Unhandled Rejection:', reason);
 });
 
-const port = process.env.PORT || 4000;
+/**
+ * Server Startup
+ * 
+ * This file handles starting our Express server and connecting to all the services we need:
+ * - MongoDB (user data, conversations)
+ * - Qdrant (vector database for code search)
+ * - BullMQ worker (background job processing)
+ * 
+ * We use a smart startup strategy: start the HTTP server first (so deployment platforms
+ * know we're alive), then connect to databases in the background. This prevents deployment
+ * timeouts while still ensuring everything is connected before we start handling requests.
+ */
+import { PORT } from './config/env.validation.js';
+
+const port = PORT;
 
 // await connectMongo();
 

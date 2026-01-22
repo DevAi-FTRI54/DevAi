@@ -1,4 +1,22 @@
 // Log when worker file loads so we can verify it's being imported
+/**
+ * Background Job Worker for Repository Indexing
+ * 
+ * This file sets up a BullMQ worker that processes repository indexing jobs in the background.
+ * When a user wants to index a repository, we don't do it synchronously (which would block
+ * the API response) - instead, we queue a job and process it here.
+ * 
+ * The worker handles the entire indexing pipeline:
+ * 1. Clone the repository (or fetch via GitHub API)
+ * 2. Load and parse code files
+ * 3. Chunk the code into semantic pieces
+ * 4. Generate embeddings
+ * 5. Store in vector database
+ * 
+ * This runs asynchronously so users get a quick response ("indexing started!") and can
+ * check the status later, rather than waiting minutes for large repositories to process.
+ */
+
 console.log('========================================');
 console.log('WORKER FILE: index.job.ts LOADED');
 console.log('========================================');
@@ -9,32 +27,43 @@ import { cloneRepo } from './git.service.js';
 import { TsmorphCodeLoader } from './loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import { upsert } from './vector.service.js';
+import { REDIS_URL } from '../../config/env.validation.js';
 
-console.log('🔍 REDIS_URL:', process.env.REDIS_URL ? 'Set' : 'Missing');
+console.log('🔍 REDIS_URL:', REDIS_URL ? 'Set' : 'Missing');
 console.log('🚀 Initializing BullMQ worker...');
 
-// Create Redis client - use lazy connect so it doesn't block server startup
+/**
+ * Redis Client for BullMQ
+ * 
+ * BullMQ uses Redis as its message broker - jobs are stored in Redis queues, and workers
+ * pull jobs from those queues. This gives us:
+ * - Persistence (jobs survive server restarts)
+ * - Scalability (multiple workers can process jobs)
+ * - Reliability (failed jobs can be retried)
+ * 
+ * We use lazy connection (lazyConnect: true) so the Redis connection doesn't block server
+ * startup. The connection will be established when the first job is processed, which is
+ * perfect because we might not have any jobs to process immediately.
+ * 
+ * The Redis URL comes from our validated environment configuration, so we know it's present
+ * and valid before we try to use it.
+ */
 let redisClient: IORedis;
-if (!process.env.REDIS_URL) {
-  console.error('⚠️ REDIS_URL not set - worker will not function');
-  // Create a dummy client that will fail gracefully
-  redisClient = new IORedis('redis://localhost:6379', {
-    lazyConnect: true,
-    maxRetriesPerRequest: null,
-    retryStrategy: () => null, // Don't retry if connection fails
-  });
-} else {
-  redisClient = new IORedis(process.env.REDIS_URL, {
-  maxRetriesPerRequest: null,
-    retryStrategy: (times) => {
-      // Retry with exponential backoff
-      const delay = Math.min(times * 50, 2000);
-      return delay;
-    },
-    lazyConnect: true, // Don't connect immediately, wait for first use
-  });
-  console.log('✅ Redis client created (lazy connect)');
-}
+
+// Create Redis client with validated URL
+// We use lazy connection so it doesn't block server startup
+redisClient = new IORedis(REDIS_URL, {
+  maxRetriesPerRequest: null, // BullMQ handles retries, not IORedis
+  retryStrategy: (times) => {
+    // Exponential backoff for reconnection attempts
+    // Start with 50ms, increase each time, cap at 2 seconds
+    const delay = Math.min(times * 50, 2000);
+    return delay;
+  },
+  lazyConnect: true, // Don't connect immediately - wait until we actually need it
+});
+
+console.log('✅ Redis client created (lazy connect)');
 
 export const indexQueue = new Queue('index', {
   connection: redisClient,

@@ -22,15 +22,22 @@ const app = express();
 
 // --- Global middleware -----------------------------------------
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://a59d8fd60bb0.ngrok.app',
-  'https://dev-ai.app',
-  'https://www.dev-ai.app',
-  'https://devai-three.vercel.app',
-  'https://devai-eshankman-devai-app.vercel.app',
-  'https://devai-devai-app.vercel.app',
-];
+/**
+ * CORS Configuration
+ * 
+ * CORS (Cross-Origin Resource Sharing) controls which websites can make requests to our API.
+ * This is a security feature that prevents malicious websites from accessing our API on behalf
+ * of users.
+ * 
+ * We get the allowed origins from our environment configuration, which makes it easy to update
+ * them for different environments (development, staging, production) without changing code.
+ * 
+ * The origins are stored as a comma-separated string in the environment variable, and we
+ * convert it to an array here for easier use with the CORS middleware.
+ */
+import { getAllowedOrigins } from './config/env.validation.js';
+
+const allowedOrigins = getAllowedOrigins();
 
 app.use(
   cors({

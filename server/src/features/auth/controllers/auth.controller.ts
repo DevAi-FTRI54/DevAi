@@ -21,11 +21,24 @@ import 'dotenv/config';
 
 console.log('Loading auth.controller.ts');
 
-//Github OAuth credentials for the app NOT FOR THE USER!!!!
-//Github code and access token are for users and are dynamic (Different Thing)
-const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID!;
-const FRONTEND_BASE_URL =
-  process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+/**
+ * GitHub OAuth Configuration
+ * 
+ * These are the credentials for our GitHub App - NOT for individual users!
+ * The GitHub App credentials allow us to:
+ * - Initiate OAuth flows on behalf of users
+ * - Access repositories where the app is installed
+ * 
+ * User-specific tokens (the ones users get after OAuth) are handled separately
+ * and stored in cookies/localStorage. Those are dynamic and different for each user.
+ * 
+ * We get these from our validated environment configuration, which ensures they're
+ * present and properly formatted before we try to use them.
+ */
+import {
+  GITHUB_APP_CLIENT_ID,
+  FRONTEND_BASE_URL,
+} from '../../../config/env.validation.js';
 
 console.log('🌍 Using frontend URL:', FRONTEND_BASE_URL);
 

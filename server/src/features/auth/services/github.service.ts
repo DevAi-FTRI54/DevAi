@@ -1,14 +1,29 @@
 import fetch from 'node-fetch';
 import jwt from 'jsonwebtoken';
 import { GitHubApiError } from '../utils/error.utils.js';
-import 'dotenv/config';
 import { GITHUB_APP_PRIVATE_KEY } from '../../../config/auth.js';
+import {
+  GITHUB_APP_ID,
+  GITHUB_APP_CLIENT_ID,
+  GITHUB_APP_CLIENT_SECRET,
+  GITHUB_REDIRECT_URI,
+} from '../../../config/env.validation.js';
 
-// GitHub OAuth and App configurations
-const GITHUB_APP_ID = process.env.GITHUB_APP_ID!;
-const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID!;
-const GITHUB_APP_CLIENT_SECRET = process.env.GITHUB_APP_CLIENT_SECRET!;
-const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI!;
+/**
+ * GitHub OAuth and App Configuration
+ * 
+ * These constants hold our GitHub integration credentials. We get them from our validated
+ * environment configuration, which ensures they're present and properly formatted before
+ * we try to use them.
+ * 
+ * The GitHub App credentials allow us to:
+ * - Authenticate users via OAuth (GITHUB_APP_CLIENT_ID and GITHUB_APP_CLIENT_SECRET)
+ * - Access repositories on behalf of users (GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY)
+ * - Handle OAuth callbacks (GITHUB_REDIRECT_URI)
+ * 
+ * All of these are validated at server startup, so if something's missing, we'll know
+ * immediately rather than getting cryptic errors when trying to make API calls.
+ */
 const REDIRECT_URI = 'https://devai-b2ui.onrender.com/api/auth/callback';
 // const GITHUB_APP_PRIVATE_KEY = process.env.GITHUB_APP_PRIVATE_KEY!.replace(
 //   /\\n/g,

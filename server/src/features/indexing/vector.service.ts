@@ -1,7 +1,3 @@
-// import 'dotenv/config';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { QdrantVectorStore } from '@langchain/qdrant';
@@ -9,38 +5,75 @@ import { TsmorphCodeLoader } from './loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import type { Document } from '@langchain/core/documents';
 import { MultiQueryRetriever } from 'langchain/retrievers/multi_query';
-// import { MultiQueryRetriever } from '@langchain/community/retrievers/multi_query';
 import { ChatOpenAI } from '@langchain/openai';
+import {
+  QDRANT_URL,
+  QDRANT_API_KEY,
+  OPENAI_API_KEY,
+} from '../../config/env.validation.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/**
+ * Vector Database and AI Service Configuration
+ * 
+ * This file sets up our AI/ML infrastructure:
+ * - Qdrant: Our vector database for storing code embeddings (semantic search)
+ * - OpenAI: Powers our code understanding and question answering
+ * 
+ * Why Qdrant over Pinecone? Check out this comparison:
+ * https://qdrant.tech/blog/comparing-qdrant-vs-pinecone-vector-databases
+ * 
+ * We use lazy initialization for the Qdrant client - this means we don't connect to it
+ * until we actually need it. This improves server startup time and prevents connection
+ * errors if Qdrant isn't available immediately (maybe it's still starting up).
+ */
 
-dotenv.config({
-  path: path.resolve(__dirname, '../../config/.env'),
-});
-
-// Why Qdrant over Pinecone - https://qdrant.tech/blog/comparing-qdrant-vs-pinecone-vector-databases
-// Lazy client initialization to avoid module-level environment access and improve startup speed
+// Lazy client initialization - we'll create the connection when we first need it
+// This is better than connecting at module load time because:
+// 1. Faster server startup (doesn't block on database connection)
+// 2. More resilient (can handle Qdrant being temporarily unavailable)
+// 3. Better error handling (can retry connection when actually needed)
 let client: QdrantClient | null = null;
 
+/**
+ * Get or create the Qdrant client
+ * 
+ * This function implements the singleton pattern - we only create one Qdrant client
+ * and reuse it for all operations. This is more efficient than creating a new client
+ * for every request.
+ * 
+ * The client is initialized with our validated environment variables, so we know
+ * the URL is valid and the API key (if provided) is in the right format.
+ * 
+ * @returns The Qdrant client instance
+ */
 function getQdrantClient(): QdrantClient {
   if (!client) {
     console.log('🔍 Initializing Qdrant client...');
     client = new QdrantClient({
-  url: process.env.QDRANT_URL!,
-  apiKey: process.env.QDRANT_API_KEY,
-});
+      url: QDRANT_URL, // Validated at startup - guaranteed to be a valid URL
+      apiKey: QDRANT_API_KEY, // Optional - only needed if Qdrant requires authentication
+    });
   }
   return client;
 }
 
+/**
+ * OpenAI LLM instance for code understanding
+ * 
+ * We use GPT-4o-mini for generating answers to user questions. It's a good balance
+ * of capability and cost - powerful enough to understand code context, but not so
+ * expensive that we can't afford to use it for every query.
+ * 
+ * The API key comes from our validated environment configuration, so we know it's
+ * present and in the correct format (starts with 'sk-') before we try to use it.
+ */
 const llm = new ChatOpenAI({
   model: 'gpt-4o-mini',
-  temperature: 0,
-  maxTokens: undefined,
-  timeout: undefined,
-  maxRetries: 2,
-  apiKey: process.env.OPENAI_API_KEY,
+  temperature: 0, // Low temperature for more consistent, factual responses
+  maxTokens: undefined, // Let the model decide based on context
+  timeout: undefined, // Use default timeout
+  maxRetries: 2, // Retry failed requests up to 2 times
+  apiKey: OPENAI_API_KEY, // Validated at startup - guaranteed to be valid
 });
 
 const embeddings = new OpenAIEmbeddings({

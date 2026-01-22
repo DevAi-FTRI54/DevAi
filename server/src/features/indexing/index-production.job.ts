@@ -1,4 +1,17 @@
-// Production-ready indexing job that works without local file cloning
+/**
+ * Production Indexing Job Worker
+ * 
+ * This is a production-optimized version of the indexing worker that uses GitHub API
+ * to fetch files directly instead of cloning repositories locally. This is more efficient
+ * for cloud deployments where we don't have persistent storage for cloned repos.
+ * 
+ * The worker processes repository indexing jobs asynchronously, handling:
+ * - Fetching repository files via GitHub API
+ * - Loading and parsing code files
+ * - Chunking code into semantic pieces
+ * - Generating embeddings
+ * - Storing in vector database
+ */
 import IORedis from 'ioredis';
 import { Worker, Queue, Job } from 'bullmq';
 import { cloneRepo } from './git.service.js';
@@ -7,11 +20,13 @@ import { GitHubApiService } from './github-api.service.js';
 import { InMemoryCodeLoader } from './memory-loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import { upsert } from './vector.service.js';
+import { REDIS_URL, NODE_ENV } from '../../config/env.validation.js';
 
-console.log('🔍 REDIS_URL:', process.env.REDIS_URL);
+console.log('🔍 REDIS_URL:', REDIS_URL ? 'Set' : 'Missing');
 
-const redisClient = new IORedis(process.env.REDIS_URL!, {
-  maxRetriesPerRequest: null,
+// Create Redis client with validated URL
+const redisClient = new IORedis(REDIS_URL, {
+  maxRetriesPerRequest: null, // BullMQ handles retries, not IORedis
 });
 
 export const indexQueue = new Queue('index', {
@@ -20,7 +35,7 @@ export const indexQueue = new Queue('index', {
 
 // Determine if we're in production or development
 const isProduction =
-  process.env.NODE_ENV === 'production' || process.env.RENDER;
+  NODE_ENV === 'production';
 
 // --- Worker ------------------------------------------------------------
 // Production worker with error handling - supports both GitHub API and local cloning

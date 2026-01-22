@@ -1,6 +1,13 @@
-// Verifies JWT tokens and attaches user data to requests for protected routes.
-import jwt from 'jsonwebtoken'; //install jsonwebtoken; install types
+/**
+ * Authentication Middleware
+ * 
+ * This middleware verifies JWT tokens and attaches user data to requests for protected routes.
+ * It's like a security guard checking IDs at the door - if you have a valid token, you get in;
+ * if not, you're politely asked to authenticate first.
+ */
+import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { JWT_SECRET } from '../config/env.validation.js';
 
 console.log('Loading authMiddleware.ts');
 
@@ -72,7 +79,10 @@ export const requireAuth: RequestHandler = (
   // it wasn't tampered with) and the expiration (to make sure it's still fresh). If everything
   // checks out, we attach the decoded user info to the request so downstream handlers can use it.
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    // Verify the token using our validated JWT secret
+    // The secret comes from our validated environment configuration, so we know it's
+    // present and at least 32 characters (for security) before we try to use it
+    const decoded = jwt.verify(token, JWT_SECRET);
     console.log(
       '✅ JWT validated for user:',
       (decoded as any).githubUsername || 'unknown'

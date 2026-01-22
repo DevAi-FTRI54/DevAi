@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { JWT_SECRET } from '../config/env.validation.js';
 
 interface TeamAuthenticatedRequest extends Request {
   user: jwt.JwtPayload | string;
@@ -52,7 +53,8 @@ export const requireTeamAuth: RequestHandler = (
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    // Verify token using validated JWT secret from environment configuration
+    const decoded = jwt.verify(token, JWT_SECRET);
     console.log('✅ User JWT authenticated for training operations');
 
     (req as TeamAuthenticatedRequest).user = decoded;
