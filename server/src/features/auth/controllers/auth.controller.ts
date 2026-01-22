@@ -390,16 +390,28 @@ export const getGitHubUserOrgs = async (
         headers,
       });
 
+      // If GitHub returns a 401, it means our token isn't valid anymore. This could happen for a few reasons:
+      // - The user revoked access in their GitHub settings (they're allowed to do that!)
+      // - The token expired (rare for GitHub tokens, but it can happen)
+      // - The token got corrupted somehow during storage or transmission
+      // 
+      // Whatever the reason, we want to be helpful about it. Let's grab the actual error message from GitHub
+      // so we can give the user (and ourselves in the logs) a clear picture of what went wrong.
       if (userResponse.status === 401) {
-        // Get the actual error response from GitHub to understand why it failed
+        // GitHub usually sends back a helpful error message explaining what went wrong.
+        // Let's grab that so we can pass it along to the user in a friendly way.
         const errorBody = await userResponse.text();
         let errorDetails;
         try {
           errorDetails = JSON.parse(errorBody);
         } catch {
+          // Sometimes GitHub sends plain text instead of JSON - that's okay, we'll work with what we get!
           errorDetails = { message: errorBody };
         }
         
+        // Log all the details we can gather - this helps us debug issues when users report problems.
+        // We're logging the token prefix (not the full token for security!) and length to help diagnose
+        // if there's a pattern with certain token formats or lengths.
         console.warn('⚠️ GitHub token is invalid or expired:', {
           status: userResponse.status,
           statusText: userResponse.statusText,
@@ -408,7 +420,10 @@ export const getGitHubUserOrgs = async (
           tokenLength: githubToken.length,
         });
         
-        // Clear cookie
+        // Since the token is invalid, we should clean up the cookie on the user's browser.
+        // This prevents them from getting stuck in a loop trying to use a bad token.
+        // Important: the path must match exactly what we used when setting the cookie, otherwise
+        // the browser won't clear it properly. It's like needing the exact key for a lock!
         res.clearCookie('github_access_token', {
           httpOnly: true,
           secure: true,
@@ -416,7 +431,9 @@ export const getGitHubUserOrgs = async (
           path: '/', // Must match the path used when setting the cookie
         });
         
-        // Return a more informative error
+        // Throw a helpful error that explains what happened. The frontend will catch this and
+        // redirect the user to login so they can get a fresh token. It's like politely asking
+        // them to refresh their credentials rather than leaving them confused!
         throw new Error(
           `GitHub token expired or invalid: ${errorDetails.message || 'Please reauthenticate'}`
         );

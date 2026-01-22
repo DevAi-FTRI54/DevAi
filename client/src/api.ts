@@ -67,48 +67,77 @@ export async function completeAuth(code: string) {
   return data;
 }
 
-//* orgselector.tsx
+/**
+ * Fetches the user's GitHub organizations so they can pick which one to work with.
+ * 
+ * This function is used by the org selector component to show the user all the organizations
+ * they have access to. We're being smart about token handling here - we can accept a token
+ * as a parameter (useful for testing or special cases), but we'll also check localStorage
+ * as a fallback. This dual approach helps us work better with Safari, which can be picky
+ * about how it handles cookies and localStorage.
+ * 
+ * @param token - Optional GitHub token. If not provided, we'll check localStorage instead.
+ * @returns Promise resolving to an array of organizations the user can access
+ */
 export async function getUserOrgs(
   token?: string
 ): Promise<{ id: number; login: string }[]> {
-  // Get token from parameter or localStorage (for Safari compatibility)
+  // Get the token from wherever we can find it - parameter first (if provided), then localStorage.
+  // This flexibility helps us work around Safari's sometimes-unpredictable localStorage behavior.
   const githubToken = token || localStorage.getItem('githubToken');
 
-  // Validate token format before making request
+  // Before we make any API calls, let's make sure we have a valid-looking token.
+  // GitHub tokens are typically 40+ characters, so if we see something shorter than 20,
+  // it's probably corrupted or incomplete. Better to catch this early and ask the user
+  // to log in again rather than making a doomed API call!
   if (githubToken && githubToken.length < 20) {
     console.error('❌ Invalid token format detected, clearing...');
+    // Clean up the bad tokens so we don't keep trying to use them
     localStorage.removeItem('githubToken');
     localStorage.removeItem('jwt');
+    // Send the user back to login - they'll need fresh credentials
     window.location.href = `/login?expired=true`;
     throw new Error('Invalid token format');
   }
 
   const headers: HeadersInit = {
-    'Cache-Control': 'no-cache',
+    'Cache-Control': 'no-cache', // We want fresh data, not cached org lists
   };
 
-  // Send token in Authorization header for Safari compatibility
+  // Safari has some quirks with cookies in cross-origin requests, so we send the token
+  // in the Authorization header as well. This gives us the best compatibility across
+  // all browsers. It's like having both a key and a backup key!
   if (githubToken) {
     headers.Authorization = `Bearer ${githubToken}`;
   }
 
   const res = await fetch(`${API_BASE_URL}/auth/orgs`, {
     method: 'GET',
-    credentials: 'include', // Still try to send cookies as fallback
+    credentials: 'include', // Still try to send cookies as fallback - belt and suspenders approach!
     headers,
   });
 
+  // If we get a 401, the token has expired or been revoked. This isn't necessarily an error
+  // on our part - users can revoke GitHub access anytime, or tokens can expire. Let's handle
+  // it gracefully by cleaning up and redirecting to login.
   if (res.status === 401) {
+    // Try to get a helpful error message from the backend, but don't fail if it's not JSON
     const errorData = await res.json().catch(() => ({ error: 'Token expired' }));
     console.warn('🔁 Token expired or invalid:', errorData);
+    // Clean house - remove the bad tokens
     localStorage.removeItem('githubToken');
     localStorage.removeItem('jwt');
+    // Send them back to login with a friendly message
     window.location.href = `/login?expired=true`;
     throw new Error(errorData.error || 'GitHub token expired — reauth required');
   }
 
+  // If something else went wrong, let the caller know
   if (!res.ok) throw new Error(`Failed to fetch orgs: ${res.statusText}`);
+  
   const data = await res.json();
+  // Make sure we got what we expected - an array of orgs. If not, something went wrong
+  // and we should let the caller know rather than returning unexpected data.
   if (!Array.isArray(data)) throw new Error('Invalid orgs response');
   return data;
 }
@@ -305,56 +334,97 @@ export async function logoutUser(): Promise<void> {
   });
 }
 
-//* Chatwrap helper function
+/**
+ * This helpful function retrieves the GitHub token from wherever we can find it!
+ * 
+ * Here's the situation: Safari can sometimes clear localStorage (especially in private browsing
+ * mode or after certain security events), but it's usually more reliable with cookies. So we have
+ * a smart two-step approach:
+ * 
+ * 1. First, we check localStorage - it's the fastest path and works great in most browsers.
+ *    If we find it there, we're done! No need to make a network request.
+ * 
+ * 2. If localStorage comes up empty (maybe Safari cleared it, or maybe it was never there),
+ *    we ask our backend for the token. The backend stores it in HTTP-only cookies, which Safari
+ *    treats much more reliably. It's like having a backup copy in a safer location!
+ * 
+ * Once we get the token from the backend, we try to store it in localStorage again for next time.
+ * If that fails (maybe the user is in strict privacy mode), that's okay - we still have the token
+ * to use right now, and we'll just fetch it from the backend again next time.
+ * 
+ * This function is used throughout the app whenever we need the GitHub token, ensuring we always
+ * have a reliable way to get it regardless of browser quirks!
+ * 
+ * @returns Promise resolving to the GitHub access token
+ */
 export async function getGithubToken(): Promise<string> {
-  // First, check if we have token in localStorage (fastest path)
+  // First, let's check localStorage - it's the fastest path and works great in most browsers.
+  // If we find the token here, we can return it immediately without making any network requests.
+  // It's like checking your pocket for your keys before looking in the drawer!
   const cachedToken = localStorage.getItem('githubToken');
   if (cachedToken) {
     console.log('✅ Using cached GitHub token from localStorage');
     return cachedToken;
   }
 
-  // If not in localStorage (Safari might have cleared it), try to get from backend
-  // Backend has it in cookies which Safari preserves better
+  // Hmm, localStorage came up empty. This could happen for a few reasons:
+  // - Safari cleared it (it does this sometimes, especially in private browsing)
+  // - The user just logged in and the token hasn't been stored yet
+  // - The token was manually cleared
+  // 
+  // No worries though! Our backend has a backup copy stored in HTTP-only cookies, which Safari
+  // treats much more reliably. Let's ask the backend nicely for the token.
   console.log('⚠️ Token not in localStorage, fetching from backend...');
 
   const res = await fetch(`${API_BASE_URL}/auth/github-token`, {
-    credentials: 'include', // Send cookies (Safari preserves these better)
+    credentials: 'include', // Send cookies (Safari preserves these better than localStorage)
     headers: {
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache', // We want fresh data, not a cached response
     },
   });
 
+  // If we get a 401, the token has expired or been revoked. This isn't necessarily a problem
+  // with our code - users can revoke GitHub access anytime. Let's handle it gracefully by
+  // cleaning up and redirecting to login so they can get a fresh token.
   if (res.status === 401) {
     console.warn('🔁 Token expired, clearing localStorage...');
+    // Clean up any stale tokens we might have
     localStorage.removeItem('githubToken');
     localStorage.removeItem('jwt');
-    // Redirect to login after a short delay to show error message
+    // Give the user a moment to see any error message, then redirect to login
+    // The delay helps prevent jarring immediate redirects
     setTimeout(() => {
       window.location.href = `/login?expired=true`;
     }, 2000);
     throw new Error('GitHub token expired — reauth required');
   }
 
+  // If something else went wrong (network error, server error, etc.), let the caller know
   if (!res.ok) {
     throw new Error('Failed to get token: ' + res.statusText);
   }
 
   const data = await res.json();
+  // Make sure we actually got a token in the response - better to fail fast than return undefined!
   if (!data.token) {
     throw new Error('No GitHub token in response');
   }
 
-  // Store token in localStorage for future use (Safari might have cleared it)
+  // Great! We got the token from the backend. Now let's try to store it in localStorage for
+  // next time. This way, future calls can use the fast localStorage path instead of making
+  // a network request. If storing fails (maybe the user is in strict privacy mode), that's
+  // okay - we still have the token to use right now, and we'll just fetch it again next time.
   try {
     localStorage.setItem('githubToken', data.token);
     console.log('✅ Token retrieved from backend and stored in localStorage');
   } catch (storageError) {
+    // This can happen in Safari's strict privacy mode or if localStorage is disabled.
+    // It's not a critical error - we still have the token to use, we just can't cache it.
     console.warn(
       '⚠️ Failed to store token in localStorage (Safari privacy mode?):',
       storageError
     );
-    // Continue anyway - we have the token to use
+    // Continue anyway - we have the token to use right now, and that's what matters!
   }
 
   return data.token;

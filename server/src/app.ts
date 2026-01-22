@@ -112,6 +112,20 @@ app.get('/', (req, res) => {
   });
 });
 
+/**
+ * Health check endpoint - this is how deployment platforms (like Render) check if our server is alive.
+ * 
+ * Here's the thing: deployment platforms are like concerned parents checking if you're okay.
+ * They ping this endpoint, and if it doesn't return a 200 status, they think something's wrong
+ * and might restart the service or mark it as unhealthy. 
+ * 
+ * The tricky part is that MongoDB might still be connecting when the server first starts up,
+ * but that doesn't mean the server itself is broken - it's just still getting ready! So we
+ * always return 200 here to keep the deployment platform happy, but we still include the MongoDB
+ * status in the response body so monitoring tools can see the real state of things.
+ * 
+ * It's like saying "I'm here and functioning!" even if we're still putting on our shoes.
+ */
 app.get('/api/health', (req, res) => {
   const health = {
     mongodb: mongoose.connection.readyState === 1,
@@ -124,7 +138,20 @@ app.get('/api/health', (req, res) => {
   res.status(200).json(health);
 });
 
-// Keep-alive endpoint to prevent service from going idle on Render free tier
+/**
+ * Keep-alive endpoint - a simple way to prevent our service from going to sleep!
+ * 
+ * Render's free tier has a feature where services "spin down" after 15 minutes of inactivity
+ * to save resources. That's great for cost savings, but it means the first request after idle
+ * time can be slow (cold start). 
+ * 
+ * This endpoint is designed to be pinged periodically (every 5-10 minutes) by an external
+ * service like UptimeRobot or cron-job.org. It's like a gentle nudge saying "Hey, I'm still
+ * here!" so the service stays warm and ready to respond quickly to real user requests.
+ * 
+ * It's a simple endpoint that just confirms we're alive - no heavy lifting, just a friendly
+ * wave to keep the service awake!
+ */
 app.get('/api/keep-alive', (req, res) => {
   res.status(200).json({
     status: 'alive',
