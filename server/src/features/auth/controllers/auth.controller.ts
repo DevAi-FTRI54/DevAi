@@ -391,14 +391,35 @@ export const getGitHubUserOrgs = async (
       });
 
       if (userResponse.status === 401) {
-      console.warn('⚠️ GitHub token is invalid or expired — clearing cookie');
-      res.clearCookie('github_access_token', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        // Get the actual error response from GitHub to understand why it failed
+        const errorBody = await userResponse.text();
+        let errorDetails;
+        try {
+          errorDetails = JSON.parse(errorBody);
+        } catch {
+          errorDetails = { message: errorBody };
+        }
+        
+        console.warn('⚠️ GitHub token is invalid or expired:', {
+          status: userResponse.status,
+          statusText: userResponse.statusText,
+          errorDetails,
+          tokenPrefix: githubToken.substring(0, 10),
+          tokenLength: githubToken.length,
+        });
+        
+        // Clear cookie
+        res.clearCookie('github_access_token', {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
           path: '/', // Must match the path used when setting the cookie
         });
-        throw new Error('GitHub token expired or invalid — please reauthenticate');
+        
+        // Return a more informative error
+        throw new Error(
+          `GitHub token expired or invalid: ${errorDetails.message || 'Please reauthenticate'}`
+        );
       }
 
       if (!userResponse.ok) {
@@ -486,6 +507,16 @@ export const getGitHubUserOrgs = async (
       `❌ [ORGS] Error after ${Date.now() - startTime}ms:`,
       err.message
     );
+    
+    // Return 401 for token expiration/invalid errors
+    if (err.message?.includes('expired') || err.message?.includes('invalid')) {
+      res.status(401).json({ 
+        error: err.message || 'GitHub token expired or invalid — please reauthenticate',
+        detail: err.message 
+      });
+      return;
+    }
+    
     res
       .status(500)
       .json({ error: 'Failed to fetch orgs', detail: err.message });

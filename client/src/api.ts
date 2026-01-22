@@ -74,6 +74,15 @@ export async function getUserOrgs(
   // Get token from parameter or localStorage (for Safari compatibility)
   const githubToken = token || localStorage.getItem('githubToken');
 
+  // Validate token format before making request
+  if (githubToken && githubToken.length < 20) {
+    console.error('❌ Invalid token format detected, clearing...');
+    localStorage.removeItem('githubToken');
+    localStorage.removeItem('jwt');
+    window.location.href = `/login?expired=true`;
+    throw new Error('Invalid token format');
+  }
+
   const headers: HeadersInit = {
     'Cache-Control': 'no-cache',
   };
@@ -90,11 +99,12 @@ export async function getUserOrgs(
   });
 
   if (res.status === 401) {
-    console.warn('🔁 Token expired, redirecting to login...');
+    const errorData = await res.json().catch(() => ({ error: 'Token expired' }));
+    console.warn('🔁 Token expired or invalid:', errorData);
     localStorage.removeItem('githubToken');
     localStorage.removeItem('jwt');
     window.location.href = `/login?expired=true`;
-    throw new Error('GitHub token expired — reauth required');
+    throw new Error(errorData.error || 'GitHub token expired — reauth required');
   }
 
   if (!res.ok) throw new Error(`Failed to fetch orgs: ${res.statusText}`);
