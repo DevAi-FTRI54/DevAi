@@ -17,6 +17,7 @@ import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
 import trainingRoutes from './features/training/training.routes.js';
+import { apiLimiter, authLimiter, queryLimiter } from './middleware/rateLimiter.js';
 
 const app = express();
 
@@ -166,6 +167,18 @@ app.get('/api/keep-alive', (req, res) => {
     message: 'Service is active',
   });
 });
+
+// --- Apply Rate Limiting ---------------------------------------
+// Apply general rate limiter to all API routes
+// This protects us from abuse while still allowing normal usage
+app.use('/api', apiLimiter);
+
+// Apply stricter rate limiters to specific routes
+// Authentication endpoints get extra protection against brute force attacks
+app.use('/api/auth', authLimiter);
+
+// Query endpoints (AI operations) get moderate limits to prevent cost spikes
+app.use('/api/query', queryLimiter);
 
 // --- Define routes ---------------------------------------------
 // Repo route
