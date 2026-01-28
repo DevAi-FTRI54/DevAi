@@ -31,7 +31,7 @@ DevAI is an AI-assisted codebase exploration tool. After you connect a GitHub re
 
 If available, the app has been deployed at `https://www.dev-ai.app/`.
 
-> Note: deployments that run on free tiers may take a moment to “wake up” after inactivity.
+> Note: the demo may take a few seconds to "wake up" on first load if the backend has been idle.
 
 ---
 
@@ -197,7 +197,4 @@ This `main` branch does not include a dedicated automated test suite yet. A prac
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
