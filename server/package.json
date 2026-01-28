@@ -35,6 +35,7 @@
     "nodemon": "^3.1.10",
     "octokit": "^5.0.3",
     "simple-git": "^3.27.0",
+    "winston": "^3.19.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

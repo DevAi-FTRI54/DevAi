@@ -1,6 +1,11 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { JWT_SECRET } from '../config/env.validation.js';
+import {
+  FINE_TUNING_TOKEN,
+  INTERNAL_TEAM_TOKEN,
+  JWT_SECRET,
+} from '../config/env.validation.js';
+import { logger } from '../utils/logger.js';
 
 interface TeamAuthenticatedRequest extends Request {
   user: jwt.JwtPayload | string;
@@ -14,7 +19,7 @@ interface TeamAuthenticatedRequest extends Request {
 export const requireTeamAuth: RequestHandler = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   // Check for team token in header first
   const authHeader = req.headers.authorization;
@@ -25,16 +30,18 @@ export const requireTeamAuth: RequestHandler = (
   // Team token for internal operations
   if (teamToken) {
     const validTeamTokens = [
-      process.env.INTERNAL_TEAM_TOKEN,
-      process.env.FINE_TUNING_TOKEN,
+      INTERNAL_TEAM_TOKEN,
+      FINE_TUNING_TOKEN,
       // Add more team tokens as needed
     ].filter(Boolean);
 
-    console.log('🔍 Debug - Team token received:', teamToken);
-    console.log('🔍 Debug - Valid team tokens:', validTeamTokens);
+    logger.debug('🔍 Team token auth attempt', {
+      hasTeamToken: true,
+      validTeamTokensConfigured: validTeamTokens.length,
+    });
 
     if (validTeamTokens.includes(teamToken)) {
-      console.log('✅ Team token authenticated for training operations');
+      logger.info('✅ Team token authenticated for training operations');
       (req as TeamAuthenticatedRequest).isTeamMember = true;
       (req as TeamAuthenticatedRequest).user = {
         role: 'team',
@@ -55,12 +62,16 @@ export const requireTeamAuth: RequestHandler = (
   try {
     // Verify token using validated JWT secret from environment configuration
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('✅ User JWT authenticated for training operations');
+    logger.debug('✅ User JWT authenticated for training operations');
 
     (req as TeamAuthenticatedRequest).user = decoded;
     (req as TeamAuthenticatedRequest).isTeamMember = false;
     next();
   } catch (err) {
+    logger.warn('❌ Training/team auth JWT failed', {
+      url: req.originalUrl,
+      ip: req.ip,
+    });
     res.status(403).json({ message: 'Invalid or expired token' });
   }
 };

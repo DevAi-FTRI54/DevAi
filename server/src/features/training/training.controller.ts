@@ -5,6 +5,7 @@ import { requireAuth } from '../../middleware/authMiddleware.js';
 import { requireTeamAuth } from '../../middleware/teamAuthMiddleware.js';
 import { Citations } from '../../models/conversation.model.js';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Helper function to extract and count training pairs efficiently
@@ -30,7 +31,7 @@ const extractTrainingPairs = async (options: {
   // Filter conversations based on timestamp if provided
   const filteredConversations = lastDataTimestamp
     ? conversations.filter((conv) =>
-        conv.messages.some((msg: any) => msg.timestamp > lastDataTimestamp)
+        conv.messages.some((msg: any) => msg.timestamp > lastDataTimestamp),
       )
     : conversations;
 
@@ -38,7 +39,7 @@ const extractTrainingPairs = async (options: {
   const allMessages = filteredConversations.flatMap((conv) =>
     conv.messages
       .filter(
-        (msg: any) => !lastDataTimestamp || msg.timestamp > lastDataTimestamp
+        (msg: any) => !lastDataTimestamp || msg.timestamp > lastDataTimestamp,
       )
       .map((msg: any) => ({
         role: msg.role,
@@ -48,7 +49,7 @@ const extractTrainingPairs = async (options: {
         sessionId: conv.sessionId,
         repoUrl: conv.repoUrl,
         userId: conv.userId,
-      }))
+      })),
   );
 
   const trainingPairs = [];
@@ -91,7 +92,7 @@ const extractTrainingPairs = async (options: {
           .filter(
             (msg) =>
               msg.sessionId === currentMsg.sessionId &&
-              msg.timestamp < currentMsg.timestamp
+              msg.timestamp < currentMsg.timestamp,
           )
           .slice(-4) // Last 4 messages for context
           .map((msg) => `${msg.role}: ${msg.content}`)
@@ -111,7 +112,7 @@ const extractTrainingPairs = async (options: {
                 (c: Citations) =>
                   `- ${c.file} (lines ${c.startLine}-${
                     c.endLine
-                  }): ${c.snippet.slice(0, 100)}...`
+                  }): ${c.snippet.slice(0, 100)}...`,
               )
               .join('\n')}`
           : '';
@@ -146,7 +147,7 @@ const extractTrainingPairs = async (options: {
  */
 export const checkTrainingReadiness = async (
   req: express.Request,
-  res: express.Response
+  res: express.Response,
 ): Promise<void> => {
   try {
     const minPairs = parseInt(req.query.min_pairs as string) || 200;
@@ -172,7 +173,7 @@ export const checkTrainingReadiness = async (
 
     res.json(response);
   } catch (error) {
-    console.error('❌ Error checking training readiness:', error);
+    logger.error('❌ Error checking training readiness', { error });
     res.status(500).json({ error: 'Failed to check training readiness' });
   }
 };
@@ -183,15 +184,16 @@ export const checkTrainingReadiness = async (
  */
 export const exportTrainingData = async (
   req: express.Request,
-  res: express.Response
+  res: express.Response,
 ): Promise<void> => {
   try {
     const minPairs = parseInt(req.query.min_pairs as string) || 200;
     const userId = req.query.user_id as string; // Optional: for user-specific export
 
-    console.log(
-      `📊 Exporting training data for ${userId ? '1 user' : 'all users'}`
-    );
+    logger.info(`📊 Exporting training data`, {
+      scope: userId ? 'user' : 'all',
+      userId,
+    });
 
     // Use helper to get full training pairs
     const result = await extractTrainingPairs({
@@ -237,12 +239,12 @@ export const exportTrainingData = async (
         averageInstructionLength: Math.round(
           result.trainingPairs.reduce(
             (sum, p) => sum + p.instruction.length,
-            0
-          ) / result.trainingPairs.length
+            0,
+          ) / result.trainingPairs.length,
         ),
         averageResponseLength: Math.round(
           result.trainingPairs.reduce((sum, p) => sum + p.response.length, 0) /
-            result.trainingPairs.length
+            result.trainingPairs.length,
         ),
         uniqueUsers: uniqueUsers.length,
         uniqueRepos: uniqueRepos.length,
@@ -251,16 +253,14 @@ export const exportTrainingData = async (
       },
     };
 
-    console.log(
-      `✅ Exported ${result.trainingPairs.length} training pairs for global fine-tuning`
-    );
-    console.log(
-      `📈 Data spans ${uniqueUsers.length} users and ${uniqueRepos.length} repositories`
+    logger.info(
+      `✅ Exported ${result.trainingPairs.length} training pairs for fine-tuning`,
+      { uniqueUsers: uniqueUsers.length, uniqueRepos: uniqueRepos.length },
     );
 
     res.json(exportData);
   } catch (error) {
-    console.error('❌ Error exporting training data:', error);
+    logger.error('❌ Error exporting training data', { error });
     res.status(500).json({ error: 'Failed to export training data' });
   }
 };
@@ -271,7 +271,7 @@ export const exportTrainingData = async (
  */
 export const triggerTraining = async (
   req: express.Request,
-  res: express.Response
+  res: express.Response,
 ): Promise<void> => {
   try {
     // Check if we have enough data first
@@ -303,18 +303,18 @@ export const triggerTraining = async (
       // For manual execution:
       manualCommands: {
         export: `curl -X GET "${req.protocol}://${req.get(
-          'host'
+          'host',
         )}/api/training/export-data?min_pairs=${minPairs}" > training_data_${jobId}.json`,
         train: `python scripts/train.py --data training_data_${jobId}.json --output ./models/devai_${jobId}`,
         deploy: `ollama create devai-assistant-${jobId} -f ./models/devai_${jobId}/Modelfile`,
       },
     };
 
-    console.log(`🚀 Fine-tuning job triggered: ${jobId}`);
+    logger.info(`🚀 Fine-tuning job triggered: ${jobId}`);
 
     res.json(response);
   } catch (error) {
-    console.error('❌ Error triggering training:', error);
+    logger.error('❌ Error triggering training', { error });
     res.status(500).json({ error: 'Failed to trigger training' });
   }
 };
@@ -325,7 +325,7 @@ export const triggerTraining = async (
  */
 export const startTrainingRun = async (
   req: express.Request,
-  res: express.Response
+  res: express.Response,
 ): Promise<void> => {
   try {
     const minPairs = req.body.min_pairs || 200;
@@ -338,9 +338,9 @@ export const startTrainingRun = async (
     const lastDataTimestamp =
       lastTrainingRun?.lastDataTimestamp || new Date('2020-01-01');
 
-    console.log(
-      `📊 Checking for new data since last training run: ${lastDataTimestamp}`
-    );
+    logger.info(`📊 Checking for new data since last training run`, {
+      lastDataTimestamp,
+    });
 
     // Use helper to get new training pairs since last run
     const result = await extractTrainingPairs({
@@ -386,9 +386,10 @@ export const startTrainingRun = async (
 
     await trainingRun.save();
 
-    console.log(
-      `🚀 Training run started: ${runId} with ${result.pairCount} new pairs`
-    );
+    logger.info(`🚀 Training run started`, {
+      runId,
+      newPairs: result.pairCount,
+    });
 
     const response = {
       runId,
@@ -409,7 +410,7 @@ export const startTrainingRun = async (
         export: `curl -H "Authorization: Bearer TEAM_TOKEN" "${
           req.protocol
         }://${req.get(
-          'host'
+          'host',
         )}/api/training/export-data?min_pairs=${minPairs}&since_last_run=true" > training_data_${runId}.json`,
         train: `python scripts/train.py --data training_data_${runId}.json --output ./models/${modelVersion}`,
         deploy: `ollama create ${modelVersion} -f ./models/${modelVersion}/Modelfile`,
@@ -418,7 +419,7 @@ export const startTrainingRun = async (
 
     res.json(response);
   } catch (error) {
-    console.error('❌ Error starting training run:', error);
+    logger.error('❌ Error starting training run', { error });
     res.status(500).json({ error: 'Failed to start training run' });
   }
 };
@@ -429,7 +430,7 @@ export const startTrainingRun = async (
  */
 export const completeTrainingRun = async (
   req: express.Request,
-  res: express.Response
+  res: express.Response,
 ): Promise<void> => {
   try {
     const { runId, success, error } = req.body;
@@ -448,7 +449,7 @@ export const completeTrainingRun = async (
 
     const completedAt = new Date();
     const duration = Math.round(
-      (completedAt.getTime() - trainingRun.startedAt.getTime()) / 60000
+      (completedAt.getTime() - trainingRun.startedAt.getTime()) / 60000,
     ); // minutes
 
     trainingRun.status = success ? 'completed' : 'failed';
@@ -461,10 +462,9 @@ export const completeTrainingRun = async (
 
     await trainingRun.save();
 
-    console.log(
-      `${success ? '✅' : '❌'} Training run ${
-        success ? 'completed' : 'failed'
-      }: ${runId} (${duration}m)`
+    logger.info(
+      `${success ? '✅' : '❌'} Training run ${success ? 'completed' : 'failed'}`,
+      { runId, durationMinutes: duration },
     );
 
     res.json({
@@ -475,7 +475,7 @@ export const completeTrainingRun = async (
       modelVersion: trainingRun.modelVersion,
     });
   } catch (error) {
-    console.error('❌ Error completing training run:', error);
+    logger.error('❌ Error completing training run', { error });
     res.status(500).json({ error: 'Failed to complete training run' });
   }
 };

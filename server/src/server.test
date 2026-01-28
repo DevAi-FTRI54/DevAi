@@ -1,8 +1,10 @@
 import app from './app.js';
+import { PORT } from './config/env.validation.js';
+import { logger } from './utils/logger.js';
 
-const port = process.env.PORT || 4000;
+const port = PORT;
 
 app.listen(port, () => {
-  console.log('✅ App listening on port ${port}');
-  console.log('🏥 Health check: http://localhost:${port}/api/health');
+  logger.info(`✅ App listening on port ${port}`);
+  logger.info(`🏥 Health check: http://localhost:${port}/api/health`);
 });

@@ -1,5 +1,6 @@
 // GitHub API service for fetching repository content without cloning
 import { Octokit } from 'octokit';
+import { logger } from '../../utils/logger.js';
 export class GitHubApiService {
     octokit;
     constructor(accessToken) {
@@ -14,7 +15,7 @@ export class GitHubApiService {
     async fetchRepositoryContent(repoUrl, sha = 'HEAD') {
         const { owner, repo } = this.parseRepoUrl(repoUrl);
         const repoId = this.generateUniqueRepoId(repoUrl);
-        console.log(`🔍 Fetching content for ${owner}/${repo} at ${sha}`);
+        logger.info(`🔍 Fetching content for ${owner}/${repo} at ${sha}`);
         try {
             // Get the tree recursively
             const { data: tree } = await this.octokit.rest.git.getTree({
@@ -30,7 +31,7 @@ export class GitHubApiService {
                 !item.path.includes('dist/') &&
                 !item.path.includes('.d.ts') // Skip type definitions
             );
-            console.log(`📁 Found ${codeFiles.length} code files`);
+            logger.info(`📁 Found ${codeFiles.length} code files`);
             // Fetch content for each file
             const fileResults = await Promise.all(codeFiles.map(async (file) => {
                 try {
@@ -50,20 +51,20 @@ export class GitHubApiService {
                     };
                 }
                 catch (error) {
-                    console.warn(`⚠️ Failed to fetch ${file.path}:`, error);
+                    logger.warn(`⚠️ Failed to fetch ${file.path}`, { error });
                     return null;
                 }
             }));
             // Filter out failed fetches
             const validFiles = fileResults.filter((file) => file !== null);
-            console.log(`✅ Successfully fetched ${validFiles.length} files`);
+            logger.info(`✅ Successfully fetched ${validFiles.length} files`);
             return {
                 files: validFiles,
                 repoId,
             };
         }
         catch (error) {
-            console.error('❌ Failed to fetch repository content:', error);
+            logger.error('❌ Failed to fetch repository content', { error });
             throw new Error(`Failed to fetch repository: ${error}`);
         }
     }

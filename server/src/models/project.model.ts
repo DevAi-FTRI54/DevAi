@@ -1,8 +1,6 @@
 // Represents project metadata (e.g., repo path, indexing status) in the database.
 import mongoose, { Document, Schema } from 'mongoose';
 
-console.log('Loading project.model.ts');
-
 export interface IProject extends Document {
   user: mongoose.Types.ObjectId; //user type is objectID
   repoName: string;

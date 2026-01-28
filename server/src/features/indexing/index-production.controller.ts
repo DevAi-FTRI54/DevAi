@@ -1,19 +1,19 @@
 // Production-ready indexing controller
 import { Request, Response } from 'express';
 import { indexQueue } from './index-production.job.js';
+import { NODE_ENV } from '../../config/env.validation.js';
+import { logger } from '../../utils/logger.js';
 
 // Using BullMQ Queue & Worker with production support
 export const indexRepo = async (req: Request, res: Response) => {
   const { repoUrl, sha = 'HEAD' } = req.body;
 
-  console.log('\n--- indexRepo (Production Ready) ------');
-  console.log('repoUrl:', repoUrl);
-  console.log('sha:', sha);
+  logger.info('indexRepo requested', { repoUrl, sha });
 
   // Get GitHub access token from cookies (for production GitHub API access)
   const accessToken = req.cookies?.github_access_token;
 
-  if (process.env.NODE_ENV === 'production' && !accessToken) {
+  if (NODE_ENV === 'production' && !accessToken) {
     return res.status(401).json({
       error: 'GitHub access token required for production indexing',
       message: 'Please ensure you are logged in with GitHub',
@@ -29,11 +29,10 @@ export const indexRepo = async (req: Request, res: Response) => {
   try {
     const job = await indexQueue.add('index', jobData);
 
-    console.log('--- Job Created Successfully ------');
-    console.log({
+    logger.info('Index job created', {
       jobId: job.id,
       repoUrl,
-      environment: process.env.NODE_ENV || 'development',
+      environment: NODE_ENV,
       useGitHubAPI: !!accessToken,
     });
 
@@ -41,11 +40,11 @@ export const indexRepo = async (req: Request, res: Response) => {
       jobId: job.id,
       repoUrl,
       message: 'Repository ingestion started',
-      environment: process.env.NODE_ENV || 'development',
+      environment: NODE_ENV,
       method: accessToken ? 'GitHub API' : 'Local Clone',
     });
   } catch (error) {
-    console.error('❌ Failed to create indexing job:', error);
+    logger.error('❌ Failed to create indexing job', { error });
     res.status(500).json({
       error: 'Failed to start repository indexing',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -55,7 +54,7 @@ export const indexRepo = async (req: Request, res: Response) => {
 
 export const getJobStatus = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
@@ -74,15 +73,14 @@ export const getJobStatus = async (
       status: state,
       progress,
       data: job.data,
-      environment: process.env.NODE_ENV || 'development',
+      environment: NODE_ENV,
     };
 
-    console.log('--- Job Status ------');
-    console.log(jobProgress);
+    logger.debug('Index job status', jobProgress as any);
 
     res.json(jobProgress);
   } catch (error) {
-    console.error('❌ Failed to get job status:', error);
+    logger.error('❌ Failed to get job status', { error });
     res.status(500).json({
       error: 'Failed to get job status',
       message: error instanceof Error ? error.message : 'Unknown error',

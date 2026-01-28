@@ -1,8 +1,6 @@
 // Defines the User model schema and interface for MongoDB and TypeScript.
 import mongoose, { Document, Schema } from 'mongoose';
 
-console.log('Loading user.model.ts');
-
 export interface IUser extends Document {
   //allows Typescript to properly type User model
   githubId: string;
@@ -29,7 +27,7 @@ const userSchema = new mongoose.Schema<IUser>( //uses created typing from line 4
     //queries: [{ type: Schema.Types.ObjectId, ref: 'Query' }],
     //Array of documents of type ObjectID, each refers to a doc in Query collection;
   },
-  { timestamps: true } //created at + updated at, does both;
+  { timestamps: true }, //created at + updated at, does both;
 );
 
 const User = mongoose.model('User', userSchema);

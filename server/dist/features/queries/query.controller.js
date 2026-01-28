@@ -1,5 +1,6 @@
 import { answerQuestion } from './rag.service.js';
 import Conversation from '../../models/conversation.model.js';
+import { logger } from '../../utils/logger.js';
 export const askController = async (req, res) => {
     try {
         res.setHeader('Content-Type', 'text/event-stream');
@@ -8,6 +9,12 @@ export const askController = async (req, res) => {
         //res.setHeader('Access-Control-Allow-Origin', '*');
         const { url: repoUrl, prompt: question, type, sessionId } = req.body;
         const userId = req.user?.userId;
+        logger.debug('askController received question', {
+            repoUrl,
+            sessionId,
+            type,
+            userId,
+        });
         res.write(`data: ${JSON.stringify({
             type: 'status',
             message: 'Retrieving code...',
@@ -53,8 +60,7 @@ export const askController = async (req, res) => {
         res.end();
     }
     catch (err) {
-        console.log('--- Error inside askController ------------');
-        console.error(err);
+        logger.error('Error inside askController', { err });
         res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
         res.end();
     }
@@ -98,8 +104,7 @@ export const addMessage = async (req, res) => {
         res.json({ success: true });
     }
     catch (err) {
-        console.log('--- Error inside addMessage controller ------------');
-        console.error(err);
+        logger.error('Error inside addMessage controller', { err });
         res.status(500).json({ error: err.message });
     }
 };

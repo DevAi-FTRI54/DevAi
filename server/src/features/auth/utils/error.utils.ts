@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { logger } from '../../../utils/logger.js';
 
 // Custom error for GitHub API failures
 export class GitHubApiError extends Error {
@@ -17,9 +18,9 @@ export class GitHubApiError extends Error {
 export function handleApiError(
   error: any,
   res: Response,
-  context: string = 'API error'
+  context: string = 'API error',
 ): void {
-  console.error(`❌ ${context}:`, error);
+  logger.error(`❌ ${context}`, { error });
 
   // Check if response was already sent
   if (res.headersSent) {

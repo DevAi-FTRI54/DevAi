@@ -1,6 +1,5 @@
 // Represents project metadata (e.g., repo path, indexing status) in the database.
 import mongoose, { Schema } from 'mongoose';
-console.log('Loading project.model.ts');
 const projectSchema = new Schema({
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     repoName: { type: String, required: true },

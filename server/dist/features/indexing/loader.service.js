@@ -4,6 +4,7 @@ import { Project, } from 'ts-morph';
 import fs from 'fs/promises';
 import path from 'path';
 import { glob } from 'glob';
+import { logger } from '../../utils/logger.js';
 /**
  * https://js.langchain.com/docs/tutorials/rag/
  * https://js.langchain.com/docs/tutorials/qa_chat_history/
@@ -39,10 +40,10 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
         // Only add tsConfigFilePath if we found one
         if (tsConfigFilePath) {
             projectConfig.tsConfigFilePath = tsConfigFilePath;
-            console.log(`🔧 Using TypeScript config: ${tsConfigFilePath}`);
+            logger.debug(`🔧 Using TypeScript config: ${tsConfigFilePath}`);
         }
         else {
-            console.log(`🔧 No tsconfig found - using default TypeScript settings`);
+            logger.debug(`🔧 No tsconfig found - using default TypeScript settings`);
         }
         const project = new Project(projectConfig);
         const projectPath = this.repoPath;
@@ -58,8 +59,7 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
         });
         filePaths.map((file) => project.addSourceFileAtPath(file));
         const sourceFiles = project.getSourceFiles();
-        console.log(' --- project.getFileSystem() ---------');
-        console.log(project.getFileSystem());
+        // logger.debug('project file system', { fs: project.getFileSystem() });
         // STEP 3: Load the docs
         /* Document[] - langchain type
         
@@ -122,13 +122,13 @@ async function findTsConfigFile(repoPath) {
     for (const path of possiblePaths) {
         try {
             await fs.access(path);
-            console.log(`Found tsconfig.json: ${path}`);
+            logger.debug(`Found tsconfig.json: ${path}`);
             return path;
         }
         catch (err) {
             continue;
         }
     }
-    console.log(`⚠️  No tsconfig.json found in repository: ${repoPath}`);
+    logger.debug(`⚠️  No tsconfig.json found in repository: ${repoPath}`);
     return null;
 }

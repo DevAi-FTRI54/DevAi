@@ -1,6 +1,5 @@
 // Defines the User model schema and interface for MongoDB and TypeScript.
 import mongoose from 'mongoose';
-console.log('Loading user.model.ts');
 const userSchema = new mongoose.Schema(//uses created typing from line 4
 {
     githubId: { type: String, required: true, unique: true }, // GitHub unique user ID

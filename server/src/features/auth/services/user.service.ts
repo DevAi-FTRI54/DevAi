@@ -1,5 +1,6 @@
 import User from '../../../models/user.model.js';
 import mongoose from 'mongoose';
+import { logger } from '../../../utils/logger.js';
 
 // GitHub user profile interface
 interface GitHubUserProfile {
@@ -19,7 +20,10 @@ interface UserDocument extends mongoose.Document {
   accessToken: string;
 }
 
-export const findOrCreateUser = async (githubData: GitHubUserProfile, accessToken: string): Promise<UserDocument> => {
+export const findOrCreateUser = async (
+  githubData: GitHubUserProfile,
+  accessToken: string,
+): Promise<UserDocument> => {
   // Check if user exists
   let user = await User.findOne({ githubId: githubData.id.toString() });
 
@@ -33,11 +37,11 @@ export const findOrCreateUser = async (githubData: GitHubUserProfile, accessToke
       accessToken: accessToken,
     });
     await user.save();
-    console.log('✅ User created:', user.username);
+    logger.info('✅ User created', { username: user.username });
   } else {
     user.accessToken = accessToken;
     await user.save();
-    console.log('✅ User found:', user.username);
+    logger.info('✅ User found', { username: user.username });
   }
 
   return user;

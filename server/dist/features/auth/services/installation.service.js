@@ -1,8 +1,9 @@
 // GitHub App installation management
 import { GitHubApiError } from '../utils/error.utils.js';
-const APP_SLUG = process.env.GITHUB_APP_SLUG.toLowerCase();
-const APP_ID = Number(process.env.GITHUB_APP_ID);
-const REDIRECT_AFTER_INSTALL = process.env.REDIRECT_AFTER_INSTALL || 'http://localhost:5173/select-repo';
+import { GITHUB_APP_ID, GITHUB_APP_SLUG, REDIRECT_AFTER_INSTALL, FRONTEND_BASE_URL, } from '../../../config/env.validation.js';
+const APP_SLUG = GITHUB_APP_SLUG;
+const APP_ID = Number(GITHUB_APP_ID);
+const redirectAfterInstall = REDIRECT_AFTER_INSTALL || `${FRONTEND_BASE_URL}/select-repo`;
 // Get GitHub app installations for user
 export async function getAppInstallations(accessToken) {
     const response = await fetch('https://api.github.com/user/installations', {
@@ -32,7 +33,7 @@ export function checkIfAppInstalled(installations) {
 // Get GitHub App installation URL
 export function getAppInstallationUrl() {
     // return `https://github.com/apps/${APP_SLUG}/installations/new?redirect_url=${encodeURIComponent(
-    //   REDIRECT_AFTER_INSTALL
+    //   redirectAfterInstall
     // )}`;
     // ✅ Always force new installation flow, don't go to settings
     return `https://github.com/apps/${APP_SLUG}/installations/new?state=force_new`;

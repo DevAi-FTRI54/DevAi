@@ -1,6 +1,6 @@
 /**
  * Authentication Middleware
- * 
+ *
  * This middleware verifies JWT tokens and attaches user data to requests for protected routes.
  * It's like a security guard checking IDs at the door - if you have a valid token, you get in;
  * if not, you're politely asked to authenticate first.
@@ -8,8 +8,9 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { JWT_SECRET } from '../config/env.validation.js';
+import { logger } from '../utils/logger.js';
 
-console.log('Loading authMiddleware.ts');
+logger.debug('Loading authMiddleware.ts');
 
 //Local Dev Testing, not meant for online app use
 
@@ -36,7 +37,7 @@ interface AuthenticatedRequest extends Request {
  * This middleware is like a friendly bouncer at a club - it checks if you have a valid ticket (JWT token)
  * before letting you into protected routes. But unlike a real bouncer, we're nice about it and give
  * you helpful feedback if something's wrong!
- * 
+ *
  * We're flexible about where the token comes from - we check the Authorization header first (which
  * works great with Safari and modern browsers), but we'll also accept it from cookies as a fallback.
  * This dual approach helps us work smoothly across different browsers and scenarios.
@@ -44,7 +45,7 @@ interface AuthenticatedRequest extends Request {
 export const requireAuth: RequestHandler = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   // Safari can be a bit particular about cookies in cross-origin requests, so we check the
   // Authorization header first. This is the modern, recommended way to send tokens anyway,
@@ -57,20 +58,23 @@ export const requireAuth: RequestHandler = (
     // Found it in the header! This is the preferred method, especially for Safari compatibility.
     // We extract just the token part (everything after "Bearer ")
     token = authHeader.substring(7);
-    console.log('🔑 Using JWT from Authorization header');
+    logger.debug('🔑 Using JWT from Authorization header');
   } else {
     // No header? No problem! Let's check cookies as a fallback. This helps with browsers
     // that handle cookies well and provides a smooth experience for users.
     token = req.cookies.token;
     if (token) {
-      console.log('🍪 Using JWT from cookie');
+      logger.debug('🍪 Using JWT from cookie');
     }
   }
 
   // If we couldn't find a token anywhere, we need to let the user know they need to authenticate.
   // We're polite about it - just a friendly "hey, you need to log in first" message.
   if (!token) {
-    console.log('❌ No JWT token found in header or cookie');
+    logger.warn('❌ No JWT token found in header or cookie', {
+      url: req.originalUrl,
+      ip: req.ip,
+    });
     res.status(401).json({ message: 'Missing auth token' });
     return;
   }
@@ -83,17 +87,22 @@ export const requireAuth: RequestHandler = (
     // The secret comes from our validated environment configuration, so we know it's
     // present and at least 32 characters (for security) before we try to use it
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log(
-      '✅ JWT validated for user:',
-      (decoded as any).githubUsername || 'unknown'
-    );
+    logger.debug('✅ JWT validated', {
+      user: (decoded as any).githubUsername || 'unknown',
+      url: req.originalUrl,
+    });
 
     // Attach the decoded user info to the request - this is like giving the user a name tag
     // so other parts of the app know who they are!
     (req as AuthenticatedRequest).user = decoded;
     next(); // All good! Let them through to the protected route.
   } catch (err: any) {
-    console.log('❌ JWT validation failed:', err.message);
+    logger.warn('❌ JWT validation failed:', {
+      error: err.message,
+      errorName: err.name,
+      url: req.originalUrl,
+      ip: req.ip,
+    });
     // If the token expired, we want to be helpful and tell the user when it expired.
     // This gives them context about why they need to log in again - it's not a bug,
     // it's just time for a fresh token!

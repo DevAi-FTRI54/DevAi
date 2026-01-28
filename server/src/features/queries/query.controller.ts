@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import { answerQuestion } from './rag.service.js';
 import Conversation from '../../models/conversation.model.js';
 import { OpenAIError } from 'openai';
+import { logger } from '../../utils/logger.js';
 
 import { QdrantVectorStore } from '@langchain/qdrant';
 import Query from '../../models/query.model.js';
@@ -10,7 +11,7 @@ import User from '../../models/user.model.js';
 
 export const askController = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -21,12 +22,18 @@ export const askController = async (
     const { url: repoUrl, prompt: question, type, sessionId } = req.body;
 
     const userId = (req as any).user?.userId;
+    logger.debug('askController received question', {
+      repoUrl,
+      sessionId,
+      type,
+      userId,
+    });
 
     res.write(
       `data: ${JSON.stringify({
         type: 'status',
         message: 'Retrieving code...',
-      })}\n\n`
+      })}\n\n`,
     );
 
     const response = await answerQuestion(repoUrl, question, type, sessionId);
@@ -40,7 +47,7 @@ export const askController = async (
     for (let i = 0; i < words.length; i += chunkSize) {
       const chunk = words.slice(i, i + chunkSize).join(' ');
       res.write(
-        `data: ${JSON.stringify({ type: 'answer_chunk', content: chunk })}\n\n`
+        `data: ${JSON.stringify({ type: 'answer_chunk', content: chunk })}\n\n`,
       );
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
@@ -50,7 +57,7 @@ export const askController = async (
         type: 'citations',
         data: citations,
         question: question,
-      })}\n\n`
+      })}\n\n`,
     );
     res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
     await Conversation.updateOne(
@@ -77,16 +84,15 @@ export const askController = async (
           sessionId,
         },
       },
-      { upsert: true }
+      { upsert: true },
     );
 
     res.end();
   } catch (err: any) {
-    console.log('--- Error inside askController ------------');
-    console.error(err);
+    logger.error('Error inside askController', { err });
 
     res.write(
-      `data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`
+      `data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`,
     );
     res.end();
   }
@@ -107,7 +113,7 @@ export const askController = async (
 
 export const addMessage = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { sessionId, role, content, repoUrl } = req.body;
   const userId = (req as any).user?.userId;
@@ -135,13 +141,12 @@ export const addMessage = async (
           sessionId,
         },
       },
-      { upsert: true }
+      { upsert: true },
     );
 
     res.json({ success: true });
   } catch (err: any) {
-    console.log('--- Error inside addMessage controller ------------');
-    console.error(err);
+    logger.error('Error inside addMessage controller', { err });
 
     res.status(500).json({ error: err.message });
   }

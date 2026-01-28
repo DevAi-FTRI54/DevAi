@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import Conversation from '../../models/conversation.model.js';
 import path from 'path';
+import { MONGODB_URI } from '../../config/env.validation.js';
+import { logger } from '../../utils/logger.js';
 
 const conversationPairs = [
   {
@@ -83,7 +85,7 @@ const conversationPairs = [
         startLine: 1,
         endLine: 15,
         snippet:
-          "const mongoose = require('mongoose'); mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });",
+          "const mongoose = require('mongoose'); mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });",
       },
     ],
   },
@@ -111,7 +113,7 @@ const conversationPairs = [
         startLine: 5,
         endLine: 20,
         snippet:
-          'const requestLogger = (req, res, next) => { const start = Date.now(); console.log(`${req.method} ${req.url} - ${new Date().toISOString()}`); }',
+          'const requestLogger = (req, res, next) => { const start = Date.now(); logger.info(`${req.method} ${req.url} - ${new Date().toISOString()}`); }',
       },
     ],
   },
@@ -147,12 +149,9 @@ const conversationPairs = [
 
 async function createSampleData(): Promise<void> {
   try {
-    // Connect to MongoDB using the production connection string
-    const mongoUri =
-      process.env.MONGO_URI ||
-      'mongodb+srv://ershankman:OmfLabBfAmk5E1fa@devai.mmwutzd.mongodb.net/devai?retryWrites=true&w=majority';
-    await mongoose.connect(mongoUri);
-    console.log('✅ Connected to MongoDB');
+    // Connect to MongoDB using validated env var (no hardcoded credentials in code)
+    await mongoose.connect(MONGODB_URI);
+    logger.info('✅ Connected to MongoDB');
 
     const users = ['user_1', 'user_2', 'user_3', 'user_4'];
     const repos = [
@@ -192,14 +191,14 @@ async function createSampleData(): Promise<void> {
 
       await conversation.save();
       created++;
-      console.log(`✅ Created conversation ${created}: ${sessionId}`);
+      logger.info(`✅ Created conversation ${created}: ${sessionId}`);
     }
 
-    console.log(`🎉 Successfully created ${created} training conversations!`);
+    logger.info(`🎉 Successfully created ${created} training conversations!`);
 
     // Verify the data
     const total = await Conversation.countDocuments({});
-    console.log(`📊 Total conversations in database: ${total}`);
+    logger.info(`📊 Total conversations in database: ${total}`);
 
     // Check training pairs specifically
     const trainingPairs = await Conversation.aggregate([
@@ -215,14 +214,14 @@ async function createSampleData(): Promise<void> {
       { $count: 'totalPairs' },
     ]);
 
-    console.log(
-      `🎯 Training pairs available: ${trainingPairs[0]?.totalPairs || 0}`
+    logger.info(
+      `🎯 Training pairs available: ${trainingPairs[0]?.totalPairs || 0}`,
     );
 
     await mongoose.connection.close();
-    console.log('✅ Database connection closed');
+    logger.info('✅ Database connection closed');
   } catch (error) {
-    console.error('❌ Error:', error);
+    logger.error('❌ Error creating sample data', { error });
     process.exit(1);
   }
 }

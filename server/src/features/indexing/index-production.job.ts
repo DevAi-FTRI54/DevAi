@@ -1,10 +1,10 @@
 /**
  * Production Indexing Job Worker
- * 
+ *
  * This is a production-optimized version of the indexing worker that uses GitHub API
  * to fetch files directly instead of cloning repositories locally. This is more efficient
  * for cloud deployments where we don't have persistent storage for cloned repos.
- * 
+ *
  * The worker processes repository indexing jobs asynchronously, handling:
  * - Fetching repository files via GitHub API
  * - Loading and parsing code files
@@ -21,8 +21,9 @@ import { InMemoryCodeLoader } from './memory-loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import { upsert } from './vector.service.js';
 import { REDIS_URL, NODE_ENV } from '../../config/env.validation.js';
+import { logger } from '../../utils/logger.js';
 
-console.log('🔍 REDIS_URL:', REDIS_URL ? 'Set' : 'Missing');
+logger.info('🔍 REDIS_URL', { configured: !!REDIS_URL });
 
 // Create Redis client with validated URL
 const redisClient = new IORedis(REDIS_URL, {
@@ -34,8 +35,7 @@ export const indexQueue = new Queue('index', {
 });
 
 // Determine if we're in production or development
-const isProduction =
-  NODE_ENV === 'production';
+const isProduction = NODE_ENV === 'production';
 
 // --- Worker ------------------------------------------------------------
 // Production worker with error handling - supports both GitHub API and local cloning
@@ -44,93 +44,92 @@ const worker = new Worker(
   async (job: Job<{ repoUrl: string; sha: string; accessToken?: string }>) => {
     // Wrap everything in try-catch to catch and log all errors
     try {
-    const { repoUrl, sha, accessToken } = job.data;
+      const { repoUrl, sha, accessToken } = job.data;
 
-    console.log(`🚀 Starting indexing job for ${repoUrl}`);
-    console.log(
-      `🏗️ Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`
-    );
+      logger.info(`🚀 Starting indexing job for ${repoUrl}`, {
+        environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+      });
 
-    let bigDocs;
-    let repoId;
-    let repoName;
+      let bigDocs;
+      let repoId;
+      let repoName;
 
-    if (isProduction && accessToken) {
-      // PRODUCTION: Use GitHub API (no local cloning)
-      console.log('📡 Using GitHub API approach (production)');
+      if (isProduction && accessToken) {
+        // PRODUCTION: Use GitHub API (no local cloning)
+        logger.info('📡 Using GitHub API approach (production)');
 
-      const githubService = new GitHubApiService(accessToken);
-      const { files, repoId: apiRepoId } =
-        await githubService.fetchRepositoryContent(repoUrl, sha);
+        const githubService = new GitHubApiService(accessToken);
+        const { files, repoId: apiRepoId } =
+          await githubService.fetchRepositoryContent(repoUrl, sha);
 
-      repoId = apiRepoId;
-      repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'unknown';
+        repoId = apiRepoId;
+        repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'unknown';
 
-      await job.updateProgress(15);
+        await job.updateProgress(15);
 
-      const loader = new InMemoryCodeLoader(files, repoId, repoName);
-      bigDocs = await loader.load();
+        const loader = new InMemoryCodeLoader(files, repoId, repoName);
+        bigDocs = await loader.load();
 
-      console.log(`📄 Loaded ${bigDocs.length} documents via GitHub API`);
-    } else {
-      // DEVELOPMENT: Use local cloning (fallback)
-      console.log('💻 Using local clone approach (development)');
+        logger.info(`📄 Loaded ${bigDocs.length} documents via GitHub API`);
+      } else {
+        // DEVELOPMENT: Use local cloning (fallback)
+        logger.info('💻 Using local clone approach (development)');
 
-      const { localRepoPath, repoId: localRepoId } = await cloneRepo(
-        repoUrl,
-        sha
-      );
-      repoId = localRepoId;
-      repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'unknown';
+        const { localRepoPath, repoId: localRepoId } = await cloneRepo(
+          repoUrl,
+          sha,
+        );
+        repoId = localRepoId;
+        repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'unknown';
 
-      await job.updateProgress(15);
+        await job.updateProgress(15);
 
-      const loader = new TsmorphCodeLoader(localRepoPath, repoId);
-      bigDocs = await loader.load();
+        const loader = new TsmorphCodeLoader(localRepoPath, repoId);
+        bigDocs = await loader.load();
 
-      console.log(`📄 Loaded ${bigDocs.length} documents via local clone`);
-    }
+        logger.info(`📄 Loaded ${bigDocs.length} documents via local clone`);
+      }
 
       // Validate documents before proceeding
       if (!bigDocs || !Array.isArray(bigDocs)) {
         throw new Error(`Invalid documents array: ${typeof bigDocs}`);
       }
-      
+
       if (bigDocs.length === 0) {
         throw new Error('No documents loaded from repository');
       }
 
-    await job.updateProgress(30);
+      await job.updateProgress(30);
 
       // Chunk documents with error handling
       let chunkedDocs;
       try {
-        console.log('🔄 Starting to chunk documents...');
+        logger.info('🔄 Starting to chunk documents...');
         chunkedDocs = await chunkDocuments(bigDocs);
-        console.log(`✅ Chunked into ${chunkedDocs.length} documents`);
+        logger.info(`✅ Chunked into ${chunkedDocs.length} documents`);
       } catch (chunkError: any) {
-        console.error('❌ Error during chunking:', chunkError);
+        logger.error('❌ Error during chunking', { chunkError });
         throw new Error(`Failed to chunk documents: ${chunkError.message}`);
       }
 
-    // Rest of the processing is the same for both approaches
+      // Rest of the processing is the same for both approaches
       chunkedDocs = chunkedDocs.map((doc) => {
-      if (!doc.pageContent || doc.pageContent.trim().length === 0) {
-        return {
-          ...doc,
-          pageContent: 'Empty file',
-          metadata: {
-            ...doc.metadata,
-            isEmpty: true,
-          },
-        };
-      }
-      return doc;
-    });
+        if (!doc.pageContent || doc.pageContent.trim().length === 0) {
+          return {
+            ...doc,
+            pageContent: 'Empty file',
+            metadata: {
+              ...doc.metadata,
+              isEmpty: true,
+            },
+          };
+        }
+        return doc;
+      });
 
-    const total = chunkedDocs.length;
-    console.log(`📊 Total documents to process: ${total}`);
-    await job.updateProgress(36);
+      const total = chunkedDocs.length;
+      logger.info(`📊 Total documents to process: ${total}`);
+      await job.updateProgress(36);
 
       // Batch processing: Instead of processing one document at a time (slow and expensive),
       // we process 50 documents together. This is much faster and reduces API costs.
@@ -138,72 +137,76 @@ const worker = new Worker(
       const BATCH_SIZE = 50; // Documents per batch
       const CONCURRENT_BATCHES = 5; // How many batches to process simultaneously
 
-    const processBatch = async (
-      batch: typeof chunkedDocs,
-      batchIndex: number
-    ) => {
-      try {
-        console.log(
-          `🔄 Processing batch ${batchIndex + 1} with ${batch.length} documents`
-        );
-        await upsert(batch);
-        console.log(`✅ Completed batch ${batchIndex + 1}`);
-        return batch.length;
-      } catch (error) {
-        console.error(`❌ Failed to process batch ${batchIndex + 1}:`, error);
-        throw error;
+      const processBatch = async (
+        batch: typeof chunkedDocs,
+        batchIndex: number,
+      ) => {
+        try {
+          logger.info(
+            `🔄 Processing batch ${batchIndex + 1} with ${batch.length} documents`,
+          );
+          await upsert(batch);
+          logger.info(`✅ Completed batch ${batchIndex + 1}`);
+          return batch.length;
+        } catch (error) {
+          logger.error(`❌ Failed to process batch ${batchIndex + 1}`, {
+            error,
+          });
+          throw error;
+        }
+      };
+
+      // Split documents into batches
+      const batches = [];
+      for (let i = 0; i < total; i += BATCH_SIZE) {
+        batches.push(chunkedDocs.slice(i, i + BATCH_SIZE));
       }
-    };
 
-    // Split documents into batches
-    const batches = [];
-    for (let i = 0; i < total; i += BATCH_SIZE) {
-      batches.push(chunkedDocs.slice(i, i + BATCH_SIZE));
-    }
-
-    console.log(
-      `📦 Split into ${batches.length} batches of up to ${BATCH_SIZE} documents each`
-    );
+      logger.info(
+        `📦 Split into ${batches.length} batches of up to ${BATCH_SIZE} documents each`,
+      );
 
       // Process multiple batches at the same time for speed
       // This processes CONCURRENT_BATCHES batches simultaneously instead of waiting for each one
-    let processedCount = 0;
+      let processedCount = 0;
       const progressRange = 64; // Progress from 36% to 100%
 
-    for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
+      for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
         // Process CONCURRENT_BATCHES batches at once
-      const currentBatches = batches.slice(i, i + CONCURRENT_BATCHES);
+        const currentBatches = batches.slice(i, i + CONCURRENT_BATCHES);
 
-      const results = await Promise.all(
-        currentBatches.map((batch, index) => processBatch(batch, i + index))
+        const results = await Promise.all(
+          currentBatches.map((batch, index) => processBatch(batch, i + index)),
+        );
+
+        processedCount += results.reduce((sum, count) => sum + count, 0);
+        const percentage =
+          36 + Math.floor((processedCount / total) * progressRange);
+
+        logger.debug(
+          `📈 Progress: ${processedCount}/${total} documents (${percentage}%)`,
+        );
+        await job.updateProgress(percentage);
+      }
+
+      logger.info(
+        `🎉 Successfully processed all ${total} documents for ${repoName}!`,
       );
-
-      processedCount += results.reduce((sum, count) => sum + count, 0);
-      const percentage =
-        36 + Math.floor((processedCount / total) * progressRange);
-
-      console.log(
-        `📈 Progress: ${processedCount}/${total} documents (${percentage}%)`
-      );
-      await job.updateProgress(percentage);
-    }
-
-    console.log(
-      `🎉 Successfully processed all ${total} documents for ${repoName}!`
-    );
     } catch (error: any) {
       // Log full error details before re-throwing
-      console.error('❌ Job failed with error:', error);
-      console.error('Error stack:', error.stack);
+      logger.error('❌ Job failed with error', { error, stack: error?.stack });
       throw error; // Re-throw to mark job as failed
     }
-  }
+  },
 )
   .on('completed', (job) => {
-    console.log(`${job.id} has completed!`);
+    logger.info(`${job.id} has completed!`);
   })
   .on('failed', (job, err) => {
     // Enhanced error logging for failed jobs
-    console.error(`❌ Job ${job?.id} has failed with error:`, err.message);
-    console.error('Full error:', err);
+    logger.error(`❌ Job ${job?.id} has failed`, {
+      message: err.message,
+      err,
+      stack: err.stack,
+    });
   });

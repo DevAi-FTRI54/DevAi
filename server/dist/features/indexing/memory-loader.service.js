@@ -3,6 +3,7 @@ import { BaseDocumentLoader } from '@langchain/core/document_loaders/base';
 import { Document } from '@langchain/core/documents';
 import { Project, ScriptTarget, ClassDeclaration, } from 'ts-morph';
 import path from 'path';
+import { logger } from '../../utils/logger.js';
 /**
  * Code loader that works with in-memory content from GitHub API
  * instead of cloned local files
@@ -18,7 +19,7 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
         this.repoName = repoName;
     }
     async load() {
-        console.log(`🔄 Processing ${this.files.length} files in memory...`);
+        logger.info(`🔄 Processing ${this.files.length} files in memory...`);
         // Create an in-memory ts-morph project
         const project = new Project({
             compilerOptions: {
@@ -38,17 +39,17 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
                 });
             }
             catch (error) {
-                console.warn(`⚠️ Failed to parse ${file.path}:`, error);
+                logger.warn(`⚠️ Failed to parse ${file.path}`, { error });
             }
         });
         const sourceFiles = project.getSourceFiles();
-        console.log(`📝 Successfully parsed ${sourceFiles.length} files`);
+        logger.info(`📝 Successfully parsed ${sourceFiles.length} files`);
         const docs = [];
         sourceFiles.forEach((sourceFile) => {
             try {
                 // Add entire file content as a document
                 const filePath = sourceFile.getFilePath();
-                console.log('🔍 InMemoryCodeLoader adding file with path:', filePath);
+                logger.debug('🔍 InMemoryCodeLoader adding file', { filePath });
                 docs.push(new Document({
                     pageContent: sourceFile.getFullText(),
                     metadata: {
@@ -81,7 +82,7 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
                         }));
                     }
                     catch (error) {
-                        console.warn(`⚠️ Failed to process declaration in ${sourceFile.getFilePath()}:`, error);
+                        logger.warn(`⚠️ Failed to process declaration in ${sourceFile.getFilePath()}`, { error });
                     }
                 };
                 // Extract functions and classes
@@ -89,10 +90,12 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
                 sourceFile.getClasses().forEach(addDeclaration);
             }
             catch (error) {
-                console.warn(`⚠️ Failed to process ${sourceFile.getFilePath()}:`, error);
+                logger.warn(`⚠️ Failed to process ${sourceFile.getFilePath()}`, {
+                    error,
+                });
             }
         });
-        console.log(`✅ Generated ${docs.length} documents from ${this.files.length} files`);
+        logger.info(`✅ Generated ${docs.length} documents from ${this.files.length} files`);
         return docs;
     }
 }

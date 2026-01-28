@@ -10,6 +10,7 @@ import {
 import fs from 'fs/promises';
 import path from 'path';
 import { glob } from 'glob';
+import { logger } from '../../utils/logger.js';
 
 /**
  * https://js.langchain.com/docs/tutorials/rag/
@@ -29,7 +30,10 @@ import { glob } from 'glob';
 
 export class TsmorphCodeLoader extends BaseDocumentLoader {
   // super() initializes the parent BaseDocumentLoader
-  constructor(private repoPath: string, private repoId: string) {
+  constructor(
+    private repoPath: string,
+    private repoId: string,
+  ) {
     super();
   }
 
@@ -47,9 +51,9 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
     // Only add tsConfigFilePath if we found one
     if (tsConfigFilePath) {
       projectConfig.tsConfigFilePath = tsConfigFilePath;
-      console.log(`🔧 Using TypeScript config: ${tsConfigFilePath}`);
+      logger.debug(`🔧 Using TypeScript config: ${tsConfigFilePath}`);
     } else {
-      console.log(`🔧 No tsconfig found - using default TypeScript settings`);
+      logger.debug(`🔧 No tsconfig found - using default TypeScript settings`);
     }
 
     const project = new Project(projectConfig);
@@ -71,8 +75,7 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
     filePaths.map((file: any) => project.addSourceFileAtPath(file));
     const sourceFiles = project.getSourceFiles();
 
-    console.log(' --- project.getFileSystem() ---------');
-    console.log(project.getFileSystem());
+    // logger.debug('project file system', { fs: project.getFileSystem() });
 
     // STEP 3: Load the docs
     /* Document[] - langchain type 
@@ -97,7 +100,7 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
             startLine: sourceFile.getStartLineNumber(true),
             endLine: sourceFile.getEndLineNumber(),
           },
-        })
+        }),
       );
 
       // STEP 3.2: Second add individual functions and classes
@@ -118,7 +121,7 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
               startLine: start,
               endLine: end,
             },
-          })
+          }),
         );
       };
       // For each source file, get all functions and classess
@@ -146,13 +149,13 @@ async function findTsConfigFile(repoPath: string): Promise<string | null> {
   for (const path of possiblePaths) {
     try {
       await fs.access(path);
-      console.log(`Found tsconfig.json: ${path}`);
+      logger.debug(`Found tsconfig.json: ${path}`);
       return path;
     } catch (err) {
       continue;
     }
   }
 
-  console.log(`⚠️  No tsconfig.json found in repository: ${repoPath}`);
+  logger.debug(`⚠️  No tsconfig.json found in repository: ${repoPath}`);
   return null;
 }

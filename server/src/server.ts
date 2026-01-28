@@ -1,22 +1,40 @@
+/**
+ * Server Startup
+ * 
+ * This file handles starting our Express server and connecting to all the services we need:
+ * - MongoDB (user data, conversations)
+ * - Qdrant (vector database for code search)
+ * - BullMQ worker (background job processing)
+ * 
+ * We use a smart startup strategy: start the HTTP server first (so deployment platforms
+ * know we're alive), then connect to databases in the background. This prevents deployment
+ * timeouts while still ensuring everything is connected before we start handling requests.
+ */
 import app from './app.js';
 import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
+import { logger } from './utils/logger.js';
 import 'dotenv/config';
 
 // Import worker so it starts processing jobs from the queue
-console.log('📦 Importing index job worker...');
+logger.info('📦 Importing index job worker...');
 import './features/indexing/index.job.js';
-console.log('✅ Index job worker imported');
+logger.info('✅ Index job worker imported');
 
-console.log('Booting server...');
-console.log('Start of server.ts');
-console.log('🟡 Fresh deploy loaded');
+logger.info('Booting server...');
+logger.info('Start of server.ts');
+logger.info('🟡 Fresh deploy loaded');
 
+// Handle uncaught exceptions - these are synchronous errors that would crash the process
+// Winston's exception handler will log these, but we also log here for immediate visibility
 process.on('uncaughtException', (err) => {
-  console.error('💥 Uncaught Exception:', err);
+  logger.error('💥 Uncaught Exception:', err);
 });
+
+// Handle unhandled promise rejections - these are async errors that could crash the process
+// Winston's rejection handler will log these, but we also log here for immediate visibility
 process.on('unhandledRejection', (reason) => {
-  console.error('💥 Unhandled Rejection:', reason);
+  logger.error('💥 Unhandled Rejection:', reason);
 });
 
 /**
@@ -41,38 +59,41 @@ async function startServer() {
   // Start server first so Render can detect the port
   // Then connect to services in the background
   const server = app.listen(Number(port), '0.0.0.0', () => {
-    console.log(`✅ App listening on port ${port}`);
-    console.log(`🌐 Server bound to 0.0.0.0:${port}`);
-    console.log(`🏥 Health check: http://localhost:${port}/api/health`);
+    logger.info(`✅ App listening on port ${port}`);
+    logger.info(`🌐 Server bound to 0.0.0.0:${port}`);
+    logger.info(`🏥 Health check: http://localhost:${port}/api/health`);
   });
 
   server.on('error', (err) => {
-    console.error('❌ Failed to start server:', err);
+    logger.error('❌ Failed to start server:', err);
     process.exit(1);
   });
 
   // Connect to services in the background (don't block server startup)
+  // This allows the server to start quickly and respond to health checks, while
+  // database connections happen asynchronously. If connections fail, we log warnings
+  // but don't crash - the server can still respond to health checks.
   try {
-    console.log('🔄 Connecting to MongoDB...');
+    logger.info('🔄 Connecting to MongoDB...');
     await connectMongo();
-    console.log('✅ MongoDB connected');
+    logger.info('✅ MongoDB connected');
   } catch (error) {
-    console.error('⚠️ MongoDB connection failed (server will continue):', error);
+    logger.warn('⚠️ MongoDB connection failed (server will continue):', error);
     // Don't exit - server can still run without MongoDB for health checks
   }
 
   try {
-    console.log('🔄 Setting up Qdrant indexes...');
+    logger.info('🔄 Setting up Qdrant indexes...');
     await ensureQdrantIndexes();
-    console.log('✅ Qdrant indexes ready');
+    logger.info('✅ Qdrant indexes ready');
   } catch (error) {
-    console.error('⚠️ Qdrant setup failed (server will continue):', error);
+    logger.warn('⚠️ Qdrant setup failed (server will continue):', error);
     // Don't exit - server can still run without Qdrant for health checks
   }
 }
 
 // Execute the startup function
 startServer().catch((error) => {
-  console.error('❌ Unhandled error during startup:', error);
+  logger.error('❌ Unhandled error during startup:', error);
   process.exit(1);
 });

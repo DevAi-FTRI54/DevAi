@@ -25,7 +25,9 @@ import {
   listReposQuerySchema,
 } from './validators/auth.validators.js';
 
-console.log('Loading auth.routes.ts');
+import { logger } from '../../utils/logger.js';
+
+logger.debug('Loading auth.routes.ts');
 const router: Router = express.Router();
 
 // /api/auth/

@@ -7,6 +7,7 @@ interface AuthenticatedRequest extends Request {
 }
 import Query from '../../models/query.model.js';
 import Conversation from '../../models/conversation.model.js';
+import { logger } from '../../utils/logger.js';
 
 export const getUserConversations = async (req: Request, res: Response) => {
   try {
@@ -25,7 +26,7 @@ export const getUserConversations = async (req: Request, res: Response) => {
 
 export const getSessionConversation = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const userId = (req as any).user.id;
@@ -45,16 +46,13 @@ export const getSessionConversation = async (
 // In chatHistory.controller.ts
 
 export const getUserMessagesFlat = async (req: Request, res: Response) => {
-  console.log('Decoded user:', (req as any).user);
-  console.log('=== ENTERED CONTROLLER ===');
+  logger.debug('getUserMessagesFlat called', { user: (req as any).user });
 
   try {
     const userId = (req as any).user.userId;
-    console.log('Fetching history for userId:', userId);
+    logger.debug('Fetching history for userId', { userId });
     const conversations = await Conversation.find({ userId });
-    console.log('Conversations found:', conversations.length);
-
-    console.log('Raw conversations:', JSON.stringify(conversations, null, 2));
+    logger.debug('Conversations found', { count: conversations.length });
 
     // Flatten user/assistant pairs into { userPrompt, answer, file, startLine, endLine }
     const flatMessages: {
@@ -95,7 +93,7 @@ export const getUserMessagesFlat = async (req: Request, res: Response) => {
 
     res.json(flatMessages);
   } catch (err) {
-    console.error('Failed to fetch history:', err);
+    logger.error('Failed to fetch history', { err });
     res.status(500).json({ message: 'Failed to fetch history', error: err });
   }
 };
@@ -120,7 +118,6 @@ export const getUserMessagesFlat = async (req: Request, res: Response) => {
 
 //     res.json(flatMessages);
 //   } catch (err) {
-//     console.log('Error in getUserMessagesFlat:', err);
 //     res.status(500).json({ message: 'Failed to fetch history', error: err });
 //   }
 // };
@@ -150,7 +147,7 @@ export const getChatHistory = async (req: Request, res: Response) => {
 
     res.json(history);
   } catch (err) {
-    console.error('Failed to fetch chat history:', err);
+    logger.error('Failed to fetch chat history', { err });
     res.status(500).json({ error: 'Failed to fetch chat history' });
   }
 };

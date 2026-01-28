@@ -9,6 +9,7 @@ import {
   SourceFile,
 } from 'ts-morph';
 import path from 'path';
+import { logger } from '../../utils/logger.js';
 
 interface GitHubFile {
   path: string;
@@ -26,13 +27,13 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
   constructor(
     private files: GitHubFile[],
     private repoId: string,
-    private repoName: string
+    private repoName: string,
   ) {
     super();
   }
 
   async load(): Promise<Document[]> {
-    console.log(`🔄 Processing ${this.files.length} files in memory...`);
+    logger.info(`🔄 Processing ${this.files.length} files in memory...`);
 
     // Create an in-memory ts-morph project
     const project = new Project({
@@ -53,12 +54,12 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
           overwrite: true,
         });
       } catch (error) {
-        console.warn(`⚠️ Failed to parse ${file.path}:`, error);
+        logger.warn(`⚠️ Failed to parse ${file.path}`, { error });
       }
     });
 
     const sourceFiles = project.getSourceFiles();
-    console.log(`📝 Successfully parsed ${sourceFiles.length} files`);
+    logger.info(`📝 Successfully parsed ${sourceFiles.length} files`);
 
     const docs: Document[] = [];
 
@@ -66,7 +67,7 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
       try {
         // Add entire file content as a document
         const filePath = sourceFile.getFilePath();
-        console.log('🔍 InMemoryCodeLoader adding file with path:', filePath);
+        logger.debug('🔍 InMemoryCodeLoader adding file', { filePath });
 
         docs.push(
           new Document({
@@ -80,12 +81,12 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
               endLine: sourceFile.getEndLineNumber(),
               fileSize: sourceFile.getFullText().length,
             },
-          })
+          }),
         );
 
         // Add individual functions and classes
         const addDeclaration = (
-          node: FunctionDeclaration | ClassDeclaration
+          node: FunctionDeclaration | ClassDeclaration,
         ) => {
           try {
             const start = node.getStartLineNumber(true);
@@ -105,12 +106,12 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
                   declarationType:
                     node instanceof ClassDeclaration ? 'class' : 'function',
                 },
-              })
+              }),
             );
           } catch (error) {
-            console.warn(
-              `⚠️ Failed to process declaration in ${sourceFile.getFilePath()}:`,
-              error
+            logger.warn(
+              `⚠️ Failed to process declaration in ${sourceFile.getFilePath()}`,
+              { error },
             );
           }
         };
@@ -119,15 +120,14 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
         sourceFile.getFunctions().forEach(addDeclaration);
         sourceFile.getClasses().forEach(addDeclaration);
       } catch (error) {
-        console.warn(
-          `⚠️ Failed to process ${sourceFile.getFilePath()}:`,
-          error
-        );
+        logger.warn(`⚠️ Failed to process ${sourceFile.getFilePath()}`, {
+          error,
+        });
       }
     });
 
-    console.log(
-      `✅ Generated ${docs.length} documents from ${this.files.length} files`
+    logger.info(
+      `✅ Generated ${docs.length} documents from ${this.files.length} files`,
     );
     return docs;
   }

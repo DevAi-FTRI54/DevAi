@@ -1,5 +1,6 @@
 // GitHub API service for fetching repository content without cloning
 import { Octokit } from 'octokit';
+import { logger } from '../../utils/logger.js';
 
 interface GitHubFile {
   path: string;
@@ -29,12 +30,12 @@ export class GitHubApiService {
    */
   async fetchRepositoryContent(
     repoUrl: string,
-    sha = 'HEAD'
+    sha = 'HEAD',
   ): Promise<RepositoryContent> {
     const { owner, repo } = this.parseRepoUrl(repoUrl);
     const repoId = this.generateUniqueRepoId(repoUrl);
 
-    console.log(`🔍 Fetching content for ${owner}/${repo} at ${sha}`);
+    logger.info(`🔍 Fetching content for ${owner}/${repo} at ${sha}`);
 
     try {
       // Get the tree recursively
@@ -60,10 +61,10 @@ export class GitHubApiService {
           /\.(ts|tsx|js|jsx)$/.test(item.path) &&
           !item.path.includes('node_modules') &&
           !item.path.includes('dist/') &&
-          !item.path.includes('.d.ts') // Skip type definitions
+          !item.path.includes('.d.ts'), // Skip type definitions
       );
 
-      console.log(`📁 Found ${codeFiles.length} code files`);
+      logger.info(`📁 Found ${codeFiles.length} code files`);
 
       // Fetch content for each file
       const fileResults = await Promise.all(
@@ -77,7 +78,7 @@ export class GitHubApiService {
 
             // Decode base64 content
             const content = Buffer.from(blob.content, 'base64').toString(
-              'utf-8'
+              'utf-8',
             );
 
             return {
@@ -88,25 +89,25 @@ export class GitHubApiService {
               type: 'file' as const,
             };
           } catch (error) {
-            console.warn(`⚠️ Failed to fetch ${file.path}:`, error);
+            logger.warn(`⚠️ Failed to fetch ${file.path}`, { error });
             return null;
           }
-        })
+        }),
       );
 
       // Filter out failed fetches
       const validFiles = fileResults.filter(
-        (file): file is GitHubFile => file !== null
+        (file): file is GitHubFile => file !== null,
       );
 
-      console.log(`✅ Successfully fetched ${validFiles.length} files`);
+      logger.info(`✅ Successfully fetched ${validFiles.length} files`);
 
       return {
         files: validFiles,
         repoId,
       };
     } catch (error) {
-      console.error('❌ Failed to fetch repository content:', error);
+      logger.error('❌ Failed to fetch repository content', { error });
       throw new Error(`Failed to fetch repository: ${error}`);
     }
   }

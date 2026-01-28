@@ -1,4 +1,6 @@
 import User from '../../models/user.model.js';
+import { logger } from '../../utils/logger.js';
+import { FRONTEND_BASE_URL } from '../../config/env.validation.js';
 export const saveInstallationId = async (req, res) => {
     try {
         const installationId = req.query.installation_id;
@@ -12,10 +14,10 @@ export const saveInstallationId = async (req, res) => {
         await User.findByIdAndUpdate(userId, {
             installationId: Number(installationId),
         });
-        res.redirect('http://localhost:3000/dashboard'); // Needs to change!!
+        res.redirect(`${FRONTEND_BASE_URL}/dashboard`);
     }
     catch (err) {
-        console.error('Failed to save installation ID:', err);
+        logger.error('Failed to save installation ID', { err });
         res.status(500).json({ error: 'Internal server error' });
     }
 };

@@ -1,4 +1,5 @@
 import User from '../../../models/user.model.js';
+import { logger } from '../../../utils/logger.js';
 export const findOrCreateUser = async (githubData, accessToken) => {
     // Check if user exists
     let user = await User.findOne({ githubId: githubData.id.toString() });
@@ -12,12 +13,12 @@ export const findOrCreateUser = async (githubData, accessToken) => {
             accessToken: accessToken,
         });
         await user.save();
-        console.log('✅ User created:', user.username);
+        logger.info('✅ User created', { username: user.username });
     }
     else {
         user.accessToken = accessToken;
         await user.save();
-        console.log('✅ User found:', user.username);
+        logger.info('✅ User found', { username: user.username });
     }
     return user;
 };

@@ -1,10 +1,11 @@
 // config/github.config.ts
+import { GITHUB_APP_CLIENT_ID, GITHUB_APP_CLIENT_SECRET, GITHUB_APP_ID, GITHUB_APP_SLUG, GITHUB_APP_PRIVATE_KEY, GITHUB_REDIRECT_URI, } from './env.validation.js';
 export default {
-    clientId: process.env.GITHUB_APP_CLIENT_ID,
-    clientSecret: process.env.GITHUB_APP_CLIENT_SECRET,
-    appId: process.env.GITHUB_APP_ID,
-    appSlug: process.env.GITHUB_APP_SLUG.toLowerCase(),
-    privateKey: process.env.GITHUB_APP_PRIVATE_KEY.replace(/\\n/g, '\n'),
-    redirectUri: process.env.REDIRECT_URI || 'http://localhost:5173/select-repo',
+    clientId: GITHUB_APP_CLIENT_ID,
+    clientSecret: GITHUB_APP_CLIENT_SECRET,
+    appId: GITHUB_APP_ID,
+    appSlug: GITHUB_APP_SLUG,
+    privateKey: GITHUB_APP_PRIVATE_KEY,
+    redirectUri: GITHUB_REDIRECT_URI,
     apiVersion: '2022-11-28',
 };

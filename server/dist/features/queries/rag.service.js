@@ -1,5 +1,19 @@
-// Handles interaction with the RAG service, including context retrieval and LLM querying.
-import 'dotenv/config';
+/**
+ * RAG (Retrieval-Augmented Generation) Service
+ *
+ * This is the brain of our code understanding system! When a user asks a question about
+ * their codebase, this service:
+ *
+ * 1. Retrieves relevant code chunks from our vector database (semantic search)
+ * 2. Reranks them to find the most relevant ones (using Cohere if available)
+ * 3. Assembles context from the code chunks and conversation history
+ * 4. Sends everything to GPT-4o-mini to generate an intelligent answer
+ * 5. Returns the answer with citations (file paths, line numbers)
+ *
+ * The "RAG" approach means we're not just asking the AI to remember everything - we're
+ * giving it the actual code context it needs to answer accurately. It's like having a
+ * really smart assistant who can instantly look up any code in your repository!
+ */
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { Annotation, StateGraph } from '@langchain/langgraph';
@@ -10,16 +24,29 @@ import { CohereRerank } from '@langchain/cohere';
 import { RUN_KEY } from '@langchain/core/outputs';
 import { SYSTEM_PROMPTS } from './prompts.js';
 import Conversation from '../../models/conversation.model.js';
-// --- Structured Output for ChatOpenAI --------------------------------------
-// https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html
-// Create a new instance of ChatOpenAI, include required options
+import { OPENAI_API_KEY, COHERE_API_KEY } from '../../config/env.validation.js';
+import { logger } from '../../utils/logger.js';
+/**
+ * OpenAI LLM Instance for Answer Generation
+ *
+ * We use GPT-4o-mini for generating answers because it's:
+ * - Fast enough for real-time responses
+ * - Capable of understanding code context
+ * - Cost-effective for frequent use
+ *
+ * The API key comes from our validated environment configuration, so we know it's
+ * present and valid before we try to use it. If it's missing, the server won't even
+ * start - much better than failing when a user asks a question!
+ *
+ * Documentation: https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html
+ */
 const llm = new ChatOpenAI({
     model: 'gpt-4o-mini',
-    temperature: 0,
-    maxTokens: undefined,
-    timeout: undefined,
-    maxRetries: 2,
-    apiKey: process.env.OPENAI_API_KEY,
+    temperature: 0, // Low temperature for consistent, factual answers
+    maxTokens: undefined, // Let the model decide based on context
+    timeout: undefined, // Use default timeout
+    maxRetries: 2, // Retry failed requests up to 2 times
+    apiKey: OPENAI_API_KEY, // Validated at startup - guaranteed to be valid
 });
 // Define response schema such that we handle multiple queries (multiple responses)
 const qa = z.object({
@@ -52,17 +79,21 @@ const formatConversationHistory = (messages) => {
 };
 // --- answerQuestion function -----------------------------------------------
 export async function answerQuestion(repoUrl, question, type, sessionId) {
-    console.log('--- RAG SERVICE STARTED ---------------');
-    console.log('📝 Question:', question);
-    console.log('🆔 SessionId:', sessionId);
-    console.log('🔗 RepoUrl:', repoUrl);
+    logger.info('--- RAG SERVICE STARTED ---', {
+        repoUrl,
+        sessionId,
+        type,
+    });
+    logger.debug('📝 Question', { question });
     const repoId = generateUniqueRepoId(repoUrl);
     const retriever = await createCodeRetriever(repoId, 8);
     // --- STEP 1: Define Prompt -----------------------------------------------
     // --- PROVIDE PAST CONVERSATIONS AS CONTEXT ---------
     const sessionHistory = await Conversation.findOne({ sessionId }); // Search for n number of the most recent interactions based on the sessionId
-    console.log('📚 Session history found:', !!sessionHistory);
-    console.log('💬 Number of messages:', sessionHistory?.messages?.length || 0);
+    logger.debug('📚 Session history', {
+        found: !!sessionHistory,
+        messages: sessionHistory?.messages?.length || 0,
+    });
     const previousContext = formatConversationHistory(sessionHistory?.messages || []);
     // --- SYSTEM PROMPT ---------
     const prompts = SYSTEM_PROMPTS;
@@ -88,8 +119,10 @@ export async function answerQuestion(repoUrl, question, type, sessionId) {
         ['system', finalSystemPrompt],
         ['user', USERPROMPT],
     ]);
-    console.log('--- systemPrompt ---------');
-    console.log(finalSystemPrompt);
+    logger.debug('--- systemPrompt ---', {
+        systemPromptType,
+        promptLength: finalSystemPrompt.length,
+    });
     // --- STEP 2: Define States -----------------------------------------------
     // https://langchain-ai.github.io/langgraphjs/concepts/low_level/#multiple-schemas
     const InputState = Annotation.Root({
@@ -105,7 +138,7 @@ export async function answerQuestion(repoUrl, question, type, sessionId) {
     // Streaming; Metadata - tokens
     const retrieve = async (state) => {
         try {
-            console.log(`Attempting to retrieve docs for repo: ${repoId}`);
+            logger.debug(`Attempting to retrieve docs for repo: ${repoId}`);
             const retrievedDocs = await retriever.invoke(state.question);
             return { context: retrievedDocs }; // merges into  WorkingState, thus the WorkingState has now access to both question + context
         }
@@ -113,40 +146,53 @@ export async function answerQuestion(repoUrl, question, type, sessionId) {
             throw new Error('VECTOR_DB_DOWN');
         }
     };
-    // --- STEP 4: Rerank the retrievedDocs for increase accuracy --------------
-    // cohere rerank: https://js.langchain.com/docs/integrations/document_compressors/cohere_rerank/
+    /**
+     * Rerank Retrieved Documents for Better Accuracy
+     *
+     * After we retrieve code chunks from the vector database, we have a list of potentially
+     * relevant code. But "potentially relevant" isn't good enough - we want the MOST relevant!
+     *
+     * That's where Cohere's reranking comes in. It uses a specialized model to reorder our
+     * results based on how well they actually match the user's question. This dramatically
+     * improves answer quality because we're giving the LLM the best context possible.
+     *
+     * Cohere rerank is optional - if the API key isn't configured, we just use the original
+     * order from the vector search. It still works, just not quite as well!
+     *
+     * Documentation: https://js.langchain.com/docs/integrations/document_compressors/cohere_rerank/
+     */
     const rerank = async (state) => {
-        // console.log('--- state ---------');
-        // console.log(state);
+        // If we don't have any documents, there's nothing to rerank!
         if (!state.context || state.context.length === 0) {
-            console.log('No documents to rerank - skipping reranking step');
+            logger.debug('No documents to rerank - skipping reranking step');
             return { context: [] };
         }
         try {
-            if (!process.env.COHERE_API_KEY) {
-                console.error('COHERE_API_KEY is missing!');
-                return { context: state.context }; // Return original docs
+            // Cohere rerank is optional - if the API key isn't set, we'll just use the original
+            // order from vector search. It's still good, just not as optimized!
+            if (!COHERE_API_KEY) {
+                logger.debug('COHERE_API_KEY not configured - skipping rerank (using original order)');
+                return { context: state.context }; // Return original docs in their original order
             }
-            // https://docs.cohere.com/v2/docs/models
+            // Create the reranker with our validated API key
+            // We use rerank-v3.5 which is Cohere's latest and most accurate reranking model
+            // We only rerank the top 5 results to balance accuracy with speed
+            // Documentation: https://docs.cohere.com/v2/docs/models
             const reranker = new CohereRerank({
-                apiKey: process.env.COHERE_API_KEY,
+                apiKey: COHERE_API_KEY, // Validated at startup - guaranteed to be valid if we reach here
                 model: 'rerank-v3.5',
-                topN: Math.min(5, state.context.length),
+                topN: Math.min(5, state.context.length), // Rerank up to 5 results (or all if we have fewer)
             });
-            console.log(`Reranking ${state.context.length} documents...`);
+            logger.debug(`Reranking ${state.context.length} documents...`);
             const ranks = await reranker.rerank(state.context, state.question);
-            // console.log('--- ranks ---------');
-            // console.log(ranks);
             if (!ranks || !Array.isArray(ranks)) {
-                console.error('Reranker returned invalid result: ', ranks);
+                logger.error('Reranker returned invalid result', { ranks });
             }
             const topDocs = ranks.map((r) => state.context[r.index]);
-            // console.log('--- topDocs ---------');
-            // console.log(topDocs);
             return { context: topDocs };
         }
         catch (err) {
-            console.error('Error during reranking:', err);
+            logger.error('Error during reranking', { err });
             return { context: state.context }; // Return original docs
         }
     };
@@ -185,8 +231,10 @@ export async function answerQuestion(repoUrl, question, type, sessionId) {
             question: state.question,
             context: promptBody,
         });
-        console.log('--- response ------------');
-        console.log(response);
+        logger.debug('--- response ---', {
+            hasAnswer: !!response?.answer,
+            citations: response?.citations?.length,
+        });
         // --- STEP 5: Store the Result in MongoDB ---------------------------------
         // Store the assistant's message:
         await Conversation.updateOne({

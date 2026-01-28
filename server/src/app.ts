@@ -4,8 +4,8 @@ import { ServerError } from './types/types.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
-// import { allowedOrigins } from '../src/config/allowedOrigins.js'; // Using local definition for Safari CORS fixes
 import mongoose from 'mongoose';
+import { logger } from './utils/logger.js';
 
 // ES modules don't have __dirname - need to create it from import.meta.url
 const __filename = fileURLToPath(import.meta.url);
@@ -17,7 +17,11 @@ import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
 import trainingRoutes from './features/training/training.routes.js';
-import { apiLimiter, authLimiter, queryLimiter } from './middleware/rateLimiter.js';
+import {
+  apiLimiter,
+  authLimiter,
+  queryLimiter,
+} from './middleware/rateLimiter.js';
 
 const app = express();
 
@@ -25,14 +29,14 @@ const app = express();
 
 /**
  * CORS Configuration
- * 
+ *
  * CORS (Cross-Origin Resource Sharing) controls which websites can make requests to our API.
  * This is a security feature that prevents malicious websites from accessing our API on behalf
  * of users.
- * 
+ *
  * We get the allowed origins from our environment configuration, which makes it easy to update
  * them for different environments (development, staging, production) without changing code.
- * 
+ *
  * The origins are stored as a comma-separated string in the environment variable, and we
  * convert it to an array here for easier use with the CORS middleware.
  */
@@ -57,7 +61,7 @@ app.use(
       'X-Requested-With',
     ], // Explicitly allow Authorization header for Safari
     exposedHeaders: ['Authorization'], // Expose Authorization header in response
-  })
+  }),
 );
 
 // Handle CORS preflight requests (OPTIONS) - Safari requires this for custom headers
@@ -68,11 +72,11 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, Cache-Control, X-Requested-With'
+      'Content-Type, Authorization, Cache-Control, X-Requested-With',
     ); // Explicitly allow Authorization header
     res.setHeader(
       'Access-Control-Allow-Methods',
-      'GET, POST, PUT, DELETE, OPTIONS'
+      'GET, POST, PUT, DELETE, OPTIONS',
     );
 
     // Handle preflight requests
@@ -110,6 +114,7 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
+      ready: '/api/ready',
       keepAlive: '/api/keep-alive',
       index: '/api/index',
       query: '/api/query',
@@ -121,42 +126,72 @@ app.get('/', (req, res) => {
 });
 
 /**
- * Health check endpoint - this is how deployment platforms (like Render) check if our server is alive.
- * 
- * Here's the thing: deployment platforms are like concerned parents checking if you're okay.
- * They ping this endpoint, and if it doesn't return a 200 status, they think something's wrong
- * and might restart the service or mark it as unhealthy. 
- * 
- * The tricky part is that MongoDB might still be connecting when the server first starts up,
- * but that doesn't mean the server itself is broken - it's just still getting ready! So we
- * always return 200 here to keep the deployment platform happy, but we still include the MongoDB
- * status in the response body so monitoring tools can see the real state of things.
- * 
- * It's like saying "I'm here and functioning!" even if we're still putting on our shoes.
+ * Health Check Endpoint
+ *
+ * Production-ready health checks typically split into two endpoints:
+ * - Liveness: "is the process up?" (should return 200 if the server can respond)
+ * - Readiness: "can the server actually do useful work?" (should be non-200 if critical deps are down)
+ *
+ * Many deployment platforms only need a liveness check to avoid restart loops during
+ * dependency outages, but your monitoring/traffic routing should use readiness.
  */
 app.get('/api/health', (req, res) => {
-  const health = {
-    mongodb: mongoose.connection.readyState === 1,
-    server: true,
+  // Liveness probe: if we can respond, the process is alive.
+  res.status(200).json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
-  };
+    services: {
+      server: {
+        status: 'running',
+        uptime: process.uptime(), // How long the server has been running (in seconds)
+        memory: {
+          used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024), // MB
+          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024), // MB
+        },
+      },
+    },
+  });
+});
 
-  // Always return 200 so Render doesn't fail deployment
-  // MongoDB status is included in response for monitoring
-  res.status(200).json(health);
+/**
+ * Readiness check - returns non-200 if critical dependencies aren't ready.
+ *
+ * Right now we treat MongoDB as the critical dependency because most routes depend on it.
+ * If you decide Qdrant/Redis are also critical for "ready", add checks here.
+ */
+app.get('/api/ready', (req, res) => {
+  // mongoose.connection.readyState values:
+  // 0 = disconnected
+  // 1 = connected
+  // 2 = connecting
+  // 3 = disconnecting
+  const mongodbState = mongoose.connection.readyState;
+  const isMongoConnected = mongodbState === 1;
+  const isReady = isMongoConnected;
+
+  res.status(isReady ? 200 : 503).json({
+    status: isReady ? 'ready' : 'not_ready',
+    timestamp: new Date().toISOString(),
+    services: {
+      mongodb: {
+        status: isMongoConnected ? 'connected' : 'disconnected',
+        readyState: mongodbState,
+      },
+    },
+  });
 });
 
 /**
  * Keep-alive endpoint - a simple way to prevent our service from going to sleep!
- * 
+ *
  * Render's free tier has a feature where services "spin down" after 15 minutes of inactivity
  * to save resources. That's great for cost savings, but it means the first request after idle
- * time can be slow (cold start). 
- * 
+ * time can be slow (cold start).
+ *
  * This endpoint is designed to be pinged periodically (every 5-10 minutes) by an external
  * service like UptimeRobot or cron-job.org. It's like a gentle nudge saying "Hey, I'm still
  * here!" so the service stays warm and ready to respond quickly to real user requests.
- * 
+ *
  * It's a simple endpoint that just confirms we're alive - no heavy lifting, just a friendly
  * wave to keep the service awake!
  */
@@ -223,43 +258,82 @@ app.use((req, res) => {
   res.status(404).send('404 Not Found');
 });
 
-// --- Global error handler --------------------------------------
-const errorHandler: ErrorRequestHandler = (err: ServerError, req, res, _next) => {
+/**
+ * Global Error Handler
+ *
+ * This is our safety net - it catches any errors that weren't handled by specific
+ * route handlers or middleware. It's like having a friendly assistant who makes
+ * sure we always respond to requests, even when something unexpected goes wrong.
+ *
+ * The error handler:
+ * - Logs detailed error information (URL, error type, message, stack trace)
+ * - Returns appropriate HTTP status codes
+ * - Provides helpful error messages to API consumers
+ * - Handles special cases (CORS errors, favicon requests) gracefully
+ *
+ * We use structured logging here so we can easily search and analyze errors in
+ * production. This helps us identify patterns and fix issues quickly.
+ */
+const errorHandler: ErrorRequestHandler = (
+  err: ServerError,
+  req,
+  res,
+  _next,
+) => {
   // Extract error message (could be string or object)
-  const errorMessage = typeof err.message === 'string' 
-    ? err.message 
-    : err.message?.err || 'Unknown error';
+  const errorMessage =
+    typeof err.message === 'string'
+      ? err.message
+      : err.message?.err || 'Unknown error';
   const errorName = err.name || 'Error';
-  
+
   // Log actual error details for debugging
-  console.error('❌ Express error handler triggered:');
-  console.error('→ URL:', req.method, req.originalUrl);
-  console.error('→ Error name:', errorName);
-  console.error('→ Error message:', errorMessage);
-  if ((err as any).stack) {
-    console.error('→ Stack:', (err as any).stack);
-  }
-  
+  // We include the request URL and method so we can see what endpoint caused the error
+  logger.error('❌ Express error handler triggered:', {
+    url: `${req.method} ${req.originalUrl}`,
+    errorName,
+    errorMessage,
+    stack: (err as any).stack,
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+  });
+
   // Handle CORS errors gracefully (don't log as critical errors)
-  if (errorMessage.includes('CORS') || errorMessage.includes('Not allowed by CORS')) {
-    console.warn('⚠️ CORS error (expected for unauthorized origins):', req.headers.origin);
+  // CORS errors are expected when unauthorized origins try to access our API
+  if (
+    errorMessage.includes('CORS') ||
+    errorMessage.includes('Not allowed by CORS')
+  ) {
+    logger.warn('⚠️ CORS error (expected for unauthorized origins):', {
+      origin: req.headers.origin,
+      url: req.originalUrl,
+    });
     res.status(403).json({ error: 'CORS: Origin not allowed' });
     return;
   }
-  
+
   // Handle favicon requests (common source of 404s, not real errors)
+  // Browsers automatically request favicon.ico, and we don't serve one, so we
+  // just return 404 silently without logging it as an error
   if (req.originalUrl === '/favicon.ico') {
     res.status(404).end();
     return;
   }
-  
+
+  // Build error response
+  // We use the error's own status code if provided, otherwise default to 500
   const defaultError: ServerError = {
-    log: err.log || errorMessage || 'Express error handler caught unknown middleware error',
+    log:
+      err.log ||
+      errorMessage ||
+      'Express error handler caught unknown middleware error',
     status: err.status || 500,
     message: { err: errorMessage },
   };
   const errorObj: ServerError = { ...defaultError, ...err };
-  
+
+  // Send error response to client
+  // We don't include stack traces in production responses (security best practice)
   res.status(errorObj.status).json(errorObj.message);
 };
 app.use(errorHandler);
