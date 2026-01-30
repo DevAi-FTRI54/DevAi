@@ -29,11 +29,15 @@ export async function cloneRepo(url, sha = 'HEAD') {
         if (err?.code !== 'ENOENT')
             throw err; // Unexpected error;
     }
-    // Make a shallow clone of the repo (without previous commits)
-    await simpleGit().clone(url, localRepoPath, ['--depth', '1']);
-    // Checkout exactly the commit we're asking for
+    // Shallow clone only gets the default-branch tip. If we need a specific SHA (e.g. from
+    // frontend), that commit may not be in the shallow clone after a merge/rebase, causing
+    // "reference is not a tree". So when sha !== 'HEAD' we do a full clone so checkout works.
     if (sha !== 'HEAD') {
+        await simpleGit().clone(url, localRepoPath);
         await simpleGit(localRepoPath).checkout(sha);
+    }
+    else {
+        await simpleGit().clone(url, localRepoPath, ['--depth', '1']);
     }
     // Return path to the cloned repo
     return { localRepoPath, repoId };
