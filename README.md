@@ -14,6 +14,21 @@
 
 DevAI is an AI-assisted codebase exploration tool. After you connect a GitHub repository, the backend ingests source files, stores embeddings in a vector database, and supports natural-language questions with answers grounded in retrieved code context (including citations).
 
+## Proof
+
+Live demo: https://www.dev-ai.app/
+
+### Screenshots:
+
+Select a Repo:
+<img width="2996" height="1482" alt="image" src="https://github.com/user-attachments/assets/de2675b6-f6de-4be9-9d38-83c58c3d7c59" />
+
+Repo Ingestion:
+<img width="2970" height="1468" alt="image" src="https://github.com/user-attachments/assets/4dbcc04f-71ee-4d63-93ad-b9b53e2f1dae" />
+
+Question and Response:
+<img width="2976" height="1484" alt="image" src="https://github.com/user-attachments/assets/7d71990f-ddb8-4346-a10e-a6e52e7e121b" />
+
 ### 🎯 Core Features
 
 - **🤖 Retrieval-augmented Q&A (RAG)**: retrieves relevant code chunks from Qdrant before generating an answer.
@@ -31,7 +46,7 @@ DevAI is an AI-assisted codebase exploration tool. After you connect a GitHub re
 
 If available, the app has been deployed at `https://www.dev-ai.app/`.
 
-> Note: deployments that run on free tiers may take a moment to “wake up” after inactivity.
+> Note: the demo may take a few seconds to "wake up" on first load if the backend has been idle.
 
 ---
 
@@ -197,7 +212,4 @@ This `main` branch does not include a dedicated automated test suite yet. A prac
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
