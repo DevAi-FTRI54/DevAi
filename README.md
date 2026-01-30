@@ -14,6 +14,23 @@
 
 DevAI is an AI-assisted codebase exploration tool. After you connect a GitHub repository, the backend ingests source files, stores embeddings in a vector database, and supports natural-language questions with answers grounded in retrieved code context (including citations).
 
+## Proof
+
+Live demo: …
+
+90s walkthrough video: …
+
+Screenshots/GIF:
+Question and Response:
+<img width="2976" height="1484" alt="image" src="https://github.com/user-attachments/assets/7d71990f-ddb8-4346-a10e-a6e52e7e121b" />
+
+Select a Repo:
+<img width="2996" height="1482" alt="image" src="https://github.com/user-attachments/assets/de2675b6-f6de-4be9-9d38-83c58c3d7c59" />
+Repo Ingestion:
+<img width="2976" height="1484" alt="image" src="https://github.com/user-attachments/assets/e5c88982-8f72-461e-a037-74a6b755bc82" />
+
+
+This is the best ROI thing you can add.
 ### 🎯 Core Features
 
 - **🤖 Retrieval-augmented Q&A (RAG)**: retrieves relevant code chunks from Qdrant before generating an answer.
