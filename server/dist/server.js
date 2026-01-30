@@ -2,8 +2,9 @@ import app from './app.js';
 import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
 import 'dotenv/config';
-// Worker is loaded after listen (dynamic import) so heavy deps (ts-morph, LangChain, etc.)
-// don't block the server from binding the port. Render sees the service as up much sooner.
+// Load worker at startup so BullMQ queue + worker exist before any /ingest request.
+// (Deferring this broke ingestion: jobs were added before worker was ready.)
+import './features/indexing/index.job.js';
 process.on('uncaughtException', (err) => {
     console.error('💥 Uncaught Exception:', err);
 });
@@ -34,12 +35,6 @@ async function startServer() {
         console.error('⚠️ Qdrant setup failed (server will continue):', error);
     });
     await Promise.all([mongoPromise, qdrantPromise]);
-    // Load index job worker after port is bound (heavy: ts-morph, LangChain, BullMQ)
-    import('./features/indexing/index.job.js')
-        .then(() => console.log('✅ Index job worker loaded'))
-        .catch((err) => {
-        console.error('⚠️ Index job worker failed to load (jobs will not run):', err);
-    });
 }
 // Execute the startup function
 startServer().catch((error) => {
