@@ -16,21 +16,19 @@ DevAI is an AI-assisted codebase exploration tool. After you connect a GitHub re
 
 ## Proof
 
-Live demo: …
+Live demo: https://www.dev-ai.app/
 
-90s walkthrough video: …
-
-Screenshots/GIF:
-Question and Response:
-<img width="2976" height="1484" alt="image" src="https://github.com/user-attachments/assets/7d71990f-ddb8-4346-a10e-a6e52e7e121b" />
+### Screenshots:
 
 Select a Repo:
 <img width="2996" height="1482" alt="image" src="https://github.com/user-attachments/assets/de2675b6-f6de-4be9-9d38-83c58c3d7c59" />
+
 Repo Ingestion:
-<img width="2976" height="1484" alt="image" src="https://github.com/user-attachments/assets/e5c88982-8f72-461e-a037-74a6b755bc82" />
+<img width="2970" height="1468" alt="image" src="https://github.com/user-attachments/assets/4dbcc04f-71ee-4d63-93ad-b9b53e2f1dae" />
 
+Question and Response:
+<img width="2976" height="1484" alt="image" src="https://github.com/user-attachments/assets/7d71990f-ddb8-4346-a10e-a6e52e7e121b" />
 
-This is the best ROI thing you can add.
 ### 🎯 Core Features
 
 - **🤖 Retrieval-augmented Q&A (RAG)**: retrieves relevant code chunks from Qdrant before generating an answer.
