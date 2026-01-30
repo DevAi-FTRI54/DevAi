@@ -1,23 +1,26 @@
 import express from 'express';
 import cors from 'cors';
-import 'dotenv/config';
 import cookieParser from 'cookie-parser';
-//import { allowedOrigins } from '../src/config/allowedOrigins.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+// import { allowedOrigins } from '../src/config/allowedOrigins.js'; // Using local definition for Safari CORS fixes
 import mongoose from 'mongoose';
+// ES modules don't have __dirname - need to create it from import.meta.url
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // import taskController from './controllers/taskController';
 import repoRoutes from './features/indexing/index.routes.js';
 import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
+import trainingRoutes from './features/training/training.routes.js';
 const app = express();
 // --- Global middleware -----------------------------------------
-// app.use(
-//   cors({
-//     origin: ['http://localhost:5173', 'https://a59d8fd60bb0.ngrok.app'],
-//     credentials: true,
-//   })
-// );
 const allowedOrigins = [
+    'http://localhost:5173',
+    'https://a59d8fd60bb0.ngrok.app',
+    'https://dev-ai.app',
+    'https://www.dev-ai.app',
     'https://devai-three.vercel.app',
     'https://devai-eshankman-devai-app.vercel.app',
     'https://devai-devai-app.vercel.app',
@@ -32,12 +35,27 @@ app.use(cors({
         }
     },
     credentials: true,
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Cache-Control',
+        'X-Requested-With',
+    ], // Explicitly allow Authorization header for Safari
+    exposedHeaders: ['Authorization'], // Expose Authorization header in response
 }));
+// Handle CORS preflight requests (OPTIONS) - Safari requires this for custom headers
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (allowedOrigins.includes(origin || '')) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, X-Requested-With'); // Explicitly allow Authorization header
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        // Handle preflight requests
+        if (req.method === 'OPTIONS') {
+            res.status(200).end();
+            return;
+        }
     }
     next();
 });
@@ -57,18 +75,38 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true })); // for form submissions, fix fromat so page loads
 app.use(express.static('assets')); // serve files in assets
-// app.get('/', (req, res) => {
-//   res.sendFile(path.join(__dirname, '../views/index.html'), {
-//     headers: { 'Content-Type': 'text/html' },
-//   });
-// });
-app.get('/api/health', (_req, res) => {
-    const mongoReady = mongoose.connection.readyState === 1;
-    console.log('🔍 Health check - Mongo ready?', mongoReady);
-    res.status(200).json({
-        mongo: mongoReady,
+// Root route - return API info instead of trying to serve missing HTML file
+app.get('/', (req, res) => {
+    res.json({
+        message: 'DevAI API Server',
+        version: '1.0.0',
+        endpoints: {
+            health: '/api/health',
+            keepAlive: '/api/keep-alive',
+            index: '/api/index',
+            query: '/api/query',
+            auth: '/api/auth',
+            chat: '/api/chat',
+            training: '/api/training',
+        },
+    });
+});
+app.get('/api/health', (req, res) => {
+    const health = {
+        mongodb: mongoose.connection.readyState === 1,
         server: true,
         timestamp: new Date().toISOString(),
+    };
+    // Always return 200 so Render doesn't fail deployment
+    // MongoDB status is included in response for monitoring
+    res.status(200).json(health);
+});
+// Keep-alive endpoint to prevent service from going idle on Render free tier
+app.get('/api/keep-alive', (req, res) => {
+    res.status(200).json({
+        status: 'alive',
+        timestamp: new Date().toISOString(),
+        message: 'Service is active',
     });
 });
 // --- Define routes ---------------------------------------------
@@ -80,6 +118,8 @@ app.use('/api/query', queryRoutes);
 app.use('/api/auth', authRoute);
 //ChatHistory route
 app.use('/api/chat', chatHistoryRoute);
+// Training route (for fine-tuning data export)
+app.use('/api/training', trainingRoutes);
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
 // app.get('/api/tasks', taskController.getTasks);
@@ -102,14 +142,37 @@ app.use((req, res) => {
     res.status(404).send('404 Not Found');
 });
 // --- Global error handler --------------------------------------
-const errorHandler = (err, _req, res, _next) => {
+const errorHandler = (err, req, res, _next) => {
+    // Extract error message (could be string or object)
+    const errorMessage = typeof err.message === 'string'
+        ? err.message
+        : err.message?.err || 'Unknown error';
+    const errorName = err.name || 'Error';
+    // Log actual error details for debugging
+    console.error('❌ Express error handler triggered:');
+    console.error('→ URL:', req.method, req.originalUrl);
+    console.error('→ Error name:', errorName);
+    console.error('→ Error message:', errorMessage);
+    if (err.stack) {
+        console.error('→ Stack:', err.stack);
+    }
+    // Handle CORS errors gracefully (don't log as critical errors)
+    if (errorMessage.includes('CORS') || errorMessage.includes('Not allowed by CORS')) {
+        console.warn('⚠️ CORS error (expected for unauthorized origins):', req.headers.origin);
+        res.status(403).json({ error: 'CORS: Origin not allowed' });
+        return;
+    }
+    // Handle favicon requests (common source of 404s, not real errors)
+    if (req.originalUrl === '/favicon.ico') {
+        res.status(404).end();
+        return;
+    }
     const defaultError = {
-        log: 'Express error handler caught unknown middleware error',
-        status: 500,
-        message: { err: 'An error occurred' },
+        log: err.log || errorMessage || 'Express error handler caught unknown middleware error',
+        status: err.status || 500,
+        message: { err: errorMessage },
     };
     const errorObj = { ...defaultError, ...err };
-    console.log(errorObj.log);
     res.status(errorObj.status).json(errorObj.message);
 };
 app.use(errorHandler);

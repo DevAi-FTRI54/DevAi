@@ -3,14 +3,8 @@ import { connectMongo } from './config/db.js';
 import { ensureQdrantIndexes } from './features/indexing/vector.service.js';
 import 'dotenv/config';
 
-// Import worker so it starts processing jobs from the queue
-console.log('📦 Importing index job worker...');
-import './features/indexing/index.job.js';
-console.log('✅ Index job worker imported');
-
-console.log('Booting server...');
-console.log('Start of server.ts');
-console.log('🟡 Fresh deploy loaded');
+// Worker is loaded after listen (dynamic import) so heavy deps (ts-morph, LangChain, etc.)
+// don't block the server from binding the port. Render sees the service as up much sooner.
 
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err);
@@ -21,11 +15,8 @@ process.on('unhandledRejection', (reason) => {
 
 const port = process.env.PORT || 4000;
 
-// await connectMongo();
-
 async function startServer() {
-  // Start server first so Render can detect the port
-  // Then connect to services in the background
+  // Bind port first so Render can detect the service quickly
   const server = app.listen(Number(port), '0.0.0.0', () => {
     console.log(`✅ App listening on port ${port}`);
     console.log(`🌐 Server bound to 0.0.0.0:${port}`);
@@ -37,24 +28,31 @@ async function startServer() {
     process.exit(1);
   });
 
-  // Connect to services in the background (don't block server startup)
-  try {
-    console.log('🔄 Connecting to MongoDB...');
-    await connectMongo();
-    console.log('✅ MongoDB connected');
-  } catch (error) {
-    console.error('⚠️ MongoDB connection failed (server will continue):', error);
-    // Don't exit - server can still run without MongoDB for health checks
-  }
+  // Connect to Mongo and Qdrant in parallel (don't block listen)
+  const mongoPromise = connectMongo()
+    .then(() => console.log('✅ MongoDB connected'))
+    .catch((error) => {
+      console.error(
+        '⚠️ MongoDB connection failed (server will continue):',
+        error,
+      );
+    });
+  const qdrantPromise = ensureQdrantIndexes()
+    .then(() => console.log('✅ Qdrant indexes ready'))
+    .catch((error) => {
+      console.error('⚠️ Qdrant setup failed (server will continue):', error);
+    });
+  await Promise.all([mongoPromise, qdrantPromise]);
 
-  try {
-    console.log('🔄 Setting up Qdrant indexes...');
-    await ensureQdrantIndexes();
-    console.log('✅ Qdrant indexes ready');
-  } catch (error) {
-    console.error('⚠️ Qdrant setup failed (server will continue):', error);
-    // Don't exit - server can still run without Qdrant for health checks
-  }
+  // Load index job worker after port is bound (heavy: ts-morph, LangChain, BullMQ)
+  import('./features/indexing/index.job.js')
+    .then(() => console.log('✅ Index job worker loaded'))
+    .catch((err) => {
+      console.error(
+        '⚠️ Index job worker failed to load (jobs will not run):',
+        err,
+      );
+    });
 }
 
 // Execute the startup function
