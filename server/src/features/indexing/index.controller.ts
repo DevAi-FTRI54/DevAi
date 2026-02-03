@@ -1,17 +1,17 @@
 import express, { Request, Response } from 'express';
-import { cloneRepo } from './git.service.js';
-import { indexQueue } from './index.job.js';
+import type { Queue } from 'bullmq';
 
-// // Local testing for GitHub repo indexing
-// export const indexRepoOld = (req: Request, res: Response) => {
-//   const { repoUrl, sha = 'HEAD' } = req.body;
-
-//   cloneRepo(repoUrl, sha)
-//     .then((localRepoPath) => console.log('repo path:', localRepoPath))
-//     .catch((err) => console.error('repo clone failed:', err));
-
-//   res.json({ status: 'indexing-started' });
-// };
+// Lazy load index.job so app can listen and respond 200 to keep-alive before heavy deps load.
+// That lets Render/UptimeRobot get a successful response and prevents the service from being
+// treated as asleep (503). Worker loads in background after listen or on first /ingest.
+let _indexQueue: Queue | null = null;
+async function getIndexQueue(): Promise<Queue> {
+  if (!_indexQueue) {
+    const m = await import('./index.job.js');
+    _indexQueue = m.indexQueue;
+  }
+  return _indexQueue;
+}
 
 // Using BullMQ Queue & Worker
 export const indexRepo = async (req: Request, res: Response) => {
@@ -20,6 +20,7 @@ export const indexRepo = async (req: Request, res: Response) => {
   console.log('repoUrl: ', repoUrl);
   console.log('sha: ', sha);
 
+  const indexQueue = await getIndexQueue();
   const job = await indexQueue.add('index', { repoUrl, sha });
   console.log('--- SENDING TO THE FRONTEND ------------');
   console.log({
@@ -36,10 +37,11 @@ export const indexRepo = async (req: Request, res: Response) => {
 
 export const getJobStatus = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
+    const indexQueue = await getIndexQueue();
     const job = await indexQueue.getJob(id);
 
     if (!job) {
@@ -49,38 +51,42 @@ export const getJobStatus = async (
 
     const state = await job.getState();
     const progress = job.progress || 0;
-    
+
     // Get the error message if job failed - check multiple places where BullMQ might store it
     let failedReason = null;
     if (state === 'failed') {
       try {
         const jobData = job as any;
-        
+
         // Log what properties the job has so we can see what's available
         console.log('--- JOB FAILED - Inspecting job object ---');
         console.log('Job keys:', Object.keys(jobData));
         console.log('Job failedReason property:', jobData.failedReason);
         console.log('Job returnvalue:', jobData.returnvalue);
         console.log('Job opts:', jobData.opts);
-        
+
         // Try to get error from different possible locations
         if (jobData.failedReason) {
           failedReason = jobData.failedReason;
         } else if (jobData.returnvalue) {
           const returnValue = jobData.returnvalue;
-          if (returnValue && typeof returnValue === 'object' && returnValue.message) {
+          if (
+            returnValue &&
+            typeof returnValue === 'object' &&
+            returnValue.message
+          ) {
             failedReason = returnValue.message;
           } else {
             failedReason = String(returnValue);
           }
         }
-        
+
         console.log('Extracted failed reason:', failedReason);
       } catch (err) {
         console.error('Error getting failed reason:', err);
       }
     }
-    
+
     const jobProgress = {
       id: job.id,
       status: state,

@@ -1,18 +1,21 @@
-import { indexQueue } from './index.job.js';
-// // Local testing for GitHub repo indexing
-// export const indexRepoOld = (req: Request, res: Response) => {
-//   const { repoUrl, sha = 'HEAD' } = req.body;
-//   cloneRepo(repoUrl, sha)
-//     .then((localRepoPath) => console.log('repo path:', localRepoPath))
-//     .catch((err) => console.error('repo clone failed:', err));
-//   res.json({ status: 'indexing-started' });
-// };
+// Lazy load index.job so app can listen and respond 200 to keep-alive before heavy deps load.
+// That lets Render/UptimeRobot get a successful response and prevents the service from being
+// treated as asleep (503). Worker loads in background after listen or on first /ingest.
+let _indexQueue = null;
+async function getIndexQueue() {
+    if (!_indexQueue) {
+        const m = await import('./index.job.js');
+        _indexQueue = m.indexQueue;
+    }
+    return _indexQueue;
+}
 // Using BullMQ Queue & Worker
 export const indexRepo = async (req, res) => {
     const { repoUrl, sha = 'HEAD' } = req.body;
     console.log('\n--- indexRepo ------');
     console.log('repoUrl: ', repoUrl);
     console.log('sha: ', sha);
+    const indexQueue = await getIndexQueue();
     const job = await indexQueue.add('index', { repoUrl, sha });
     console.log('--- SENDING TO THE FRONTEND ------------');
     console.log({
@@ -29,6 +32,7 @@ export const indexRepo = async (req, res) => {
 export const getJobStatus = async (req, res) => {
     try {
         const { id } = req.params;
+        const indexQueue = await getIndexQueue();
         const job = await indexQueue.getJob(id);
         if (!job) {
             res.status(404).json({ error: 'Job not found' });
