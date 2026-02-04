@@ -57,7 +57,9 @@ export const getJobStatus = async (req, res) => {
                 }
                 else if (jobData.returnvalue) {
                     const returnValue = jobData.returnvalue;
-                    if (returnValue && typeof returnValue === 'object' && returnValue.message) {
+                    if (returnValue &&
+                        typeof returnValue === 'object' &&
+                        returnValue.message) {
                         failedReason = returnValue.message;
                     }
                     else {

@@ -1,22 +1,19 @@
 // Receives queries from the client and invokes RAG processing logic.
-import { Request, Response, NextFunction } from 'express';
-import { answerQuestion } from './rag.service.js';
+// answerQuestion is lazy-loaded so app can listen and respond to /api/keep-alive
+// before LangChain/Qdrant load (avoids long cold start and 503 after restarts).
+import { Request, Response } from 'express';
 import Conversation from '../../models/conversation.model.js';
-import { OpenAIError } from 'openai';
-
-import { QdrantVectorStore } from '@langchain/qdrant';
 import Query from '../../models/query.model.js';
 import User from '../../models/user.model.js';
 
 export const askController = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    //res.setHeader('Access-Control-Allow-Origin', '*');
 
     const { url: repoUrl, prompt: question, type, sessionId } = req.body;
 
@@ -26,9 +23,10 @@ export const askController = async (
       `data: ${JSON.stringify({
         type: 'status',
         message: 'Retrieving code...',
-      })}\n\n`
+      })}\n\n`,
     );
 
+    const { answerQuestion } = await import('./rag.service.js');
     const response = await answerQuestion(repoUrl, question, type, sessionId);
 
     const answer = String(response.result.response.answer);
@@ -40,7 +38,7 @@ export const askController = async (
     for (let i = 0; i < words.length; i += chunkSize) {
       const chunk = words.slice(i, i + chunkSize).join(' ');
       res.write(
-        `data: ${JSON.stringify({ type: 'answer_chunk', content: chunk })}\n\n`
+        `data: ${JSON.stringify({ type: 'answer_chunk', content: chunk })}\n\n`,
       );
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
@@ -50,7 +48,7 @@ export const askController = async (
         type: 'citations',
         data: citations,
         question: question,
-      })}\n\n`
+      })}\n\n`,
     );
     res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
     await Conversation.updateOne(
@@ -77,7 +75,7 @@ export const askController = async (
           sessionId,
         },
       },
-      { upsert: true }
+      { upsert: true },
     );
 
     res.end();
@@ -86,7 +84,7 @@ export const askController = async (
     console.error(err);
 
     res.write(
-      `data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`
+      `data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`,
     );
     res.end();
   }
@@ -107,7 +105,7 @@ export const askController = async (
 
 export const addMessage = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { sessionId, role, content, repoUrl } = req.body;
   const userId = (req as any).user?.userId;
@@ -135,7 +133,7 @@ export const addMessage = async (
           sessionId,
         },
       },
-      { upsert: true }
+      { upsert: true },
     );
 
     res.json({ success: true });
