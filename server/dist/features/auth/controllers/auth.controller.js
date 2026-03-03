@@ -159,7 +159,13 @@ export const completeAuth = async (req, res) => {
         }
         // Set cookies with Safari-compatible settings; maxAge so session survives browser close / inactivity
         const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-        const cookieOpts = { httpOnly: true, secure: true, sameSite: 'none', path: '/', maxAge: COOKIE_MAX_AGE_MS };
+        const cookieOpts = {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            path: '/',
+            maxAge: COOKIE_MAX_AGE_MS,
+        };
         res.cookie('github_access_token', githubToken, cookieOpts);
         const githubData = await getGitHubUserProfile(githubToken);
         console.log('✅ GitHub user profile fetched:', githubData.login || githubData);
@@ -359,8 +365,9 @@ export const getGitHubUserOrgs = async (req, res) => {
         // Return 401 for token expiration/invalid errors
         if (err.message?.includes('expired') || err.message?.includes('invalid')) {
             res.status(401).json({
-                error: err.message || 'GitHub token expired or invalid — please reauthenticate',
-                detail: err.message
+                error: err.message ||
+                    'GitHub token expired or invalid — please reauthenticate',
+                detail: err.message,
             });
             return;
         }

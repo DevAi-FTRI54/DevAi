@@ -115,6 +115,22 @@ try {
                     return batch.length;
                 }
                 catch (error) {
+                    const msg = (error?.message || String(error)).toLowerCase();
+                    const code = error?.code ?? '';
+                    const isQdrantConnection = code === 'ECONNREFUSED' ||
+                        code === 'ETIMEDOUT' ||
+                        msg.includes('qdrant') ||
+                        msg.includes('econnrefused') ||
+                        msg.includes('etimedout') ||
+                        msg.includes('connection refused') ||
+                        msg.includes('fetch failed') ||
+                        msg.includes('service unavailable') ||
+                        msg.includes('502') ||
+                        msg.includes('503') ||
+                        msg.includes('network error');
+                    if (isQdrantConnection) {
+                        console.error(`❌ INGESTION ERROR: Batch ${batchIndex + 1} failed — Qdrant connection unavailable. Free tier may be suspended after inactivity; check Qdrant dashboard.`, { error: error?.message || error });
+                    }
                     console.error(`❌ Failed to process batch ${batchIndex + 1}:`, error);
                     throw error;
                 }
@@ -141,7 +157,22 @@ try {
             console.log(`🎉 Successfully processed all ${total} documents!`);
         }
         catch (error) {
-            // Log full error details before re-throwing
+            const msg = (error?.message || String(error)).toLowerCase();
+            const code = error?.code ?? '';
+            const isQdrantConnection = code === 'ECONNREFUSED' ||
+                code === 'ETIMEDOUT' ||
+                msg.includes('qdrant') ||
+                msg.includes('econnrefused') ||
+                msg.includes('etimedout') ||
+                msg.includes('connection refused') ||
+                msg.includes('fetch failed') ||
+                msg.includes('service unavailable') ||
+                msg.includes('502') ||
+                msg.includes('503') ||
+                msg.includes('network error');
+            if (isQdrantConnection) {
+                console.error('❌ INGESTION ERROR: Job failed due to Qdrant connection/availability. If using Qdrant Cloud free tier, the cluster may be suspended after inactivity — check the Qdrant dashboard or try again later.');
+            }
             console.error('❌ Job failed with error:', error);
             console.error('Error stack:', error.stack);
             throw error; // Re-throw to mark job as failed
@@ -160,10 +191,25 @@ try {
         console.log(`✅ Job ${job.id} has completed!`);
     })
         .on('failed', (job, err) => {
-        // Enhanced error logging for failed jobs
+        const msg = (err?.message || '').toLowerCase();
+        const code = err?.code ?? '';
+        const likelyQdrant = code === 'ECONNREFUSED' ||
+            code === 'ETIMEDOUT' ||
+            msg.includes('qdrant') ||
+            msg.includes('econnrefused') ||
+            msg.includes('etimedout') ||
+            msg.includes('connection refused') ||
+            msg.includes('fetch failed') ||
+            msg.includes('service unavailable') ||
+            msg.includes('502') ||
+            msg.includes('503') ||
+            msg.includes('network error');
         console.error(`\n❌❌❌ JOB FAILED ❌❌❌`);
         console.error(`Job ID: ${job?.id}`);
         console.error(`Error message: ${err.message}`);
+        if (likelyQdrant) {
+            console.error(`❌ LIKELY CAUSE: Qdrant connection failed (e.g. free tier suspended after inactivity). Check Qdrant dashboard and ensure the cluster is running.`);
+        }
         console.error(`Error name: ${err.name}`);
         console.error(`Full error object:`, err);
         if (err.stack) {

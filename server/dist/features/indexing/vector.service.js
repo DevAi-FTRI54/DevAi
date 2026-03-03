@@ -40,19 +40,51 @@ const embeddings = new OpenAIEmbeddings({
 // --- A Single Collection For All Users ------------------------------
 const COLLECTION = 'devai_collection_01';
 // Supporting documentation: https://js.langchain.com/docs/integrations/retrievers/self_query/qdrant/
+const QDRANT_UNAVAILABLE_HINT = 'If using Qdrant Cloud free tier, the cluster may be suspended after inactivity — check the Qdrant dashboard or try again after it resumes.';
+// Only true when the error clearly indicates Qdrant or network/connection failure (not e.g. OpenAI or validation errors).
+function isQdrantConnectionError(err) {
+    const code = err?.code ?? '';
+    const msg = (err?.message || String(err)).toLowerCase();
+    if (code === 'ECONNREFUSED' || code === 'ETIMEDOUT')
+        return true;
+    return (msg.includes('qdrant') ||
+        msg.includes('econnrefused') ||
+        msg.includes('etimedout') ||
+        msg.includes('connection refused') ||
+        msg.includes('fetch failed') ||
+        msg.includes('service unavailable') ||
+        msg.includes('502') ||
+        msg.includes('503') ||
+        msg.includes('network error'));
+}
 // Upsert documents to vector store - handles batching automatically for efficiency
 export async function upsert(docs) {
     if (!docs || docs.length === 0) {
         console.warn('⚠️ upsert called with empty documents array');
         return;
     }
-    // This automatically batches embeddings API calls (OpenAI supports up to 2048 per request)
-    // and batches Qdrant upserts, making it much faster and cheaper than processing one-by-one
-    const vectorStore = QdrantVectorStore.fromDocuments(docs, embeddings, {
-        client: getQdrantClient(),
-        collectionName: COLLECTION,
-    });
-    return vectorStore;
+    try {
+        const vectorStore = QdrantVectorStore.fromDocuments(docs, embeddings, {
+            client: getQdrantClient(),
+            collectionName: COLLECTION,
+        });
+        return vectorStore;
+    }
+    catch (err) {
+        const msg = err?.message || String(err);
+        if (isQdrantConnectionError(err)) {
+            console.error('❌ INGESTION ERROR: Qdrant upsert failed (no connection or Qdrant unavailable).', {
+                error: msg,
+                docCount: docs.length,
+                hint: QDRANT_UNAVAILABLE_HINT,
+            });
+        }
+        else {
+            console.error('❌ INGESTION ERROR: Upsert failed.', { error: msg, docCount: docs.length });
+        }
+        console.error('❌ Ingestion failure details:', err?.stack || err);
+        throw err;
+    }
 }
 // -- asRetriever ----------------------------------------------------
 // Factory asRetriever so chat can pull retriever later
@@ -152,13 +184,23 @@ export async function ensureQdrantIndexes() {
                         console.log(`✅ Collection '${COLLECTION}' was created by another process`);
                     }
                     else {
+                        if (isQdrantConnectionError(createErr)) {
+                            console.error('❌ QDRANT CONNECTION ERROR: Failed to create collection.', { error: createErr?.message || createErr, hint: QDRANT_UNAVAILABLE_HINT });
+                        }
+                        else {
+                            console.error('❌ Failed to create collection:', createErr?.message || createErr);
+                        }
                         throw createErr;
                     }
                 }
             }
             else {
-                // Re-throw if it's a different error
-                console.error('❌ Unexpected error checking collection:', err);
+                if (isQdrantConnectionError(err)) {
+                    console.error('❌ QDRANT CONNECTION ERROR: Could not reach Qdrant or collection check failed.', { error: err?.message || err, hint: QDRANT_UNAVAILABLE_HINT });
+                }
+                else {
+                    console.error('❌ Unexpected error checking collection:', err?.message || err);
+                }
                 throw err;
             }
         }
@@ -175,7 +217,12 @@ export async function ensureQdrantIndexes() {
             console.log('✅ Index for metadata.repoId already exists');
             return;
         }
-        console.error('❌ Failed to create index:', err);
+        if (isQdrantConnectionError(err)) {
+            console.error('❌ QDRANT CONNECTION ERROR: Failed to create or ensure Qdrant index.', { error: err?.message || err, hint: QDRANT_UNAVAILABLE_HINT });
+        }
+        else {
+            console.error('❌ Failed to create or ensure Qdrant index:', err?.message || err);
+        }
         throw err;
     }
 }
