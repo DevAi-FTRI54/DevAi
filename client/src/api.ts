@@ -38,11 +38,11 @@ export async function completeAuth(code: string) {
     // Check for specific error messages
     if (errorText.includes('expired') || res.status === 401) {
       throw new Error(
-        'Authorization code expired. Please try logging in again.'
+        'Authorization code expired. Please try logging in again.',
       );
     } else if (res.status === 400) {
       throw new Error(
-        'Invalid authorization code. Please try logging in again.'
+        'Invalid authorization code. Please try logging in again.',
       );
     }
     throw new Error(`Auth failed: ${res.status} ${errorText}`);
@@ -56,7 +56,7 @@ export async function completeAuth(code: string) {
     const stored = localStorage.getItem('githubToken');
     if (stored !== data.githubToken) {
       console.error(
-        '❌ WARNING: Token was not stored correctly in localStorage!'
+        '❌ WARNING: Token was not stored correctly in localStorage!',
       );
     }
   }
@@ -69,7 +69,7 @@ export async function completeAuth(code: string) {
 
 //* orgselector.tsx
 export async function getUserOrgs(
-  token?: string
+  token?: string,
 ): Promise<{ id: number; login: string }[]> {
   // Get token from parameter or localStorage (for Safari compatibility)
   const githubToken = token || localStorage.getItem('githubToken');
@@ -99,12 +99,16 @@ export async function getUserOrgs(
   });
 
   if (res.status === 401) {
-    const errorData = await res.json().catch(() => ({ error: 'Token expired' }));
+    const errorData = await res
+      .json()
+      .catch(() => ({ error: 'Token expired' }));
     console.warn('🔁 Token expired or invalid:', errorData);
     localStorage.removeItem('githubToken');
     localStorage.removeItem('jwt');
     window.location.href = `/login?expired=true`;
-    throw new Error(errorData.error || 'GitHub token expired — reauth required');
+    throw new Error(
+      errorData.error || 'GitHub token expired — reauth required',
+    );
   }
 
   if (!res.ok) throw new Error(`Failed to fetch orgs: ${res.statusText}`);
@@ -115,7 +119,7 @@ export async function getUserOrgs(
 
 //* promptbaringestion
 export async function getIngestionStatus(
-  jobId: string
+  jobId: string,
 ): Promise<IngestionStatusData> {
   const res = await fetch(`${API_BASE_URL}/index/status/${jobId}`);
   if (!res.ok)
@@ -150,7 +154,7 @@ export async function getReposForOrg(opts: {
     {
       credentials: 'include', // Still try to send cookies as fallback
       headers,
-    }
+    },
   );
 
   if (res.status === 401) {
@@ -185,13 +189,13 @@ export async function startRepoIngestion(opts: {
 export async function getRepoFileContent(
   repoUrl: string,
   filePath: string,
-  token: string
+  token: string,
 ): Promise<string> {
   const res = await fetch(
     `https://api.github.com/repos/${repoUrl}/contents/${filePath}`,
     {
       headers: { Authorization: `Bearer ${token}` },
-    }
+    },
   );
   if (!res.ok) throw new Error('Failed to fetch file');
   const data = await res.json();
@@ -204,7 +208,7 @@ export async function getRepoContents(
   owner: string,
   repo: string,
   path: string = '',
-  token?: string
+  token?: string,
 ): Promise<GitHubContentItem[]> {
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}` }
@@ -329,10 +333,8 @@ export async function getGithubToken(): Promise<string> {
     console.warn('🔁 Token expired, clearing localStorage...');
     localStorage.removeItem('githubToken');
     localStorage.removeItem('jwt');
-    // Redirect to login after a short delay to show error message
-    setTimeout(() => {
-      window.location.href = `/login?expired=true`;
-    }, 2000);
+    // Redirect immediately so user can get new credentials (no automatic refresh with GitHub OAuth)
+    window.location.href = '/login?expired=true';
     throw new Error('GitHub token expired — reauth required');
   }
 
@@ -352,7 +354,7 @@ export async function getGithubToken(): Promise<string> {
   } catch (storageError) {
     console.warn(
       '⚠️ Failed to store token in localStorage (Safari privacy mode?):',
-      storageError
+      storageError,
     );
     // Continue anyway - we have the token to use
   }

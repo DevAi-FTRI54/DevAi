@@ -53,10 +53,13 @@ export const handleGitHubCallback = async (req, res) => {
         console.log('🔧 GitHub App installed:', isInstalled, 'Installation ID:', installationId);
         // Step 6: Set all cookies with environment-aware settings
         const isProduction = process.env.NODE_ENV === 'production';
+        const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days so session survives browser close / inactivity
         const cookieSettings = {
             httpOnly: true,
-            secure: isProduction, // Only require HTTPS in production
-            sameSite: isProduction ? 'none' : 'lax', // Relaxed settings for development
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            maxAge: COOKIE_MAX_AGE_MS,
+            path: '/',
         };
         res.cookie('github_access_token', access_token, cookieSettings);
         res.cookie('token', token, cookieSettings);
@@ -154,13 +157,10 @@ export const completeAuth = async (req, res) => {
             // Re-throw other errors
             throw tokenError;
         }
-        // Set cookies with Safari-compatible settings
-        res.cookie('github_access_token', githubToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            path: '/', // Safari requires explicit path
-        });
+        // Set cookies with Safari-compatible settings; maxAge so session survives browser close / inactivity
+        const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+        const cookieOpts = { httpOnly: true, secure: true, sameSite: 'none', path: '/', maxAge: COOKIE_MAX_AGE_MS };
+        res.cookie('github_access_token', githubToken, cookieOpts);
         const githubData = await getGitHubUserProfile(githubToken);
         console.log('✅ GitHub user profile fetched:', githubData.login || githubData);
         const user = await findOrCreateUser(githubData, githubToken);
@@ -169,22 +169,12 @@ export const completeAuth = async (req, res) => {
             _id: user._id.toString(),
             username: user.username,
         });
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none', // Changed to 'none' for cross-origin Safari compatibility
-            path: '/', // Safari requires explicit path
-        });
+        res.cookie('token', token, cookieOpts);
         const installations = await getAppInstallations(githubToken);
         const { isInstalled, installationId } = checkIfAppInstalled(installations);
         console.log('🔧 GitHub App installed:', isInstalled, 'Installation ID:', installationId);
         if (installationId) {
-            res.cookie('installation_id', installationId, {
-                httpOnly: true,
-                sameSite: 'none',
-                secure: true,
-                path: '/', // Safari requires explicit path
-            });
+            res.cookie('installation_id', installationId, cookieOpts);
         }
         const responseData = {
             token,

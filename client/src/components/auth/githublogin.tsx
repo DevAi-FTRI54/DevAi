@@ -10,11 +10,13 @@ const GitHubLogin: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for error in URL params
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get('error');
+    const expiredParam = urlParams.get('expired');
     if (errorParam) {
       setError(decodeURIComponent(errorParam));
+    } else if (expiredParam === 'true') {
+      setError('Your session expired. Log in again to continue.');
     }
   }, []);
 

@@ -49,10 +49,10 @@ export const getGitHubLoginURL = (req: Request, res: Response) => {
 // Process Github callback with auth code
 export const handleGitHubCallback = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
-  const code = req.query.code as string;
+    const code = req.query.code as string;
     if (!code) return res.status(400).send('Missing code');
 
     console.log('[GitHub OAuth] Received code:', code);
@@ -64,7 +64,7 @@ export const handleGitHubCallback = async (
     const githubData = await getGitHubUserProfile(access_token);
     console.log(
       '✅ GitHub user profile fetched:',
-      githubData.login || githubData
+      githubData.login || githubData,
     );
 
     // Step 3: Create/find user in database
@@ -84,15 +84,18 @@ export const handleGitHubCallback = async (
       '🔧 GitHub App installed:',
       isInstalled,
       'Installation ID:',
-      installationId
+      installationId,
     );
 
     // Step 6: Set all cookies with environment-aware settings
     const isProduction = process.env.NODE_ENV === 'production';
+    const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days so session survives browser close / inactivity
     const cookieSettings = {
       httpOnly: true,
-      secure: isProduction, // Only require HTTPS in production
-      sameSite: isProduction ? ('none' as const) : ('lax' as const), // Relaxed settings for development
+      secure: isProduction,
+      sameSite: isProduction ? ('none' as const) : ('lax' as const),
+      maxAge: COOKIE_MAX_AGE_MS,
+      path: '/',
     };
 
     res.cookie('github_access_token', access_token, cookieSettings);
@@ -112,7 +115,7 @@ export const handleGitHubCallback = async (
       '🚀 Redirecting to:',
       redirectUrl,
       'at:',
-      new Date().toISOString()
+      new Date().toISOString(),
     );
 
     if (isInstalled) {
@@ -123,7 +126,7 @@ export const handleGitHubCallback = async (
   } catch (error: any) {
     console.error('❌ GitHub callback failed:', error);
     return res.redirect(
-      `${FRONTEND_BASE_URL}/login?error=${encodeURIComponent(error.message)}`
+      `${FRONTEND_BASE_URL}/login?error=${encodeURIComponent(error.message)}`,
     );
   }
 };
@@ -186,7 +189,7 @@ export const handleGitHubCallback = async (
 
 export const completeAuth = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const code = req.body.code as string;
@@ -219,18 +222,21 @@ export const completeAuth = async (
       throw tokenError;
     }
 
-    // Set cookies with Safari-compatible settings
-    res.cookie('github_access_token', githubToken, {
+    // Set cookies with Safari-compatible settings; maxAge so session survives browser close / inactivity
+    const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+    const cookieOpts = {
       httpOnly: true,
       secure: true,
-      sameSite: 'none',
-      path: '/', // Safari requires explicit path
-    });
+      sameSite: 'none' as const,
+      path: '/',
+      maxAge: COOKIE_MAX_AGE_MS,
+    };
+    res.cookie('github_access_token', githubToken, cookieOpts);
 
     const githubData = await getGitHubUserProfile(githubToken);
     console.log(
       '✅ GitHub user profile fetched:',
-      githubData.login || githubData
+      githubData.login || githubData,
     );
     const user = await findOrCreateUser(githubData, githubToken);
     console.log('👤 DB user record:', user?.username);
@@ -239,12 +245,7 @@ export const completeAuth = async (
       username: user.username,
     });
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none', // Changed to 'none' for cross-origin Safari compatibility
-      path: '/', // Safari requires explicit path
-    });
+    res.cookie('token', token, cookieOpts);
 
     const installations = await getAppInstallations(githubToken);
     const { isInstalled, installationId } = checkIfAppInstalled(installations);
@@ -252,16 +253,11 @@ export const completeAuth = async (
       '🔧 GitHub App installed:',
       isInstalled,
       'Installation ID:',
-      installationId
+      installationId,
     );
 
     if (installationId) {
-      res.cookie('installation_id', installationId, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-        path: '/', // Safari requires explicit path
-      });
+      res.cookie('installation_id', installationId, cookieOpts);
     }
 
     const responseData = {
@@ -297,7 +293,7 @@ const inFlightRequests = new Map<string, Promise<any>>();
 
 export const getGitHubUserOrgs = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const startTime = Date.now();
   console.log('⏱️ [ORGS] Request started at:', new Date().toISOString());
@@ -333,7 +329,7 @@ export const getGitHubUserOrgs = async (
         {
           authHeader: authHeader ? 'present but invalid format' : 'missing',
           cookieToken: cookieToken ? 'present' : 'missing',
-        }
+        },
       );
       res.status(401).json({ error: 'Missing GitHub token' });
       return;
@@ -345,7 +341,7 @@ export const getGitHubUserOrgs = async (
       {
         tokenLength: githubToken.length,
         tokenPrefix: githubToken.substring(0, 10),
-      }
+      },
     );
 
     const cacheKey = githubToken.slice(0, 10); // Use token prefix as cache key
@@ -354,7 +350,7 @@ export const getGitHubUserOrgs = async (
     const cached = orgCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       console.log(
-        `📦 [ORGS] Returning cached organizations (${Date.now() - startTime}ms)`
+        `📦 [ORGS] Returning cached organizations (${Date.now() - startTime}ms)`,
       );
       res.json(cached.data);
       return;
@@ -368,7 +364,7 @@ export const getGitHubUserOrgs = async (
       console.log(
         `✅ [ORGS] Got result from existing request (${
           Date.now() - startTime
-        }ms)`
+        }ms)`,
       );
       res.json(result);
       return;
@@ -399,7 +395,7 @@ export const getGitHubUserOrgs = async (
         } catch {
           errorDetails = { message: errorBody };
         }
-        
+
         console.warn('⚠️ GitHub token is invalid or expired:', {
           status: userResponse.status,
           statusText: userResponse.statusText,
@@ -407,7 +403,7 @@ export const getGitHubUserOrgs = async (
           tokenPrefix: githubToken.substring(0, 10),
           tokenLength: githubToken.length,
         });
-        
+
         // Clear cookie
         res.clearCookie('github_access_token', {
           httpOnly: true,
@@ -415,10 +411,10 @@ export const getGitHubUserOrgs = async (
           sameSite: 'none',
           path: '/', // Must match the path used when setting the cookie
         });
-        
+
         // Return a more informative error
         throw new Error(
-          `GitHub token expired or invalid: ${errorDetails.message || 'Please reauthenticate'}`
+          `GitHub token expired or invalid: ${errorDetails.message || 'Please reauthenticate'}`,
         );
       }
 
@@ -436,20 +432,20 @@ export const getGitHubUserOrgs = async (
       });
 
       console.log(
-        `📡 [ORGS] GitHub API responded in ${Date.now() - apiStartTime}ms`
+        `📡 [ORGS] GitHub API responded in ${Date.now() - apiStartTime}ms`,
       );
 
       if (!orgsResponse.ok) {
         const errorText = await orgsResponse.text();
-      console.error('❌ GitHub orgs fetch failed:', errorText);
+        console.error('❌ GitHub orgs fetch failed:', errorText);
         throw new Error('Failed to fetch GitHub orgs');
-    }
+      }
 
       const orgs = (await orgsResponse.json()) as {
-      id: number;
-      login: string;
-      avatar_url: string;
-    }[];
+        id: number;
+        login: string;
+        avatar_url: string;
+      }[];
 
       // Check if user has personal installation of the app
       const installations = await getAppInstallations(githubToken);
@@ -459,7 +455,7 @@ export const getGitHubUserOrgs = async (
 
       // Find personal installation (where account.login matches user.login)
       const personalInstallation = installationsList.find(
-        (inst: any) => inst.account && inst.account.login === user.login
+        (inst: any) => inst.account && inst.account.login === user.login,
       );
 
       // Build result: include personal account first, then orgs
@@ -478,12 +474,12 @@ export const getGitHubUserOrgs = async (
       // Add organizations
       processedOrgs.push(
         ...orgs.map(({ id, login, avatar_url }) => ({
-        id,
-        login,
-        avatar_url,
+          id,
+          login,
+          avatar_url,
           isPersonal: false,
-      }))
-    );
+        })),
+      );
 
       orgCache.set(cacheKey, { data: processedOrgs, timestamp: Date.now() });
 
@@ -505,18 +501,20 @@ export const getGitHubUserOrgs = async (
   } catch (err: Error | any) {
     console.error(
       `❌ [ORGS] Error after ${Date.now() - startTime}ms:`,
-      err.message
+      err.message,
     );
-    
+
     // Return 401 for token expiration/invalid errors
     if (err.message?.includes('expired') || err.message?.includes('invalid')) {
-      res.status(401).json({ 
-        error: err.message || 'GitHub token expired or invalid — please reauthenticate',
-        detail: err.message 
+      res.status(401).json({
+        error:
+          err.message ||
+          'GitHub token expired or invalid — please reauthenticate',
+        detail: err.message,
       });
       return;
     }
-    
+
     res
       .status(500)
       .json({ error: 'Failed to fetch orgs', detail: err.message });
@@ -536,7 +534,7 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
         error: 'Service temporarily unavailable',
         retry: true,
         retryAfter: Math.ceil(
-          (CIRCUIT_RESET_TIME - (now - lastFailureTime)) / 1000
+          (CIRCUIT_RESET_TIME - (now - lastFailureTime)) / 1000,
         ),
       });
       return;
@@ -577,7 +575,9 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
 
     if (org) {
       if (!githubToken) {
-        console.error('❌ listRepos: No GitHub token found in header or cookies');
+        console.error(
+          '❌ listRepos: No GitHub token found in header or cookies',
+        );
         res.status(401).json({ error: 'Missing GitHub token' });
         return;
       }
@@ -595,7 +595,7 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
         (inst: any) =>
           inst.account &&
           inst.account.login &&
-          inst.account.login.toLowerCase() === org.toLowerCase()
+          inst.account.login.toLowerCase() === org.toLowerCase(),
       );
       if (!match) {
         res.status(404).json({ error: 'App not installed on this org' });
@@ -653,7 +653,7 @@ export const listRepos = async (req: Request, res: Response): Promise<void> => {
 // 4. Get githubToken and pass to chatwrap.tsx
 export const getGithubToken = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   if (!mongoose.connection.readyState) {
     res.status(503).json({ error: 'Database not ready', ready: true });
@@ -677,7 +677,9 @@ export const getGithubToken = async (
   });
 
   if (!githubToken) {
-    console.error('❌ getGithubToken: No GitHub token found in header or cookies');
+    console.error(
+      '❌ getGithubToken: No GitHub token found in header or cookies',
+    );
     res.status(401).json({ error: 'Failed to get Github token' });
     return;
   }
