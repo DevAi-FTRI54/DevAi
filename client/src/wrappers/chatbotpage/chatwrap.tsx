@@ -4,7 +4,7 @@ import ChatWindow from '../../components/chat/chatwindow';
 import ChatInput from '../../components/chat/chatinput';
 import RepoViewer from '../../components/chat/filepreview';
 import type { Message, ChatWrapProps } from '../../types';
-import { getGithubToken } from '../../api'; // [ADDED]
+import { checkSession } from '../../api';
 
 // // Helper to convert absolute to repo-relative path
 // function toRepoRelative(absolutePath: string) {
@@ -16,9 +16,8 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   // const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [originalFilePath, setOriginalFilePath] = useState<string>('');
-  const [githubToken, setGithubToken] = useState<string | null>(null);
-  const [tokenLoading, setTokenLoading] = useState(true); // [ADDED]
-  const [tokenError, setTokenError] = useState<string | null>(null); // [ADDED]
+  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
 
   const [streamingAnswer, setStreamingAnswer] = useState('');
@@ -39,20 +38,13 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingAnswer]);
 
-  // Get GitHub token (now using helper in api.ts)
   useEffect(() => {
-    async function fetchToken() {
-      try {
-        const token = await getGithubToken(); // [CHANGED]
-        setGithubToken(token); // [CHANGED]
-      } catch (error) {
-        setTokenError('Failed to get GitHub token'); // [ADDED]
-        console.error('Failed to get GitHub token:', error);
-      } finally {
-        setTokenLoading(false); // [ADDED]
-      }
-    }
-    fetchToken();
+    checkSession()
+      .then(() => setSessionReady(true))
+      .catch((e) => {
+        setSessionError('Session expired or not authenticated');
+        console.error('Session check failed:', e);
+      });
   }, []);
 
   // Show streaming state while waiting for/receiving AI response
@@ -109,7 +101,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
   }, [isLoadingResponse, isStreaming, streamingAnswer]);
 
   // Handle loading/error for token
-  if (tokenLoading) {
+  if (!sessionReady) {
     // [ADDED]
     return (
       <div className='flex h-screen bg-[#121629] items-center justify-center'>
@@ -118,16 +110,16 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
     );
   }
 
-  if (tokenError) {
+  if (sessionError) {
     // [ADDED]
     return (
       <div className='flex h-screen bg-[#121629] items-center justify-center'>
-        <div className='text-red-400'>{tokenError}</div>
+        <div className='text-red-400'>{sessionError}</div>
       </div>
     );
   }
 
-  if (!githubToken) {
+  if (!sessionReady) {
     return (
       <div className='min-h-screen bg-[#171717] flex items-center justify-center'>
         <div className='bg-[#212121] border border-[#303030] rounded-2xl shadow-lg p-8 max-w-md mx-auto text-center'>
@@ -177,7 +169,7 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
     snippet: string,
     file: string,
     startLine: number,
-    endLine: number
+    endLine: number,
   ) => {
     console.log('💾 Storing message with file:', file);
     console.log('💾 File type:', typeof file);
@@ -218,7 +210,6 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
         <PermanentSidebar
           owner={owner}
           repo={repoName}
-          token={githubToken!}
           onFileSelect={handleFileSelect}
           org={org || repo.org}
           installationId={installationId || repo.installationId}
@@ -328,7 +319,6 @@ const ChatWrap: React.FC<ChatWrapProps> = ({ repo, org, installationId }) => {
               repoUrl={`${owner}/${repoName}`}
               selectedPath={originalFilePath}
               setSelectedPath={setOriginalFilePath}
-              token={githubToken!}
             />
           ) : (
             <div className='flex flex-col items-center justify-center h-64 text-center'>

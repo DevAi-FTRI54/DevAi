@@ -10,6 +10,9 @@ import {
   handleGitHubCallback,
   listRepos,
   getGithubToken,
+  getMe,
+  getGitHubFileContent,
+  getGitHubRepoContents,
 } from './controllers/auth.controller.js';
 
 console.log('Loading auth.routes.ts');
@@ -20,6 +23,9 @@ router.get('/github', getGitHubLoginURL);
 router.get('/callback', handleGitHubCallback);
 router.get('/repos', listRepos);
 router.get('/github-token', getGithubToken);
+router.get('/me', getMe);
+router.get('/github-file-content', getGitHubFileContent);
+router.get('/github-repo-contents', getGitHubRepoContents);
 // /orgs doesn't need requireAuth - it uses GitHub token, not JWT
 // getGitHubUserOrgs handles its own authentication
 router.get('/orgs', getGitHubUserOrgs);

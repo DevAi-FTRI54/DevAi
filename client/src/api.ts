@@ -19,23 +19,19 @@ console.log('🔧 Environment check:', {
   all_env: import.meta.env,
 });
 
-// Helper to get JWT token from localStorage
-function getJWTToken(): string | null {
-  return localStorage.getItem('jwt');
-}
+// Cookies-only: tokens live in HTTP-only cookies; client never reads or stores them.
 
-//* AuthCallback.tsx get
+//* AuthCallback.tsx: complete auth; server sets HTTP-only cookies, we do not store tokens.
 export async function completeAuth(code: string) {
   const res = await fetch(`${API_BASE_URL}/auth/complete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code }),
-    credentials: 'include', // Required for Safari to send cookies
+    credentials: 'include',
   });
 
   if (!res.ok) {
     const errorText = await res.text();
-    // Check for specific error messages
     if (errorText.includes('expired') || res.status === 401) {
       throw new Error(
         'Authorization code expired. Please try logging in again.',
@@ -49,66 +45,20 @@ export async function completeAuth(code: string) {
   }
 
   const data = await res.json();
-
-  // Verify token was stored (Safari sometimes has issues with localStorage)
-  if (data.githubToken) {
-    localStorage.setItem('githubToken', data.githubToken);
-    const stored = localStorage.getItem('githubToken');
-    if (stored !== data.githubToken) {
-      console.error(
-        '❌ WARNING: Token was not stored correctly in localStorage!',
-      );
-    }
-  }
-  if (data.token) {
-    localStorage.setItem('jwt', data.token);
-  }
-
   return data;
 }
 
-//* orgselector.tsx
-export async function getUserOrgs(
-  token?: string,
-): Promise<{ id: number; login: string }[]> {
-  // Get token from parameter or localStorage (for Safari compatibility)
-  const githubToken = token || localStorage.getItem('githubToken');
-
-  // Validate token format before making request
-  if (githubToken && githubToken.length < 20) {
-    console.error('❌ Invalid token format detected, clearing...');
-    localStorage.removeItem('githubToken');
-    localStorage.removeItem('jwt');
-    window.location.href = `/login?expired=true`;
-    throw new Error('Invalid token format');
-  }
-
-  const headers: HeadersInit = {
-    'Cache-Control': 'no-cache',
-  };
-
-  // Send token in Authorization header for Safari compatibility
-  if (githubToken) {
-    headers.Authorization = `Bearer ${githubToken}`;
-  }
-
+//* orgselector.tsx — auth via cookie only
+export async function getUserOrgs(): Promise<{ id: number; login: string }[]> {
   const res = await fetch(`${API_BASE_URL}/auth/orgs`, {
     method: 'GET',
-    credentials: 'include', // Still try to send cookies as fallback
-    headers,
+    credentials: 'include',
+    headers: { 'Cache-Control': 'no-cache' },
   });
 
   if (res.status === 401) {
-    const errorData = await res
-      .json()
-      .catch(() => ({ error: 'Token expired' }));
-    console.warn('🔁 Token expired or invalid:', errorData);
-    localStorage.removeItem('githubToken');
-    localStorage.removeItem('jwt');
-    window.location.href = `/login?expired=true`;
-    throw new Error(
-      errorData.error || 'GitHub token expired — reauth required',
-    );
+    window.location.href = '/login?expired=true';
+    throw new Error('Session expired — reauth required');
   }
 
   if (!res.ok) throw new Error(`Failed to fetch orgs: ${res.statusText}`);
@@ -121,53 +71,35 @@ export async function getUserOrgs(
 export async function getIngestionStatus(
   jobId: string,
 ): Promise<IngestionStatusData> {
-  const res = await fetch(`${API_BASE_URL}/index/status/${jobId}`);
+  const res = await fetch(`${API_BASE_URL}/index/status/${jobId}`, {
+    credentials: 'include',
+  });
   if (!res.ok)
     throw new Error(`Failed to fetch ingestion status: ${res.statusText}`);
   return res.json();
 }
 
-//* repo-selector:
+//* repo-selector — auth via cookie only
 export async function getReposForOrg(opts: {
   org?: string;
   installation_id?: string;
 }): Promise<Repo[]> {
-  // Get token from localStorage for Safari compatibility
-  const githubToken = localStorage.getItem('githubToken');
-
   const params = new URLSearchParams();
   if (opts.org) params.append('org', opts.org);
   if (opts.installation_id)
     params.append('installation_id', opts.installation_id);
 
-  const headers: HeadersInit = {};
-
-  // Send token in Authorization header for Safari compatibility
-  if (githubToken) {
-    headers.Authorization = `Bearer ${githubToken}`;
-  }
-
   const res = await fetch(
-    `${API_BASE_URL}/auth/repos${
-      params.toString() ? '?' + params.toString() : ''
-    }`,
-    {
-      credentials: 'include', // Still try to send cookies as fallback
-      headers,
-    },
+    `${API_BASE_URL}/auth/repos${params.toString() ? '?' + params.toString() : ''}`,
+    { credentials: 'include' },
   );
 
   if (res.status === 401) {
-    console.warn('🔁 Token expired, redirecting to login...');
-    localStorage.removeItem('githubToken');
-    localStorage.removeItem('jwt');
-    window.location.href = `/login?expired=true`;
-    throw new Error('GitHub token expired — reauth required');
+    window.location.href = '/login?expired=true';
+    throw new Error('Session expired — reauth required');
   }
 
-  if (!res.ok) {
-    throw res;
-  }
+  if (!res.ok) throw res;
   return res.json();
 }
 
@@ -180,43 +112,43 @@ export async function startRepoIngestion(opts: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(opts),
+    credentials: 'include',
   });
   if (!res.ok) throw new Error('Ingestion failed');
   return res.json();
 }
 
-// Fetch file content from GitHub, decode base64
+// Fetch file content via backend proxy (cookie auth; client never sees token).
 export async function getRepoFileContent(
   repoUrl: string,
   filePath: string,
-  token: string,
 ): Promise<string> {
+  const params = new URLSearchParams({ repoUrl, filePath });
   const res = await fetch(
-    `https://api.github.com/repos/${repoUrl}/contents/${filePath}`,
+    `${API_BASE_URL}/auth/github-file-content?${params}`,
     {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     },
   );
   if (!res.ok) throw new Error('Failed to fetch file');
   const data = await res.json();
-  // GitHub returns content as base64
-  return atob(data.content.replace(/\n/g, ''));
+  return data.content ?? '';
 }
 
-//* Calls to GitHub stay the same (they don't use your API_BASE_URL):
+// Fetch repo contents (directory listing) via backend proxy (cookie auth).
 export async function getRepoContents(
   owner: string,
   repo: string,
   path: string = '',
-  token?: string,
 ): Promise<GitHubContentItem[]> {
-  const headers: HeadersInit = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents${
-    path ? '/' + path : ''
-  }`;
-  const res = await fetch(url, { headers });
+  const params = new URLSearchParams({ owner, repo });
+  if (path) params.append('path', path);
+  const res = await fetch(
+    `${API_BASE_URL}/auth/github-repo-contents?${params}`,
+    {
+      credentials: 'include',
+    },
+  );
   if (!res.ok) throw new Error(`GitHub fetch failed: ${res.statusText}`);
   return res.json();
 }
@@ -241,28 +173,15 @@ export async function storeUserMessage(data: {
   repoUrl: string;
   timestamp: Date;
 }): Promise<boolean> {
-  const jwtToken = getJWTToken();
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-
-  // Send JWT in Authorization header for Safari compatibility
-  if (jwtToken) {
-    headers.Authorization = `Bearer ${jwtToken}`;
-  }
-
   const response = await fetch(`${API_BASE_URL}/query/store`, {
     method: 'POST',
-    headers,
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-    credentials: 'include', // Still send cookies as fallback
+    credentials: 'include',
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
-      // Token expired, redirect to login
-      localStorage.removeItem('jwt');
-      localStorage.removeItem('githubToken');
-      window.location.href = `/login?expired=true`;
-    }
+    if (response.status === 401) window.location.href = '/login?expired=true';
     throw new Error('Failed to store user message');
   }
   return true;
@@ -274,28 +193,15 @@ export async function postUserPrompt(data: {
   type: string;
   sessionId: string;
 }): Promise<Response> {
-  const jwtToken = getJWTToken();
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-
-  // Send JWT in Authorization header for Safari compatibility
-  if (jwtToken) {
-    headers.Authorization = `Bearer ${jwtToken}`;
-  }
-
   const response = await fetch(`${API_BASE_URL}/query/question`, {
     method: 'POST',
-    headers,
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-    credentials: 'include', // Still send cookies as fallback
+    credentials: 'include',
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
-      // Token expired, redirect to login
-      localStorage.removeItem('jwt');
-      localStorage.removeItem('githubToken');
-      window.location.href = `/login?expired=true`;
-    }
+    if (response.status === 401) window.location.href = '/login?expired=true';
     throw new Error('Failed to submit prompt');
   }
   return response;
@@ -309,55 +215,27 @@ export async function logoutUser(): Promise<void> {
   });
 }
 
-//* Chatwrap helper function
-export async function getGithubToken(): Promise<string> {
-  // First, check if we have token in localStorage (fastest path)
-  const cachedToken = localStorage.getItem('githubToken');
-  if (cachedToken) {
-    console.log('✅ Using cached GitHub token from localStorage');
-    return cachedToken;
-  }
-
-  // If not in localStorage (Safari might have cleared it), try to get from backend
-  // Backend has it in cookies which Safari preserves better
-  console.log('⚠️ Token not in localStorage, fetching from backend...');
-
-  const res = await fetch(`${API_BASE_URL}/auth/github-token`, {
-    credentials: 'include', // Send cookies (Safari preserves these better)
-    headers: {
-      'Cache-Control': 'no-cache',
-    },
+// Fetch current user for display only (server reads JWT from cookie; no token in response).
+export async function getCurrentUserFromApi(): Promise<{
+  userId: string;
+  githubUsername: string;
+} | null> {
+  const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    credentials: 'include',
   });
+  if (res.status === 401 || !res.ok) return null;
+  return res.json();
+}
 
+// Cookies-only: verify session (server has token in HTTP-only cookie). Throws if not authenticated.
+export async function checkSession(): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/auth/github-token`, {
+    credentials: 'include',
+    headers: { 'Cache-Control': 'no-cache' },
+  });
   if (res.status === 401) {
-    console.warn('🔁 Token expired, clearing localStorage...');
-    localStorage.removeItem('githubToken');
-    localStorage.removeItem('jwt');
-    // Redirect immediately so user can get new credentials (no automatic refresh with GitHub OAuth)
     window.location.href = '/login?expired=true';
-    throw new Error('GitHub token expired — reauth required');
+    throw new Error('Session expired — reauth required');
   }
-
-  if (!res.ok) {
-    throw new Error('Failed to get token: ' + res.statusText);
-  }
-
-  const data = await res.json();
-  if (!data.token) {
-    throw new Error('No GitHub token in response');
-  }
-
-  // Store token in localStorage for future use (Safari might have cleared it)
-  try {
-    localStorage.setItem('githubToken', data.token);
-    console.log('✅ Token retrieved from backend and stored in localStorage');
-  } catch (storageError) {
-    console.warn(
-      '⚠️ Failed to store token in localStorage (Safari privacy mode?):',
-      storageError,
-    );
-    // Continue anyway - we have the token to use
-  }
-
-  return data.token;
+  if (!res.ok) throw new Error('Session check failed: ' + res.statusText);
 }

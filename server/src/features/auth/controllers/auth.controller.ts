@@ -260,19 +260,14 @@ export const completeAuth = async (
       res.cookie('installation_id', installationId, cookieOpts);
     }
 
+    // Cookies-only: do not send tokens in response body; they are in HTTP-only cookies.
     const responseData = {
-      token,
-      githubToken,
       installed: isInstalled,
       installationId,
       needsInstall: !isInstalled,
     };
 
-    console.log('✅ completeAuth: Sending response with tokens:', {
-      hasToken: !!token,
-      hasGithubToken: !!githubToken,
-      tokenLength: token?.length || 0,
-      githubTokenLength: githubToken?.length || 0,
+    console.log('✅ completeAuth: Cookies set, response (no tokens in body):', {
       installed: isInstalled,
     });
 
@@ -684,7 +679,111 @@ export const getGithubToken = async (
     return;
   }
 
-  res.json({ token: githubToken });
+  // Cookies-only: do not send token in response body; client uses credentials only.
+  res.json({ session: true });
+};
+
+// Return current user info from JWT in cookie (for UI display only; no token in response).
+export const getMe = async (req: Request, res: Response): Promise<void> => {
+  const token = req.cookies.token;
+  if (!token) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: string;
+      githubUsername: string;
+    };
+    res.json({
+      userId: decoded.userId,
+      githubUsername: decoded.githubUsername,
+    });
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired session' });
+  }
+};
+
+// Proxy: get file content from GitHub using cookie token (client never receives token).
+export const getGitHubFileContent = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const githubToken = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.slice(7)
+    : req.cookies.github_access_token;
+  if (!githubToken) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+  const repoUrl = req.query.repoUrl as string;
+  const filePath = req.query.filePath as string;
+  if (!repoUrl || !filePath) {
+    res.status(400).json({ error: 'Missing repoUrl or filePath' });
+    return;
+  }
+  try {
+    const url = `https://api.github.com/repos/${repoUrl}/contents/${encodeURIComponent(filePath)}`;
+    const ghRes = await fetch(url, {
+      headers: { Authorization: `Bearer ${githubToken}` },
+    });
+    if (!ghRes.ok) {
+      res
+        .status(ghRes.status)
+        .json(await ghRes.json().catch(() => ({ error: ghRes.statusText })));
+      return;
+    }
+    const data = (await ghRes.json()) as {
+      content?: string;
+      encoding?: string;
+    };
+    const content = data.content
+      ? Buffer.from(data.content.replace(/\n/g, ''), 'base64').toString('utf8')
+      : '';
+    res.json({ content });
+  } catch (err: any) {
+    console.error('getGitHubFileContent error:', err);
+    res.status(500).json({ error: err?.message || 'Failed to fetch file' });
+  }
+};
+
+// Proxy: get repo contents (directory listing) from GitHub using cookie token.
+export const getGitHubRepoContents = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const githubToken = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.slice(7)
+    : req.cookies.github_access_token;
+  if (!githubToken) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+  const owner = req.query.owner as string;
+  const repo = req.query.repo as string;
+  const path = (req.query.path as string) || '';
+  if (!owner || !repo) {
+    res.status(400).json({ error: 'Missing owner or repo' });
+    return;
+  }
+  try {
+    const pathSegment = path ? `/${encodeURIComponent(path)}` : '';
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents${pathSegment}`;
+    const ghRes = await fetch(url, {
+      headers: { Authorization: `Bearer ${githubToken}` },
+    });
+    if (!ghRes.ok) {
+      res
+        .status(ghRes.status)
+        .json(await ghRes.json().catch(() => ({ error: ghRes.statusText })));
+      return;
+    }
+    const data = await ghRes.json();
+    res.json(data);
+  } catch (err: any) {
+    console.error('getGitHubRepoContents error:', err);
+    res.status(500).json({ error: err?.message || 'Failed to fetch contents' });
+  }
 };
 
 //Logout function
