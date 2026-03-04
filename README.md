@@ -209,6 +209,8 @@ This `main` branch does not include a dedicated automated test suite yet. A prac
 2. Confirm `GET /api/health` returns 200.
 3. Complete GitHub OAuth, select a repo, and trigger ingestion.
 4. Ask a question and verify that citations reference real files/lines from the repo.
+  
+   Planned next: automated tests for ingestion and query endpoints (unit + integration).
 
 ---
 
