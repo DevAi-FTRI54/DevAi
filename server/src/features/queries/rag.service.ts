@@ -285,43 +285,44 @@ export async function answerQuestion(
 
   // Normalize citation file paths: LLM often returns only filename (e.g. "github.service.ts").
   // Replace with full repo-relative path from retrieved docs so the file viewer can load from GitHub.
-  const context = result.context ?? [];
-  const citations = result.response?.citations ?? [];
+  const context: Document[] = Array.isArray(result.context)
+    ? result.context
+    : [];
+  const rawCitations = result.response?.citations;
+  const citations: Array<{
+    file: string;
+    startLine: number;
+    endLine: number;
+    snippet: string;
+  }> = Array.isArray(rawCitations) ? rawCitations : [];
+  let resultToReturn = result;
   if (citations.length > 0 && context.length > 0) {
-    const normalizedCitations = citations.map(
-      (c: {
-        file: string;
-        startLine: number;
-        endLine: number;
-        snippet: string;
-      }) => {
-        const hasPath = c.file.includes('/') || c.file.includes('\\');
-        if (hasPath) return c;
-        const doc = context.find(
-          (d: Document) =>
-            (d.metadata.startLine === c.startLine &&
-              d.metadata.endLine === c.endLine) ||
-            (d.metadata.filePath &&
-              String(d.metadata.filePath).endsWith(c.file)),
-        );
-        if (doc?.metadata?.filePath) {
-          return { ...c, file: String(doc.metadata.filePath) };
-        }
-        return c;
-      },
-    );
-    result = {
+    const normalizedCitations = citations.map((c) => {
+      const hasPath = c.file.includes('/') || c.file.includes('\\');
+      if (hasPath) return c;
+      const doc = context.find(
+        (d) =>
+          (d.metadata.startLine === c.startLine &&
+            d.metadata.endLine === c.endLine) ||
+          (d.metadata.filePath && String(d.metadata.filePath).endsWith(c.file)),
+      );
+      if (doc?.metadata?.filePath) {
+        return { ...c, file: String(doc.metadata.filePath) };
+      }
+      return c;
+    });
+    resultToReturn = {
       ...result,
       response: { ...result.response, citations: normalizedCitations },
-    };
+    } as unknown as typeof result;
   }
 
-  const traceUrl = (result as any)[RUN_KEY]?.url ?? null; // LLM observability
-  const tokens = (result as any)[RUN_KEY]?.totalTokens ?? undefined;
-  const latency = (result as any)[RUN_KEY]?.durationMs ?? undefined;
+  const traceUrl = (resultToReturn as any)[RUN_KEY]?.url ?? null; // LLM observability
+  const tokens = (resultToReturn as any)[RUN_KEY]?.totalTokens ?? undefined;
+  const latency = (resultToReturn as any)[RUN_KEY]?.durationMs ?? undefined;
 
   return {
-    result,
+    result: resultToReturn,
     traceUrl,
     tokens,
     latency,
