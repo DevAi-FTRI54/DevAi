@@ -35,7 +35,7 @@ const qa = z.object({
       startLine: z.number(),
       endLine: z.number(),
       snippet: z.string(),
-    })
+    }),
   ),
 });
 
@@ -69,7 +69,7 @@ export async function answerQuestion(
   repoUrl: string,
   question: string,
   type: string,
-  sessionId: string
+  sessionId: string,
 ) {
   console.log('--- RAG SERVICE STARTED ---------------');
   console.log('📝 Question:', question);
@@ -87,7 +87,7 @@ export async function answerQuestion(
   console.log('💬 Number of messages:', sessionHistory?.messages?.length || 0);
 
   const previousContext = formatConversationHistory(
-    sessionHistory?.messages || []
+    sessionHistory?.messages || [],
   );
 
   // --- SYSTEM PROMPT ---------
@@ -248,7 +248,7 @@ export async function answerQuestion(
             },
           ],
         },
-      }
+      },
     );
 
     return { response };
@@ -280,8 +280,41 @@ export async function answerQuestion(
 
   const result = await workflow.invoke(
     { question },
-    { runName: 'ask-question', configurable: { repoId } }
+    { runName: 'ask-question', configurable: { repoId } },
   );
+
+  // Normalize citation file paths: LLM often returns only filename (e.g. "github.service.ts").
+  // Replace with full repo-relative path from retrieved docs so the file viewer can load from GitHub.
+  const context = result.context ?? [];
+  const citations = result.response?.citations ?? [];
+  if (citations.length > 0 && context.length > 0) {
+    const normalizedCitations = citations.map(
+      (c: {
+        file: string;
+        startLine: number;
+        endLine: number;
+        snippet: string;
+      }) => {
+        const hasPath = c.file.includes('/') || c.file.includes('\\');
+        if (hasPath) return c;
+        const doc = context.find(
+          (d: Document) =>
+            (d.metadata.startLine === c.startLine &&
+              d.metadata.endLine === c.endLine) ||
+            (d.metadata.filePath &&
+              String(d.metadata.filePath).endsWith(c.file)),
+        );
+        if (doc?.metadata?.filePath) {
+          return { ...c, file: String(doc.metadata.filePath) };
+        }
+        return c;
+      },
+    );
+    result = {
+      ...result,
+      response: { ...result.response, citations: normalizedCitations },
+    };
+  }
 
   const traceUrl = (result as any)[RUN_KEY]?.url ?? null; // LLM observability
   const tokens = (result as any)[RUN_KEY]?.totalTokens ?? undefined;
