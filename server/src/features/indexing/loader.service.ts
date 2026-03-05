@@ -29,7 +29,10 @@ import { glob } from 'glob';
 
 export class TsmorphCodeLoader extends BaseDocumentLoader {
   // super() initializes the parent BaseDocumentLoader
-  constructor(private repoPath: string, private repoId: string) {
+  constructor(
+    private repoPath: string,
+    private repoId: string,
+  ) {
     super();
   }
 
@@ -84,20 +87,28 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
 
     */
     const docs: Document[] = [];
+    // Store repo-relative paths so citations work with GitHub Contents API (which expects paths relative to repo root).
+    const toRepoRelative = (absolutePath: string): string => {
+      const rel = path.relative(this.repoPath, absolutePath);
+      return rel.replace(/\\/g, '/');
+    };
 
     sourceFiles.forEach((sourceFile: any) => {
+      const absolutePath = sourceFile.getFilePath();
+      const filePath = toRepoRelative(absolutePath);
+
       // STEP 3.1: First add ENTIRE file content
       docs.push(
         new Document({
           pageContent: sourceFile.getFullText(),
           metadata: {
             repoId: this.repoId,
-            filePath: sourceFile.getFilePath(),
-            declarationName: path.basename(sourceFile.getFilePath()),
+            filePath,
+            declarationName: path.basename(absolutePath),
             startLine: sourceFile.getStartLineNumber(true),
             endLine: sourceFile.getEndLineNumber(),
           },
-        })
+        }),
       );
 
       // STEP 3.2: Second add individual functions and classes
@@ -113,12 +124,12 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
             pageContent: node.getFullText(),
             metadata: {
               repoId: this.repoId,
-              filePath: sourceFile.getFilePath(),
+              filePath,
               declarationName: node.getName() ?? '<anonymous>',
               startLine: start,
               endLine: end,
             },
-          })
+          }),
         );
       };
       // For each source file, get all functions and classess

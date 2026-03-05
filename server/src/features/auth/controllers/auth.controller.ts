@@ -717,10 +717,20 @@ export const getGitHubFileContent = async (
     return;
   }
   const repoUrl = req.query.repoUrl as string;
-  const filePath = req.query.filePath as string;
+  let filePath = req.query.filePath as string;
   if (!repoUrl || !filePath) {
     res.status(400).json({ error: 'Missing repoUrl or filePath' });
     return;
+  }
+  // Normalize: GitHub API expects repo-relative path. Old citations may have absolute paths from ingestion.
+  filePath = filePath.replace(/\\/g, '/').trim();
+  if (filePath.startsWith('/') || filePath.includes('.cache/repos/')) {
+    const match = filePath.match(/repos\/[^/]+\/[^/]+\/(.+)/);
+    if (match) filePath = match[1];
+    else if (filePath.includes('/server/'))
+      filePath = filePath.slice(filePath.indexOf('/server/') + 1);
+    else if (filePath.includes('/src/'))
+      filePath = filePath.slice(filePath.indexOf('/src/') + 1);
   }
   try {
     const url = `https://api.github.com/repos/${repoUrl}/contents/${encodeURIComponent(filePath)}`;
