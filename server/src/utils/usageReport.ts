@@ -16,54 +16,111 @@ const LOGS_DIR = path.resolve(__dirname, '..', '..', 'logs');
 const USAGE_REPORT_PATH = path.join(LOGS_DIR, 'usage-report.txt');
 const QUERY_LOG_PATH = path.join(LOGS_DIR, 'query-log.txt');
 
+export interface QueryEntry {
+  query: string;
+  timestamp: string; // ISO
+  repoUrl: string;
+  repoName: string; // e.g. "owner/repo" for display
+}
+
 export interface UserUsageRow {
   userId: string;
   username: string | null;
   sessionCount: number;
   queryCount: number;
-  queries: string[];
+  queries: QueryEntry[];
+}
+
+/** Extract "owner/repo" style name from repo URL for display. */
+function repoDisplayName(repoUrl: string): string {
+  if (!repoUrl) return '(no repo)';
+  try {
+    const u = new URL(
+      repoUrl.startsWith('http') ? repoUrl : `https://${repoUrl}`,
+    );
+    const path = u.pathname.replace(/^\//, '').replace(/\.git$/, '');
+    return path || repoUrl;
+  } catch {
+    return repoUrl;
+  }
 }
 
 /**
- * Aggregate from Conversation: unique users, session count, query count, and query texts.
- * Joins User for username when available.
+ * Aggregate from Conversation: unique users, session count, query count, and query entries (text + timestamp + repo).
+ * Joins User for username (by _id and fallback by username in case of legacy data).
  */
 export async function buildUsageReport(): Promise<UserUsageRow[]> {
   const conversations = await Conversation.find({}).lean();
   const userIds = [
-    ...new Set(conversations.map((c) => String(c.userId)).filter(Boolean)),
+    ...new Set(
+      conversations.map((c) => String(c.userId).trim()).filter(Boolean),
+    ),
   ];
   const objectIds = userIds
     .filter((id) => mongoose.Types.ObjectId.isValid(id))
     .map((id) => new mongoose.Types.ObjectId(id));
-  const users =
+  const nonObjectIdIds = userIds.filter(
+    (id) => !mongoose.Types.ObjectId.isValid(id),
+  );
+
+  const usersById =
     objectIds.length > 0
       ? await User.find({ _id: { $in: objectIds } }).lean()
       : [];
-  const userMap = new Map(users.map((u) => [u._id.toString(), u.username]));
+  const usersByUsername =
+    nonObjectIdIds.length > 0
+      ? await User.find({ username: { $in: nonObjectIdIds } }).lean()
+      : [];
+
+  const userMapById = new Map(
+    usersById.map((u) => [u._id.toString(), u.username]),
+  );
+  const userMapByLegacyId = new Map(
+    usersByUsername.map((u) => [u.username, u.username]),
+  );
 
   const rows: UserUsageRow[] = [];
   for (const uid of userIds) {
-    const userConvs = conversations.filter((c) => String(c.userId) === uid);
+    const userConvs = conversations.filter(
+      (c) => String(c.userId).trim() === uid,
+    );
     const sessionIds = new Set(userConvs.map((c) => c.sessionId));
-    const queries: string[] = [];
+    const queries: QueryEntry[] = [];
     for (const conv of userConvs) {
+      const repoUrl = conv.repoUrl || '';
+      const repoName = repoDisplayName(repoUrl);
       for (const msg of conv.messages || []) {
         if (msg.role === 'user' && msg.content) {
-          queries.push(msg.content);
+          const ts =
+            msg.timestamp instanceof Date
+              ? msg.timestamp.toISOString()
+              : new Date(msg.timestamp as any).toISOString();
+          queries.push({
+            query: msg.content,
+            timestamp: ts,
+            repoUrl,
+            repoName,
+          });
         }
       }
     }
+    const username = userMapById.get(uid) ?? userMapByLegacyId.get(uid) ?? null;
+    // Per user: queries most recent first (chronological with newest at top)
+    queries.sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1));
     rows.push({
       userId: uid,
-      username: userMap.get(uid) ?? null,
+      username,
       sessionCount: sessionIds.size,
       queryCount: queries.length,
       queries,
     });
   }
-  // Sort by query count descending so heaviest users are first
-  rows.sort((a, b) => b.queryCount - a.queryCount);
+  // Users ordered by most recent activity first (each user's newest query timestamp)
+  rows.sort((a, b) => {
+    const aLatest = a.queries[0]?.timestamp ?? '';
+    const bLatest = b.queries[0]?.timestamp ?? '';
+    return bLatest > aLatest ? 1 : bLatest < aLatest ? -1 : 0;
+  });
   return rows;
 }
 
@@ -91,9 +148,14 @@ export async function writeUsageReportToFile(): Promise<string> {
     lines.push(`Username: ${r.username ?? '(unknown)'}`);
     lines.push(`Sessions: ${r.sessionCount}  Queries: ${r.queryCount}`);
     lines.push('Queries:');
-    for (const q of r.queries) {
-      const preview = q.length > 120 ? q.slice(0, 117) + '...' : q;
-      lines.push(`  - ${preview.replace(/\n/g, ' ')}`);
+    for (const entry of r.queries) {
+      const preview =
+        entry.query.length > 120
+          ? entry.query.slice(0, 117) + '...'
+          : entry.query;
+      const oneLine = preview.replace(/\n/g, ' ');
+      lines.push(`  [${entry.timestamp}]  repo: ${entry.repoName}`);
+      lines.push(`    ${oneLine}`);
     }
     lines.push('');
   }
@@ -127,6 +189,7 @@ export function appendQueryLog(params: {
         'timestamp\tuserId\tsessionId\trepoUrl\tquery (repo query = user question about the repo, same as in Conversation)\n',
         'utf8',
       );
+      console.log('[Query log] File created at:', path.resolve(QUERY_LOG_PATH));
     }
     const preview =
       params.query.length > 200
@@ -134,9 +197,26 @@ export function appendQueryLog(params: {
         : params.query;
     const line = `${new Date().toISOString()}\t${params.userId ?? 'anonymous'}\t${params.sessionId}\t${params.repoUrl}\t${preview.replace(/\n/g, ' ')}\n`;
     fs.appendFileSync(QUERY_LOG_PATH, line, 'utf8');
-    console.log('[Query log] Repo query appended to', QUERY_LOG_PATH);
+    console.log(
+      '[Query log] Repo query appended. Full path:',
+      path.resolve(QUERY_LOG_PATH),
+    );
   } catch (err) {
     console.error('Failed to append query log:', err);
+  }
+}
+
+/**
+ * Return the contents of the query log file if it exists (for viewing via API when server runs on Render).
+ */
+export function readQueryLog(): string | null {
+  try {
+    if (fs.existsSync(QUERY_LOG_PATH)) {
+      return fs.readFileSync(QUERY_LOG_PATH, 'utf8');
+    }
+    return null;
+  } catch {
+    return null;
   }
 }
 
