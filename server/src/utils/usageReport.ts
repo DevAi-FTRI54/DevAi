@@ -76,8 +76,8 @@ export async function writeUsageReportToFile(): Promise<string> {
     '=== DevAI Usage Report ===',
     `Generated: ${new Date().toISOString()}`,
     '',
-    'Note: Worker/Redis command usage is primarily from ingestion jobs; this report shows',
-    'user activity (queries and sessions) to help identify who is using the app.',
+    'This report lists repo queries: each time a user asked a question about a repo in the app',
+    '(the same events stored in Conversation). Sessions = distinct conversation sessions per user.',
     '',
     '--- Summary ---',
     `Unique users: ${rows.length}`,
@@ -106,24 +106,35 @@ export async function writeUsageReportToFile(): Promise<string> {
 }
 
 /**
- * Append one line to the running query log (call this on each successful query).
- * Format: ISO timestamp, userId, sessionId, query preview.
+ * Append one line to the running query log. Call this only for a repo query:
+ * when a user asks a question about a repo in the app (same event stored in Conversation).
+ * Format: ISO timestamp, userId, sessionId, repoUrl, query preview.
  */
 export function appendQueryLog(params: {
   userId: string | undefined;
   sessionId: string;
+  repoUrl: string;
   query: string;
 }): void {
   try {
     if (!fs.existsSync(LOGS_DIR)) {
       fs.mkdirSync(LOGS_DIR, { recursive: true });
     }
+    const isNewFile = !fs.existsSync(QUERY_LOG_PATH);
+    if (isNewFile) {
+      fs.writeFileSync(
+        QUERY_LOG_PATH,
+        'timestamp\tuserId\tsessionId\trepoUrl\tquery (repo query = user question about the repo, same as in Conversation)\n',
+        'utf8',
+      );
+    }
     const preview =
       params.query.length > 200
         ? params.query.slice(0, 197) + '...'
         : params.query;
-    const line = `${new Date().toISOString()}\t${params.userId ?? 'anonymous'}\t${params.sessionId}\t${preview.replace(/\n/g, ' ')}\n`;
+    const line = `${new Date().toISOString()}\t${params.userId ?? 'anonymous'}\t${params.sessionId}\t${params.repoUrl}\t${preview.replace(/\n/g, ' ')}\n`;
     fs.appendFileSync(QUERY_LOG_PATH, line, 'utf8');
+    console.log('[Query log] Repo query appended to', QUERY_LOG_PATH);
   } catch (err) {
     console.error('Failed to append query log:', err);
   }

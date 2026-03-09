@@ -82,6 +82,7 @@ export const askController = async (
     appendQueryLog({
       userId,
       sessionId,
+      repoUrl,
       query: question,
     });
 
