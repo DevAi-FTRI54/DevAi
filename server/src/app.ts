@@ -17,6 +17,7 @@ import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
 import trainingRoutes from './features/training/training.routes.js';
+import usageReportRoutes from './features/usageReport/usageReport.routes.js';
 
 const app = express();
 
@@ -49,7 +50,7 @@ app.use(
       'X-Requested-With',
     ], // Explicitly allow Authorization header for Safari
     exposedHeaders: ['Authorization'], // Expose Authorization header in response
-  })
+  }),
 );
 
 // Handle CORS preflight requests (OPTIONS) - Safari requires this for custom headers
@@ -60,11 +61,11 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, Cache-Control, X-Requested-With'
+      'Content-Type, Authorization, Cache-Control, X-Requested-With',
     ); // Explicitly allow Authorization header
     res.setHeader(
       'Access-Control-Allow-Methods',
-      'GET, POST, PUT, DELETE, OPTIONS'
+      'GET, POST, PUT, DELETE, OPTIONS',
     );
 
     // Handle preflight requests
@@ -108,6 +109,7 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       chat: '/api/chat',
       training: '/api/training',
+      usageReport: '/api/usage-report (GET, auth required)',
     },
   });
 });
@@ -148,6 +150,8 @@ app.use('/api/chat', chatHistoryRoute);
 
 // Training route (for fine-tuning data export)
 app.use('/api/training', trainingRoutes);
+// Usage report (auth required): GET /api/usage-report
+app.use('/api/usage-report', usageReportRoutes);
 
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
@@ -177,13 +181,19 @@ app.use((req, res) => {
 });
 
 // --- Global error handler --------------------------------------
-const errorHandler: ErrorRequestHandler = (err: ServerError, req, res, _next) => {
+const errorHandler: ErrorRequestHandler = (
+  err: ServerError,
+  req,
+  res,
+  _next,
+) => {
   // Extract error message (could be string or object)
-  const errorMessage = typeof err.message === 'string' 
-    ? err.message 
-    : err.message?.err || 'Unknown error';
+  const errorMessage =
+    typeof err.message === 'string'
+      ? err.message
+      : err.message?.err || 'Unknown error';
   const errorName = err.name || 'Error';
-  
+
   // Log actual error details for debugging
   console.error('❌ Express error handler triggered:');
   console.error('→ URL:', req.method, req.originalUrl);
@@ -192,27 +202,36 @@ const errorHandler: ErrorRequestHandler = (err: ServerError, req, res, _next) =>
   if ((err as any).stack) {
     console.error('→ Stack:', (err as any).stack);
   }
-  
+
   // Handle CORS errors gracefully (don't log as critical errors)
-  if (errorMessage.includes('CORS') || errorMessage.includes('Not allowed by CORS')) {
-    console.warn('⚠️ CORS error (expected for unauthorized origins):', req.headers.origin);
+  if (
+    errorMessage.includes('CORS') ||
+    errorMessage.includes('Not allowed by CORS')
+  ) {
+    console.warn(
+      '⚠️ CORS error (expected for unauthorized origins):',
+      req.headers.origin,
+    );
     res.status(403).json({ error: 'CORS: Origin not allowed' });
     return;
   }
-  
+
   // Handle favicon requests (common source of 404s, not real errors)
   if (req.originalUrl === '/favicon.ico') {
     res.status(404).end();
     return;
   }
-  
+
   const defaultError: ServerError = {
-    log: err.log || errorMessage || 'Express error handler caught unknown middleware error',
+    log:
+      err.log ||
+      errorMessage ||
+      'Express error handler caught unknown middleware error',
     status: err.status || 500,
     message: { err: errorMessage },
   };
   const errorObj: ServerError = { ...defaultError, ...err };
-  
+
   res.status(errorObj.status).json(errorObj.message);
 };
 app.use(errorHandler);

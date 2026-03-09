@@ -5,6 +5,7 @@ import { Request, Response } from 'express';
 import Conversation from '../../models/conversation.model.js';
 import Query from '../../models/query.model.js';
 import User from '../../models/user.model.js';
+import { appendQueryLog } from '../../utils/usageReport.js';
 
 export const askController = async (
   req: Request,
@@ -77,6 +78,12 @@ export const askController = async (
       },
       { upsert: true },
     );
+
+    appendQueryLog({
+      userId,
+      sessionId,
+      query: question,
+    });
 
     res.end();
   } catch (err: any) {
