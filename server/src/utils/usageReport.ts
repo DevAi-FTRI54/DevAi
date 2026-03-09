@@ -2,14 +2,17 @@
  * Builds a usage report from Conversation and User collections.
  * Use for auditing who is using the app and how much (sessions, queries).
  * Past data comes from existing Conversation documents; run this on-demand or on a schedule.
+ * Logs are written to server/logs/ (relative to app code) so they stay in the workspace and are easy to open in Cursor.
  */
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import Conversation from '../models/conversation.model.js';
 import User from '../models/user.model.js';
 
-const LOGS_DIR = path.resolve(process.cwd(), 'logs');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const LOGS_DIR = path.resolve(__dirname, '..', '..', 'logs');
 const USAGE_REPORT_PATH = path.join(LOGS_DIR, 'usage-report.txt');
 const QUERY_LOG_PATH = path.join(LOGS_DIR, 'query-log.txt');
 
