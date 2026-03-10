@@ -1,4 +1,5 @@
 import Conversation from '../../models/conversation.model.js';
+import { appendQueryLog } from '../../utils/usageReport.js';
 export const askController = async (req, res) => {
     try {
         res.setHeader('Content-Type', 'text/event-stream');
@@ -49,6 +50,12 @@ export const askController = async (req, res) => {
                 sessionId,
             },
         }, { upsert: true });
+        appendQueryLog({
+            userId,
+            sessionId,
+            repoUrl,
+            query: question,
+        });
         res.end();
     }
     catch (err) {

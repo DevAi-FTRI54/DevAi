@@ -14,6 +14,7 @@ import queryRoutes from './features/queries/query.routes.js';
 import authRoute from './features/auth/auth.routes.js';
 import chatHistoryRoute from './features/chatHistory/chatHistory.routes.js';
 import trainingRoutes from './features/training/training.routes.js';
+import usageReportRoutes from './features/usageReport/usageReport.routes.js';
 const app = express();
 // --- Global middleware -----------------------------------------
 const allowedOrigins = [
@@ -88,6 +89,7 @@ app.get('/', (req, res) => {
             auth: '/api/auth',
             chat: '/api/chat',
             training: '/api/training',
+            usageReport: '/api/usage-report (GET, auth required)',
         },
     });
 });
@@ -120,6 +122,8 @@ app.use('/api/auth', authRoute);
 app.use('/api/chat', chatHistoryRoute);
 // Training route (for fine-tuning data export)
 app.use('/api/training', trainingRoutes);
+// Usage report (auth required): GET /api/usage-report
+app.use('/api/usage-report', usageReportRoutes);
 // --- Tasks route -----------------------------------------------
 // app.post('/api/tasks', taskController.postTask);
 // app.get('/api/tasks', taskController.getTasks);
@@ -157,7 +161,8 @@ const errorHandler = (err, req, res, _next) => {
         console.error('→ Stack:', err.stack);
     }
     // Handle CORS errors gracefully (don't log as critical errors)
-    if (errorMessage.includes('CORS') || errorMessage.includes('Not allowed by CORS')) {
+    if (errorMessage.includes('CORS') ||
+        errorMessage.includes('Not allowed by CORS')) {
         console.warn('⚠️ CORS error (expected for unauthorized origins):', req.headers.origin);
         res.status(403).json({ error: 'CORS: Origin not allowed' });
         return;
@@ -168,7 +173,9 @@ const errorHandler = (err, req, res, _next) => {
         return;
     }
     const defaultError = {
-        log: err.log || errorMessage || 'Express error handler caught unknown middleware error',
+        log: err.log ||
+            errorMessage ||
+            'Express error handler caught unknown middleware error',
         status: err.status || 500,
         message: { err: errorMessage },
     };

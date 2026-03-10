@@ -85,6 +85,13 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ jobId, onComplete }) => {
         </div>
 
         <div className='space-y-4'>
+          {status.status === 'waiting' && (
+            <div className='bg-[#303030]/30 rounded-lg p-3 border border-[#404040]'>
+              <p className='text-[#fafafa] text-sm'>
+                Worker waking up....please wait
+              </p>
+            </div>
+          )}
           <div className='w-full bg-[#303030] rounded-full h-3 overflow-hidden'>
             <div
               className='bg-gradient-to-r from-[#5ea9ea] to-[#4a9ae0] h-3 rounded-full transition-all duration-500 ease-out'

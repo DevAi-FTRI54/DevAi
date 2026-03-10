@@ -2,9 +2,11 @@
 // That lets Render/UptimeRobot get a successful response and prevents the service from being
 // treated as asleep (503). Worker loads in background after listen or on first /ingest.
 let _indexQueue = null;
+let _indexModule = null;
 async function getIndexQueue() {
     if (!_indexQueue) {
         const m = await import('./index.job.js');
+        _indexModule = m;
         _indexQueue = m.indexQueue;
     }
     return _indexQueue;
@@ -16,6 +18,8 @@ export const indexRepo = async (req, res) => {
     console.log('repoUrl: ', repoUrl);
     console.log('sha: ', sha);
     const indexQueue = await getIndexQueue();
+    if (_indexModule?.ensureWorker)
+        await _indexModule.ensureWorker();
     const job = await indexQueue.add('index', { repoUrl, sha });
     console.log('--- SENDING TO THE FRONTEND ------------');
     console.log({

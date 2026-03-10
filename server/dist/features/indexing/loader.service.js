@@ -70,14 +70,21 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
     
         */
         const docs = [];
+        // Store repo-relative paths so citations work with GitHub Contents API (which expects paths relative to repo root).
+        const toRepoRelative = (absolutePath) => {
+            const rel = path.relative(this.repoPath, absolutePath);
+            return rel.replace(/\\/g, '/');
+        };
         sourceFiles.forEach((sourceFile) => {
+            const absolutePath = sourceFile.getFilePath();
+            const filePath = toRepoRelative(absolutePath);
             // STEP 3.1: First add ENTIRE file content
             docs.push(new Document({
                 pageContent: sourceFile.getFullText(),
                 metadata: {
                     repoId: this.repoId,
-                    filePath: sourceFile.getFilePath(),
-                    declarationName: path.basename(sourceFile.getFilePath()),
+                    filePath,
+                    declarationName: path.basename(absolutePath),
                     startLine: sourceFile.getStartLineNumber(true),
                     endLine: sourceFile.getEndLineNumber(),
                 },
@@ -93,7 +100,7 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
                     pageContent: node.getFullText(),
                     metadata: {
                         repoId: this.repoId,
-                        filePath: sourceFile.getFilePath(),
+                        filePath,
                         declarationName: node.getName() ?? '<anonymous>',
                         startLine: start,
                         endLine: end,

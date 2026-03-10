@@ -227,11 +227,37 @@ export async function answerQuestion(repoUrl, question, type, sessionId) {
         .addEdge('generate', '__end__')
         .compile();
     const result = await workflow.invoke({ question }, { runName: 'ask-question', configurable: { repoId } });
-    const traceUrl = result[RUN_KEY]?.url ?? null; // LLM observability
-    const tokens = result[RUN_KEY]?.totalTokens ?? undefined;
-    const latency = result[RUN_KEY]?.durationMs ?? undefined;
+    // Normalize citation file paths: LLM often returns only filename (e.g. "github.service.ts").
+    // Replace with full repo-relative path from retrieved docs so the file viewer can load from GitHub.
+    const context = Array.isArray(result.context)
+        ? result.context
+        : [];
+    const rawCitations = result.response?.citations;
+    const citations = Array.isArray(rawCitations) ? rawCitations : [];
+    let resultToReturn = result;
+    if (citations.length > 0 && context.length > 0) {
+        const normalizedCitations = citations.map((c) => {
+            const hasPath = c.file.includes('/') || c.file.includes('\\');
+            if (hasPath)
+                return c;
+            const doc = context.find((d) => (d.metadata.startLine === c.startLine &&
+                d.metadata.endLine === c.endLine) ||
+                (d.metadata.filePath && String(d.metadata.filePath).endsWith(c.file)));
+            if (doc?.metadata?.filePath) {
+                return { ...c, file: String(doc.metadata.filePath) };
+            }
+            return c;
+        });
+        resultToReturn = {
+            ...result,
+            response: { ...result.response, citations: normalizedCitations },
+        };
+    }
+    const traceUrl = resultToReturn[RUN_KEY]?.url ?? null; // LLM observability
+    const tokens = resultToReturn[RUN_KEY]?.totalTokens ?? undefined;
+    const latency = resultToReturn[RUN_KEY]?.durationMs ?? undefined;
     return {
-        result,
+        result: resultToReturn,
         traceUrl,
         tokens,
         latency,

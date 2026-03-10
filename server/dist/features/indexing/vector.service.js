@@ -80,7 +80,10 @@ export async function upsert(docs) {
             });
         }
         else {
-            console.error('❌ INGESTION ERROR: Upsert failed.', { error: msg, docCount: docs.length });
+            console.error('❌ INGESTION ERROR: Upsert failed.', {
+                error: msg,
+                docCount: docs.length,
+            });
         }
         console.error('❌ Ingestion failure details:', err?.stack || err);
         throw err;
@@ -185,7 +188,10 @@ export async function ensureQdrantIndexes() {
                     }
                     else {
                         if (isQdrantConnectionError(createErr)) {
-                            console.error('❌ QDRANT CONNECTION ERROR: Failed to create collection.', { error: createErr?.message || createErr, hint: QDRANT_UNAVAILABLE_HINT });
+                            console.error('❌ QDRANT CONNECTION ERROR: Failed to create collection.', {
+                                error: createErr?.message || createErr,
+                                hint: QDRANT_UNAVAILABLE_HINT,
+                            });
                         }
                         else {
                             console.error('❌ Failed to create collection:', createErr?.message || createErr);
