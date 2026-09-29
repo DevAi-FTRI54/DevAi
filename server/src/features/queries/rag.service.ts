@@ -10,6 +10,8 @@ import { createCodeRetriever } from '../indexing/vector.service.js';
 import { generateUniqueRepoId } from '../indexing/git.service.js';
 import { CohereRerank } from '@langchain/cohere';
 import { RUN_KEY } from '@langchain/core/outputs';
+import type { Callbacks } from '@langchain/core/callbacks/manager';
+import type { RunnableConfig } from '@langchain/core/runnables';
 import { SYSTEM_PROMPTS } from './prompts.js';
 import Conversation from '../../models/conversation.model.js';
 import { Message } from '../../models/conversation.model.js';
@@ -70,6 +72,7 @@ export async function answerQuestion(
   question: string,
   type: string,
   sessionId: string,
+  options?: { callbacks?: Callbacks },
 ) {
   console.log('--- RAG SERVICE STARTED ---------------');
   console.log('📝 Question:', question);
@@ -137,11 +140,14 @@ export async function answerQuestion(
   // https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html
   // Streaming; Metadata - tokens
 
-  const retrieve = async (state: typeof InputState.State) => {
+  const retrieve = async (
+    state: typeof InputState.State,
+    config?: RunnableConfig,
+  ) => {
     try {
       console.log(`Attempting to retrieve docs for repo: ${repoId}`);
 
-      const retrievedDocs = await retriever.invoke(state.question);
+      const retrievedDocs = await retriever.invoke(state.question, config);
 
       return { context: retrievedDocs }; // merges into  WorkingState, thus the WorkingState has now access to both question + context
     } catch (err) {
@@ -193,7 +199,10 @@ export async function answerQuestion(
     }
   };
 
-  const generate = async (state: typeof WorkingState.State) => {
+  const generate = async (
+    state: typeof WorkingState.State,
+    config?: RunnableConfig,
+  ) => {
     // // Option #1: Generate context for the prompt
     // const docsContent = state.context
     //   .map(
@@ -225,10 +234,13 @@ export async function answerQuestion(
     // pipe: https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html#pipe
     // Create a new runnable sequence that runs each individual runnable in series, piping the output of one runnable into another runnable or runnable-like.
     const answerChain = promptTemplate.pipe(structuredLlm);
-    const response = await answerChain.invoke({
-      question: state.question,
-      context: promptBody,
-    });
+    const response = await answerChain.invoke(
+      {
+        question: state.question,
+        context: promptBody,
+      },
+      config,
+    );
     console.log('--- response ------------');
     console.log(response);
 
@@ -280,7 +292,11 @@ export async function answerQuestion(
 
   const result = await workflow.invoke(
     { question },
-    { runName: 'ask-question', configurable: { repoId } },
+    {
+      runName: 'ask-question',
+      configurable: { repoId },
+      callbacks: options?.callbacks,
+    },
   );
 
   // Normalize citation file paths: LLM often returns only filename (e.g. "github.service.ts").

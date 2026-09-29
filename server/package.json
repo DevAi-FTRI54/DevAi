@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "eval:ingest": "tsx evals/ingest.ts",
+    "eval:validate": "tsx evals/validate-golden.ts",
+    "eval:run": "tsx evals/run.ts"
   },
   "keywords": [],
   "author": "",
@@ -44,6 +47,7 @@
     "concurrently": "^9.1.2",
     "ngrok": "^5.0.0-beta.2",
     "ts-morph": "^25.0.1",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.15"
   }
 }

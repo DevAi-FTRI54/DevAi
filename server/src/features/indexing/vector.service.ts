@@ -48,7 +48,7 @@ const embeddings = new OpenAIEmbeddings({
 });
 
 // --- A Single Collection For All Users ------------------------------
-const COLLECTION = 'devai_collection_01';
+const COLLECTION = process.env.QDRANT_COLLECTION ?? 'devai_collection_01';
 
 // Supporting documentation: https://js.langchain.com/docs/integrations/retrievers/self_query/qdrant/
 const QDRANT_UNAVAILABLE_HINT =
