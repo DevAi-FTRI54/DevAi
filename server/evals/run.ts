@@ -1,6 +1,7 @@
 // Runs the golden set through answerQuestion and records retrieval, citation, judge, latency, and cost metrics.
 // Usage: npm run eval:run -- [--only E01,X03] [--category cross_file] [--repeats 1]
-//        [--concurrency 1] [--no-judge] [--verbose] [--save-baseline] [--golden path]
+//        [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path]
+// --save-baseline writes baselines/<label>-<goldenSha7>.json and refuses to overwrite an existing baseline.
 import { EVAL_COLLECTION } from './lib/env.js';
 import fs from 'fs';
 import path from 'path';
@@ -133,7 +134,7 @@ type Summary = ReturnType<typeof aggregate>;
 function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCategory: Record<string, Summary>) {
   const rows = [['overall', overall] as const, ...Object.entries(byCategory)];
   const lines = [
-    `# DevAI eval: ${meta.goldenName}`,
+    `# DevAI eval: ${meta.label ? `${meta.label} on ` : ''}${meta.goldenName}`,
     '',
     `- Run: \`${meta.runId}\``,
     `- Golden repo: ${meta.repoUrl} @ \`${String(meta.goldenSha).slice(0, 7)}\``,
@@ -173,6 +174,24 @@ async function main() {
   const useJudge = !hasFlag('no-judge');
   const verbose = hasFlag('verbose');
 
+  let baselineFile: string | null = null;
+  const baselineLabel = argValue('save-baseline');
+  if (hasFlag('save-baseline')) {
+    if (!baselineLabel || baselineLabel.startsWith('--') || !/^[a-z0-9][a-z0-9._-]*$/i.test(baselineLabel)) {
+      throw new Error('--save-baseline needs a version label, e.g. --save-baseline rag-v1');
+    }
+    baselineFile = path.join(
+      EVALS_DIR,
+      'baselines',
+      `${baselineLabel}-${golden.sha.slice(0, 7)}.json`,
+    );
+    if (fs.existsSync(baselineFile)) {
+      throw new Error(
+        `Baseline ${path.relative(process.cwd(), baselineFile)} already exists. Baselines are historical records; use a new label.`,
+      );
+    }
+  }
+
   const items = golden.items.filter(
     (i) => (!only || only.includes(i.id)) && (!category || i.category === category),
   );
@@ -187,6 +206,7 @@ async function main() {
   const codeSha = git('rev-parse HEAD');
   const meta = {
     runId,
+    label: baselineLabel ?? null,
     goldenName: golden.name,
     repoUrl: golden.repoUrl,
     goldenSha: golden.sha,
@@ -320,12 +340,12 @@ async function main() {
   fs.writeFileSync(path.join(outDir, 'summary.md'), md);
   out(`\n${md}`);
 
-  if (hasFlag('save-baseline')) {
-    const baselineDir = path.join(EVALS_DIR, 'baselines');
-    fs.mkdirSync(baselineDir, { recursive: true });
-    const file = path.join(baselineDir, `baseline-${golden.sha.slice(0, 7)}.json`);
-    fs.writeFileSync(file, JSON.stringify({ ...summary, results }, null, 2));
-    out(`Baseline saved to ${path.relative(process.cwd(), file)}`);
+  if (baselineFile) {
+    fs.mkdirSync(path.dirname(baselineFile), { recursive: true });
+    fs.writeFileSync(baselineFile, JSON.stringify({ ...summary, results }, null, 2), {
+      flag: 'wx',
+    });
+    out(`Baseline saved to ${path.relative(process.cwd(), baselineFile)}`);
   }
 
   appLog.end();
