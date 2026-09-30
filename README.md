@@ -28,11 +28,13 @@ Each fix was benchmarked against the one before it, and every milestone is kept 
 | RAG v1 | Deterministic bug fixes: chunk line ranges, prompt routing, error taxonomy | 51% | 15% |
 | RAG v2 | Server-assembled citations from verified evidence; the model cites IDs, never code | 94% ¹ | 15% |
 | RAG v2.1 | Stabilization: no whitespace-only citations, a checker that accepts verbatim comments, and a one-line prompt fix for a completeness regression | **100%** | 20% |
-| Agentic v1 | Next: planning and multi-step retrieval for multi-part and cross-file questions | — | — |
+| Agentic v1 | First measured agentic architecture: a bounded tool-using agent over the pinned commit, answering through the same citation layer. A new baseline, not an improvement claim ² | 100% | 13% |
 
 ¹ 93.9% passed the checker, and 100% of returned snippets were sourced from retrieved code. The checker at the time rejected verbatim comment-only snippets; see [RAG v2.1](#rag-v21-stabilization-rag-v21-625d687json).
 
-Citations are now solved. Answer quality is not: multi-part questions still score 0.62 out of 2, and completeness is stuck below 50%. That is the problem the agentic architecture has to beat, measured on the same benchmark against the same baselines. Details are in [Evaluation](#-evaluation).
+² The agent gathered better evidence than RAG v2.1 but did not produce better answers, at roughly twice the latency and cost; see [Agentic v1](#agentic-v1-first-measured-agentic-architecture-agentic-v1-625d687json).
+
+Citations are now solved. Answer quality is not: completeness is stuck below 50% for both RAG and the first agent. The first agentic architecture found the right code more often but answered no better, and a controlled experiment showed the answer prompt is not the bottleneck. The open problem is investigation depth and evidence selection on genuinely multi-hop questions. Details are in [Evaluation](#-evaluation).
 
 ## Proof
 
@@ -219,7 +221,7 @@ cd server
 npm run eval:ingest                    # clone the pinned repo and index it (use -- --reset to rebuild)
 npm run eval:validate                  # check every golden label against the pinned source
 npm run eval:run -- --system rag-v2.1 --repeats 3     # full run; results land in server/evals/results/
-npm run eval:run -- --system agentic-v1 --repeats 3   # same golden set through the agent
+npm run eval:run -- --system agentic-v1 --repeats 3   # same golden set through the agent (also agentic-v1.1, agentic-v1.2)
 npm run eval:run -- --system rag-v2.1 --repeats 3 --save-baseline rag-v3   # record a milestone (never overwrites)
 ```
 
@@ -380,6 +382,76 @@ An agent that reads files, greps, and searches can only be trusted if every one 
 
 Check that nothing regressed: after re-ingesting the eval collection with commit SHAs, a no-judge run of all 50 questions matched v2.1 (file recall 86.3% vs 85.6%, range hit 92.0% vs 92.0%, citation validity 100% vs 100%, 0 errors). No new baseline was saved, since behavior did not change. The agent loop and tool routing come next.
 
+#### Agentic v1: first measured agentic architecture (`agentic-v1-625d687.json`)
+
+Agentic v1 is the first agentic architecture measured on this benchmark. It sets the agent baseline; it is not a claim that the agent beats RAG. RAG v2.1 is unchanged and remains the production path, and there is no RAG-or-agent router yet.
+
+How it works (`server/src/features/agent/`):
+
+- **Bounded LangGraph loop.** Each turn, a planner (`gpt-4o-mini`) either calls exactly one of the five Phase 2 tools or declares that the evidence is sufficient. Hard limits end the loop otherwise:
+  - 8 tool calls and 12 planner turns;
+  - 3 consecutive turns without new evidence;
+  - a 20 s timeout per tool call, with 2 bounded retries on transient failures;
+  - a 120 s budget for the whole run.
+- **Duplicate calls are rejected** without spending the tool budget.
+- **Evidence and citations are unchanged.** Every tool result goes into the shared `EvidenceStore`. A separate answer step (`gpt-4o-mini`, same structured output as RAG) cites evidence IDs and line ranges, and the same deterministic layer as RAG v2 assembles the citations. The agent never writes a file path or a snippet.
+- **Traced.** Every run records its tool sequence, arguments, evidence IDs, tokens, latency, retries, and stop reason.
+
+Both columns are 3 repeats of the same 50 questions. The agent had 150 runs and 0 errors.
+
+| Metric | RAG v2.1 | Agentic v1 |
+|---|---|---|
+| File recall | 85.6% | 89.6% |
+| Range hit | 92% | 100% |
+| Citation validity | 100% | 100% |
+| Correctness (0–2) | **1.01** | 0.97 |
+| Fully correct | **20%** | 13.3% |
+| Completeness | 47.1% | 47.3% |
+| Latency p50 | **4.3 s** | 10.6 s |
+| Cost per question | **$0.0027** | $0.0048 |
+
+By category, the agent scored higher on multi-part questions (correctness 0.71 vs 0.62) and lower on cross-file questions (0.81 vs 0.89). Each category has only 21–27 runs, so treat neither difference as settled.
+
+What the agent did:
+- **Tool calls:** 3.2 per question (maximum 8).
+- **Why runs stopped:** 117 of 150 declared sufficient evidence, 18 stopped for lack of progress, and 15 hit the tool-call limit.
+- **Tool mix:** `findReferences` 193, `semanticSearch` 126, `readFile` 95, `findDefinition` 70, `grepSearch` 3.
+- **Evidence per question:** 8.4 items from 3.9 files (about 2,600 tokens). 2.9 of those items were cited, a 41% utilization.
+- **`findReferences` misuse:** 146 of its 193 calls restricted the search to a single file, using a usage-tracing tool as a file reader. All 52 of its empty results came from those restricted calls.
+
+**Takeaway:** the agent gathered better evidence but did not yet produce better answers, while roughly doubling latency and cost. It found the required files more often and always retrieved a range overlapping the labeled lines. Correctness, completeness, and the fully-correct rate did not improve. Agentic v1 did not outperform RAG v2.1 overall.
+
+##### Answer-prompt ablation: is answer synthesis the bottleneck?
+
+If the agent collects better evidence but answers no better, the answer step is the obvious suspect. The experiment:
+
+- Rebuild the exact evidence the agent had shown its answer step for all 150 baseline runs, reconstructed from the pinned snapshot with no mismatches.
+- Answer each question twice from that same evidence: once with the agent's answer prompt, once with RAG v2.1's generation prompt.
+- Use the same model and structured output in both arms, and score both with the same citation checks and judge (`server/evals/ablate-answer-prompt.ts`; results in `server/evals/experiments/`).
+
+| Same Agentic v1 evidence | Correctness | Fully correct | Completeness |
+|---|---|---|---|
+| Agent answer prompt | 1.03 | 19.3% | 49.0% |
+| RAG v2.1 answer prompt | 1.08 | 18.0% | 47.9% |
+
+Paired per run, the judge rated the RAG prompt's answer better in 19 cases, worse in 12, and tied in 119. The small differences in either direction are about the size of the gap between the baseline's own answers and a fresh sample with the same prompt (0.97 vs 1.03). With the evidence held fixed, both prompts produce nearly identical answers. Answer synthesis was not the primary bottleneck. The remaining work is in investigation (what the agent decides to look at) and evidence selection (what reaches the answer).
+
+#### Planner experiments after v1 (single runs, not baselines)
+
+Two planner changes were tried after the v1 baseline. Each was a single initial run of the 50 questions, not a 3-repeat baseline, so their numbers are not stable performance estimates and they get no milestone rows. They are recorded for what they taught. Both kept the answer prompt, tools, citation layer, and 8-call limit unchanged, and `--system agentic-v1.1` / `agentic-v1.2` still reproduce them.
+
+- **v1.1: explicit decomposition and coverage.**
+  - **What changed:** each question is split into subgoals, and the planner can't finish until every subgoal is mapped to gathered evidence. The tool descriptions now state each tool's role, and a guard rejects prose or nonexistent names passed to `findReferences` or `findDefinition`.
+  - **What happened:** it over-decomposed. 48 of 50 questions were split, often into parts the question never asked for, such as "provide examples of configuration options" for a simple where-is question. Evidence per question grew by roughly 40% and cost roughly doubled. Utilization fell from 41% to 29%, and correctness and completeness dropped.
+  - **Takeaway:** more planning and more retrieved context were not automatically beneficial.
+- **v1.2: conservative decomposition.**
+  - **What changed:** questions default to one subgoal. Each tool call declares which subgoals it serves, and evidence counts only for those. `findReferences` always searches the whole repository; `readFile` is the tool for inspecting one file.
+  - **What it fixed:** 25 of 50 questions now stay whole, and restricted `findReferences` calls disappeared. Cost and latency fell below v1.
+  - **What it didn't fix:** the planner often satisfied several subgoals with a single `semanticSearch` tagged for all of them. 39 of 50 runs made exactly one tool call, and every multi-part and cross-file run stopped after one call. Overall quality was roughly unchanged from v1 and did not improve.
+  - **Takeaway:** fixing the over-splitting still left the agent investigating too shallowly on questions that need several hops.
+
+**Current hypothesis:** the next iteration should improve investigation depth and evidence selection for genuinely multi-hop questions. That means following a lead across files and choosing which evidence reaches the answer, rather than adding planning structure or more context. RAG stays the cheaper, faster path for questions where agentic investigation does not add value. Deciding between the two paths is a later router step, and it only makes sense once the agent reliably wins on the questions it is meant for.
+
 ---
 
 ## 📁 Project Structure
@@ -406,7 +478,7 @@ DevAi/
 
 ## 🧪 Testing
 
-Answer quality is measured by the golden-set evaluation harness (see [Evaluation](#-evaluation)). Deterministic unit tests cover commit snapshots, indexed-commit citations, and the code tools. They run offline against local git fixtures:
+Answer quality is measured by the golden-set evaluation harness (see [Evaluation](#-evaluation)). Deterministic unit tests cover commit snapshots, indexed-commit citations, the code tools, and the agent's runtime guarantees (limits, duplicate rejection, timeouts, retries, subgoal coverage) using scripted planners. They run offline against local git fixtures:
 
 ```bash
 cd server
