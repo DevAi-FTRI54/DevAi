@@ -2,7 +2,7 @@
 // Usage: npm run eval:run -- [--only E01,X03] [--category cross_file] [--repeats 1]
 //        [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path]
 // --save-baseline writes baselines/<label>-<goldenSha7>.json and refuses to overwrite an existing baseline.
-import { EVAL_COLLECTION } from './lib/env.js';
+import { EVAL_COLLECTION, EVAL_TARGETS } from './lib/env.js';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
@@ -228,6 +228,7 @@ async function main() {
     codeSha,
     codeDirty: git('status --porcelain -- src') !== '',
     collection: EVAL_COLLECTION,
+    targets: EVAL_TARGETS,
     judgeModel: useJudge ? JUDGE_MODEL : null,
     repeats,
     concurrency,
@@ -250,6 +251,7 @@ async function main() {
   const mongoose = await connectMongo();
   const { answerQuestion } = await import('../src/features/queries/rag.service.js');
 
+  out(`Eval targets: ${EVAL_TARGETS}`);
   out(`Running ${items.length} item(s) x ${repeats} repeat(s) -> ${path.relative(process.cwd(), outDir)}`);
 
   const jobs: { item: GoldenItem; repeat: number }[] = [];

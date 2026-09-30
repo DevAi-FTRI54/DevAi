@@ -1,6 +1,6 @@
 // Ingests the pinned golden-set commit into the isolated eval collection.
 // Usage: npm run eval:ingest [-- --reset] [--golden path/to/golden.json]
-import { EVAL_COLLECTION } from './lib/env.js';
+import { EVAL_COLLECTION, EVAL_TARGETS } from './lib/env.js';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { loadGolden, argValue, hasFlag } from './lib/golden.js';
 
@@ -29,7 +29,7 @@ async function main() {
     );
   }
 
-  console.log(`Collection: ${EVAL_COLLECTION}`);
+  console.log(`Eval targets: ${EVAL_TARGETS}`);
   console.log(`Repo: ${golden.repoUrl} @ ${golden.sha}`);
   await ensureQdrantIndexes();
 
