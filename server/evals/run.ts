@@ -1,7 +1,8 @@
-// Runs the golden set through answerQuestion and records retrieval, citation, judge, latency, and cost metrics.
-// Usage: npm run eval:run -- [--only E01,X03] [--category cross_file] [--repeats 1]
+// Runs the golden set through one system and records retrieval, citation, judge, latency, and cost metrics.
+// Usage: npm run eval:run -- --system rag-v2.1|agentic-v1 [--only E01,X03] [--category cross_file] [--repeats 1]
 //        [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path]
-// --save-baseline writes baselines/<label>-<goldenSha7>.json and refuses to overwrite an existing baseline.
+// --save-baseline writes baselines/<label>-<goldenSha7>.json and refuses to overwrite an existing baseline;
+// the label must belong to the system under test (rag-* for rag-v2.1, agentic-* for agentic-v1).
 import { EVAL_COLLECTION, EVAL_TARGETS } from './lib/env.js';
 import fs from 'fs';
 import path from 'path';
@@ -23,6 +24,7 @@ import {
   mean,
   percentile,
   toContextDoc,
+  evidenceToContextDoc,
   type ContextDoc,
   type RetrievalMetrics,
   type CitationMetrics,
@@ -35,9 +37,17 @@ import {
   type ModelUsage,
 } from './lib/tokens.js';
 import { judgeAnswer, JUDGE_MODEL, type JudgeResult } from './lib/judge.js';
+import type { AgentTrace } from '../src/features/agent/types.js';
+
+const SYSTEMS = {
+  'rag-v2.1': { baselinePrefix: 'rag-' },
+  'agentic-v1': { baselinePrefix: 'agentic-' },
+} as const;
+type SystemName = keyof typeof SYSTEMS;
 
 interface ItemResult {
   id: string;
+  system: SystemName;
   category: Category;
   repeat: number;
   question: string;
@@ -58,6 +68,8 @@ interface ItemResult {
   rerankSearches: number;
   costUsd: number;
   judgeCostUsd: number;
+  // Agentic runs only.
+  trace: AgentTrace | null;
 }
 
 const git = (cmd: string) => {
@@ -72,6 +84,32 @@ const fmt = (x: number | null | undefined, digits = 3) =>
   x === null || x === undefined ? 'n/a' : x.toFixed(digits);
 const pct = (x: number | null | undefined) =>
   x === null || x === undefined ? 'n/a' : `${(x * 100).toFixed(1)}%`;
+
+const countBy = <T,>(xs: T[], key: (x: T) => string) =>
+  xs.reduce<Record<string, number>>((acc, x) => {
+    const k = key(x);
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
+
+function agentAggregate(results: ItemResult[]) {
+  const traces = results.map((r) => r.trace).filter((t): t is AgentTrace => !!t);
+  if (!traces.length) return null;
+  const steps = traces.flatMap((t) => t.steps);
+  return {
+    runs: traces.length,
+    toolCallsMean: mean(traces.map((t) => t.toolCalls)),
+    toolCallsMax: Math.max(...traces.map((t) => t.toolCalls)),
+    plannerCallsMean: mean(traces.map((t) => t.llmCalls.filter((c) => c.phase === 'plan').length)),
+    evidenceMean: mean(traces.map((t) => t.evidenceCount)),
+    answerEvidenceMean: mean(traces.map((t) => t.answerEvidenceIds.length)),
+    terminationReasons: countBy(traces, (t) => t.terminationReason ?? 'error'),
+    toolUsage: countBy(steps, (s) => s.tool),
+    stepStatus: countBy(steps, (s) => s.status),
+    retries: traces.reduce((s, t) => s + t.retries, 0),
+    runsWithErrors: traces.filter((t) => t.errors.length).length,
+  };
+}
 
 function aggregate(results: ItemResult[]) {
   const ok = results.filter((r) => !r.error);
@@ -134,6 +172,7 @@ function aggregate(results: ItemResult[]) {
       perQuestion: results.length ? totalCost / results.length : null,
       judgeTotal: results.reduce((s, r) => s + r.judgeCostUsd, 0),
     },
+    agent: agentAggregate(results),
   };
 }
 
@@ -144,6 +183,7 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
   const lines = [
     `# DevAI eval: ${meta.label ? `${meta.label} on ` : ''}${meta.goldenName}`,
     '',
+    `- System: \`${meta.system}\``,
     `- Run: \`${meta.runId}\``,
     `- Golden repo: ${meta.repoUrl} @ \`${String(meta.goldenSha).slice(0, 7)}\``,
     `- System under test: DevAI \`${String(meta.codeSha).slice(0, 7)}\`${meta.codeDirty ? ' (uncommitted changes)' : ''}`,
@@ -167,9 +207,36 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
     '',
     `Judge cost (not included above): $${fmt(overall.costUsd.judgeTotal, 4)}. Embedding tokens are estimated; chat tokens come from LangChain callbacks.`,
     '',
-    `Range hit requires a retrieved doc that overlaps the expected lines and spans at most max(60, 2x the expected range). ${pct(overall.retrieval.chunkedDocShare)} of retrieved docs are split chunks.`,
+    meta.system === 'agentic-v1'
+      ? 'For the agent, "retrieved" means all evidence gathered by its tools. Range hit requires an evidence item that overlaps the expected lines and spans at most max(60, 2x the expected range).'
+      : `Range hit requires a retrieved doc that overlaps the expected lines and spans at most max(60, 2x the expected range). ${pct(overall.retrieval.chunkedDocShare)} of retrieved docs are split chunks.`,
     '',
   ];
+  const ag = overall.agent;
+  if (ag) {
+    const fmtCounts = (c: Record<string, number>) =>
+      Object.entries(c)
+        .sort((a, b) => b[1] - a[1])
+        .map(([k, v]) => `${k} ${v}`)
+        .join(', ');
+    lines.push(
+      '## Agent',
+      '',
+      '| Slice | Tool calls/q | Max | Planner calls/q | Evidence/q | Answer evidence/q |',
+      '|---|---|---|---|---|---|',
+      ...rows
+        .filter(([, s]) => s.agent)
+        .map(
+          ([name, s]) =>
+            `| ${name} | ${fmt(s.agent!.toolCallsMean, 2)} | ${s.agent!.toolCallsMax} | ${fmt(s.agent!.plannerCallsMean, 2)} | ${fmt(s.agent!.evidenceMean, 1)} | ${fmt(s.agent!.answerEvidenceMean, 1)} |`,
+        ),
+      '',
+      `Termination: ${fmtCounts(ag.terminationReasons)}.`,
+      '',
+      `Tool usage: ${fmtCounts(ag.toolUsage)}. Step outcomes: ${fmtCounts(ag.stepStatus)}. Retries: ${ag.retries}. Runs with errors: ${ag.runsWithErrors}.`,
+      '',
+    );
+  }
   const a = overall.citations.assembly;
   if (a) {
     lines.push(
@@ -189,11 +256,21 @@ async function main() {
   const useJudge = !hasFlag('no-judge');
   const verbose = hasFlag('verbose');
 
+  const system = argValue('system') as SystemName | undefined;
+  if (!system || !(system in SYSTEMS)) {
+    throw new Error(`--system is required: one of ${Object.keys(SYSTEMS).join(', ')}`);
+  }
+
   let baselineFile: string | null = null;
   const baselineLabel = argValue('save-baseline');
   if (hasFlag('save-baseline')) {
     if (!baselineLabel || baselineLabel.startsWith('--') || !/^[a-z0-9][a-z0-9._-]*$/i.test(baselineLabel)) {
       throw new Error('--save-baseline needs a version label, e.g. --save-baseline rag-v1');
+    }
+    if (!baselineLabel.startsWith(SYSTEMS[system].baselinePrefix)) {
+      throw new Error(
+        `Baseline label "${baselineLabel}" does not match --system ${system}; use a ${SYSTEMS[system].baselinePrefix}* label.`,
+      );
     }
     baselineFile = path.join(
       EVALS_DIR,
@@ -221,6 +298,7 @@ async function main() {
   const codeSha = git('rev-parse HEAD');
   const meta = {
     runId,
+    system,
     label: baselineLabel ?? null,
     goldenName: golden.name,
     repoUrl: golden.repoUrl,
@@ -236,7 +314,7 @@ async function main() {
     prices: PRICES,
   };
 
-  const outDir = path.join(EVALS_DIR, 'results', `${runId}_${codeSha.slice(0, 7)}`);
+  const outDir = path.join(EVALS_DIR, 'results', `${runId}_${system}_${codeSha.slice(0, 7)}`);
   fs.mkdirSync(outDir, { recursive: true });
   const jsonlPath = path.join(outDir, 'results.jsonl');
 
@@ -250,7 +328,9 @@ async function main() {
   const { connectMongo } = await import('../src/config/db.js');
   const mongoose = await connectMongo();
   const { answerQuestion } = await import('../src/features/queries/rag.service.js');
+  const { answerWithAgent, AgentError } = await import('../src/features/agent/agent.service.js');
 
+  out(`System: ${system}`);
   out(`Eval targets: ${EVAL_TARGETS}`);
   out(`Running ${items.length} item(s) x ${repeats} repeat(s) -> ${path.relative(process.cwd(), outDir)}`);
 
@@ -268,19 +348,33 @@ async function main() {
     let citations: Citation[] = [];
     let context: ContextDoc[] = [];
     let citationDiagnostics: ItemResult['citationDiagnostics'] = null;
+    let trace: AgentTrace | null = null;
 
     const t0 = performance.now();
     try {
-      const res = await answerQuestion(golden.repoUrl, item.question, item.type, sessionId, {
-        callbacks: [handler],
-      });
-      const response = (res.result as any).response ?? {};
-      answer = String(response.answer ?? '');
-      citations = Array.isArray(response.citations) ? response.citations : [];
-      context = ((res.result as any).context ?? []).map(toContextDoc);
-      citationDiagnostics = (res.result as any).citationDiagnostics ?? null;
+      if (system === 'agentic-v1') {
+        const res = await answerWithAgent(golden.repoUrl, item.question, item.type, { callbacks: [handler] });
+        trace = res.trace;
+        if (res.trace.commitSha !== golden.sha.toLowerCase()) {
+          throw new Error(`Agent snapshot ${res.trace.commitSha} is not the golden commit ${golden.sha}`);
+        }
+        answer = res.answer;
+        citations = res.citations;
+        context = res.allEvidence.map(evidenceToContextDoc);
+        citationDiagnostics = res.citationDiagnostics;
+      } else {
+        const res = await answerQuestion(golden.repoUrl, item.question, item.type, sessionId, {
+          callbacks: [handler],
+        });
+        const response = (res.result as any).response ?? {};
+        answer = String(response.answer ?? '');
+        citations = Array.isArray(response.citations) ? response.citations : [];
+        context = ((res.result as any).context ?? []).map(toContextDoc);
+        citationDiagnostics = (res.result as any).citationDiagnostics ?? null;
+      }
     } catch (err: any) {
       error = err?.message ?? String(err);
+      if (err instanceof AgentError) trace = err.trace;
     }
     const latencyMs = performance.now() - t0;
 
@@ -302,8 +396,22 @@ async function main() {
       }
     }
 
-    const estEmbeddingTokens = error ? 0 : estimateQueryEmbeddingTokens(item.question);
-    const rerankSearches = !error && context.length && process.env.COHERE_API_KEY ? 1 : 0;
+    // Each semanticSearch attempt embeds its query (plus MultiQuery rewrites) and may run one rerank.
+    const semanticAttempts = (trace?.steps ?? [])
+      .filter((s) => s.tool === 'semanticSearch')
+      .flatMap((s) => Array(s.attempts).fill(String(s.args.query ?? '')) as string[]);
+    const estEmbeddingTokens = trace
+      ? semanticAttempts.reduce((sum, q) => sum + estimateQueryEmbeddingTokens(q), 0)
+      : error
+        ? 0
+        : estimateQueryEmbeddingTokens(item.question);
+    const rerankSearches = !process.env.COHERE_API_KEY
+      ? 0
+      : trace
+        ? semanticAttempts.length
+        : !error && context.length
+          ? 1
+          : 0;
     const costUsd =
       chatCost(handler.usage) +
       (estEmbeddingTokens / 1e6) * PRICES.embeddingPer1M +
@@ -311,6 +419,7 @@ async function main() {
 
     const result: ItemResult = {
       id: item.id,
+      system,
       category: item.category,
       repeat,
       question: item.question,
@@ -330,14 +439,16 @@ async function main() {
       rerankSearches,
       costUsd,
       judgeCostUsd,
+      trace,
     };
     results.push(result);
     fs.appendFileSync(jsonlPath, `${JSON.stringify(result)}\n`);
 
+    const agentInfo = trace ? ` tools=${trace.toolCalls} stop=${trace.terminationReason ?? 'error'}` : '';
     out(
       error
-        ? `${item.id}#${repeat} ERROR ${error}`
-        : `${item.id}#${repeat} recall=${pct(result.retrieval!.fileRecall)} cites=${citations.length} valid=${pct(result.citationMetrics.validRate)} correct=${judge?.correctness ?? (judgeError ? 'judge-err' : '-')} complete=${judge ? pct(judge.completeness) : '-'} ${Math.round(latencyMs)}ms`,
+        ? `${item.id}#${repeat} ERROR ${error}${agentInfo}`
+        : `${item.id}#${repeat} recall=${pct(result.retrieval!.fileRecall)} cites=${citations.length} valid=${pct(result.citationMetrics.validRate)} correct=${judge?.correctness ?? (judgeError ? 'judge-err' : '-')} complete=${judge ? pct(judge.completeness) : '-'}${agentInfo} ${Math.round(latencyMs)}ms`,
     );
   };
 

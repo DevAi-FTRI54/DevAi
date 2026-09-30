@@ -34,6 +34,24 @@ export function toContextDoc(d: {
   };
 }
 
+// Agent evidence already carries absolute, exact line ranges.
+export function evidenceToContextDoc(e: {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  label?: string;
+}): ContextDoc {
+  return {
+    filePath: e.filePath,
+    startLine: e.startLine,
+    endLine: e.endLine,
+    spanStart: e.startLine,
+    spanEnd: e.endLine,
+    chunked: false,
+    declarationName: e.label,
+  };
+}
+
 // A doc "localizes" an expected range if it overlaps it and is not much bigger than it (whole-file docs overlap everything).
 const MIN_TIGHT_SPAN = 60;
 const localizes = (d: ContextDoc, range: [number, number]) =>

@@ -218,9 +218,12 @@ Prerequisites: local Qdrant on `:6333` and MongoDB on `:27017` (see `server/.env
 cd server
 npm run eval:ingest                    # clone the pinned repo and index it (use -- --reset to rebuild)
 npm run eval:validate                  # check every golden label against the pinned source
-npm run eval:run -- --repeats 3        # full run; results land in server/evals/results/
-npm run eval:run -- --repeats 3 --save-baseline rag-v1   # record a milestone (never overwrites)
+npm run eval:run -- --system rag-v2.1 --repeats 3     # full run; results land in server/evals/results/
+npm run eval:run -- --system agentic-v1 --repeats 3   # same golden set through the agent
+npm run eval:run -- --system rag-v2.1 --repeats 3 --save-baseline rag-v3   # record a milestone (never overwrites)
 ```
+
+`--system` is required, so a run always says which pipeline it measured. A baseline label must match the system (`rag-*` or `agentic-*`). Agent runs also record each question's full trace (tool calls, arguments, evidence IDs, tokens, latency, retries, stop reason) in `results.jsonl`, and add an Agent section to the summary.
 
 Milestone baselines are committed in `server/evals/baselines/` and are write-once, so the history stays honest.
 
