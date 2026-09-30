@@ -41,7 +41,7 @@ export const DEFAULT_AGENT_LIMITS: AgentLimits = {
   maxAnswerEvidenceTokens: 12_000,
 };
 
-export type AgentProfile = 'agentic-v1' | 'agentic-v1.1';
+export type AgentProfile = 'agentic-v1' | 'agentic-v1.1' | 'agentic-v1.2';
 
 export type TerminationReason =
   | 'sufficient_evidence'
@@ -77,6 +77,8 @@ export type ToolStepTrace = {
   latencyMs: number;
   // 1-based subgoal the planner said this call serves (agentic-v1.1).
   subgoal?: number;
+  // Every 1-based subgoal the call was tagged with (agentic-v1.2).
+  subgoals?: number[];
 };
 
 export type SubgoalTrace = {

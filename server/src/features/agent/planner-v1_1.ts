@@ -7,7 +7,7 @@ const globs = z
   .array(z.string())
   .describe('Optional globs over repo-relative paths, e.g. ["server/**/*.ts"]. Leave empty to search everywhere.');
 
-const RESEARCH_TOOLS: PlannerToolSpec[] = [
+export const RESEARCH_TOOLS_V1_1: PlannerToolSpec[] = [
   {
     name: 'semanticSearch',
     description:
@@ -79,7 +79,7 @@ const RESEARCH_TOOLS: PlannerToolSpec[] = [
 const subgoal = z.number().int().min(1).describe('Number of the subgoal this call investigates.');
 
 export const PLANNER_TOOLS_V1_1: PlannerToolSpec[] = [
-  ...RESEARCH_TOOLS.map((t) => ({ ...t, schema: t.schema.extend({ subgoal }) })),
+  ...RESEARCH_TOOLS_V1_1.map((t) => ({ ...t, schema: t.schema.extend({ subgoal }) })),
   {
     name: FINISH_TOOL,
     description:

@@ -1,5 +1,5 @@
 // Runs the golden set through one system and records retrieval, citation, judge, latency, and cost metrics.
-// Usage: npm run eval:run -- --system rag-v2.1|agentic-v1|agentic-v1.1 [--only E01,X03] [--category cross_file] [--repeats 1]
+// Usage: npm run eval:run -- --system rag-v2.1|agentic-v1|agentic-v1.1|agentic-v1.2 [--only E01,X03] [--category cross_file] [--repeats 1]
 //        [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path]
 // --save-baseline writes baselines/<label>-<goldenSha7>.json and refuses to overwrite an existing baseline;
 // the label must belong to the system under test (rag-* for rag-v2.1, agentic-* for agentic-v1).
@@ -43,6 +43,7 @@ const SYSTEMS = {
   'rag-v2.1': { baselinePrefix: 'rag-' },
   'agentic-v1': { baselinePrefix: 'agentic-' },
   'agentic-v1.1': { baselinePrefix: 'agentic-' },
+  'agentic-v1.2': { baselinePrefix: 'agentic-' },
 } as const;
 type SystemName = keyof typeof SYSTEMS;
 
@@ -148,9 +149,17 @@ function coverageAggregate(traces: AgentTrace[]) {
   if (!withSubgoals.length) return null;
   const subgoals = withSubgoals.flatMap((t) => t.subgoals!);
   const rejections = withSubgoals.map((t) => (t.finishAttempts ?? []).filter((f) => !f.accepted).length);
+  const ranSteps = withSubgoals.flatMap((t) => t.steps.filter((s) => s.status === 'ok'));
   return {
     subgoalsMean: mean(withSubgoals.map((t) => t.subgoals!.length)),
+    subgoalCounts: countBy(withSubgoals, (t) => String(t.subgoals!.length)),
     multiSubgoalRuns: withSubgoals.filter((t) => t.subgoals!.length > 1).length,
+    toolCallsPerSubgoal: mean(subgoals.map((s) => s.toolCalls)),
+    evidencePerSubgoal: mean(subgoals.map((s) => s.gatheredEvidenceIds.length)),
+    subgoalsWithoutOwnCall: subgoals.filter((s) => s.toolCalls === 0).length,
+    // Calls tagged with more than one subgoal, whose evidence may support each of them.
+    sharedEvidenceCalls: ranSteps.filter((s) => (s.subgoals?.length ?? 0) > 1).length,
+    untaggedCalls: ranSteps.filter((s) => !s.subgoals?.length && s.subgoal === undefined).length,
     subgoalStatus: countBy(subgoals, (s) => s.status),
     finishRejections: rejections.reduce((s, n) => s + n, 0),
     runsWithRejectedFinish: rejections.filter((n) => n > 0).length,
@@ -288,7 +297,9 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
     const c = ag.coverage;
     if (c) {
       lines.push(
-        `Subgoals: ${fmt(c.subgoalsMean, 2)}/q (${c.multiSubgoalRuns} of ${ag.runs} runs split into several); final status ${fmtCounts(c.subgoalStatus)}. ` +
+        `Subgoals: ${fmt(c.subgoalsMean, 2)}/q (${c.multiSubgoalRuns} of ${ag.runs} runs split into several; runs by subgoal count: ${fmtCounts(c.subgoalCounts)}); final status ${fmtCounts(c.subgoalStatus)}. ` +
+          `Per subgoal: ${fmt(c.toolCallsPerSubgoal, 2)} tool calls, ${fmt(c.evidencePerSubgoal, 1)} evidence items; ${c.subgoalsWithoutOwnCall} subgoals had no tool call of their own. ` +
+          `Shared-evidence calls (tagged with 2+ subgoals): ${c.sharedEvidenceCalls} of ${ag.stepStatus.ok ?? 0} successful calls; untagged calls: ${c.untaggedCalls}. ` +
           `Finish rejected ${c.finishRejections} times in ${c.runsWithRejectedFinish} runs. Runs with unresolved subgoals: ${c.runsWithUnresolved}; ended with open subgoals: ${c.runsEndedWithOpenSubgoals}. Decomposition failures: ${c.decomposeFailures}.`,
         '',
       );

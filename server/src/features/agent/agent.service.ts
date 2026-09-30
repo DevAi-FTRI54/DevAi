@@ -10,11 +10,21 @@ import { EvidenceStore, RepoSnapshot, ToolError, type ToolName } from '../tools/
 import type { Citation, CitationDiagnostics, Evidence } from '../queries/evidence.js';
 import { generateUniqueRepoId } from '../indexing/git.service.js';
 import { ToolRuntime, isTransient, type ToolImpl } from './tool-runtime.js';
-import { FINISH_TOOL, PLANNER_TOOLS, createDefaultPlanner, plannerSystemPrompt, type Planner } from './planner.js';
+import {
+  FINISH_TOOL,
+  PLANNER_TOOLS,
+  createDefaultPlanner,
+  plannerSystemPrompt,
+  type Planner,
+  type PlannerToolSpec,
+} from './planner.js';
+
+type PlannerBudget = { toolCallsUsed: number; maxToolCalls: number; turnsLeft: number };
 import { PLANNER_TOOLS_V1_1, plannerSystemPromptV1_1 } from './planner-v1_1.js';
+import { PLANNER_TOOLS_V1_2, plannerSystemPromptV1_2 } from './planner-v1_2.js';
 import { symbolGuard } from './symbol-guard.js';
-import { createDefaultDecomposer, normalizeSubgoals, type Decomposer } from './decomposer.js';
-import { checkFinish, rejectionMessage, subgoalStatus, subgoalsPromptSection } from './coverage.js';
+import { createDefaultDecomposer, normalizeSubgoals, type Decomposer, type DecomposerStyle } from './decomposer.js';
+import { checkFinish, rejectionMessage, subgoalStatus, subgoalsPromptSection, type CoverageMode } from './coverage.js';
 import { answerSystemPrompt, answerUserPrompt, createDefaultAnswerer, type Answerer } from './answerer.js';
 import {
   DEFAULT_AGENT_LIMITS,
@@ -36,12 +46,33 @@ export type AgentRunResult = {
   trace: AgentTrace;
 };
 
-const PROFILES = {
-  'agentic-v1': { tools: PLANNER_TOOLS, systemPrompt: plannerSystemPrompt, guardSymbols: false, subgoals: false },
-  'agentic-v1.1': { tools: PLANNER_TOOLS_V1_1, systemPrompt: plannerSystemPromptV1_1, guardSymbols: true, subgoals: true },
-} as const;
+type ProfileConfig = {
+  tools: PlannerToolSpec[];
+  systemPrompt: (snapshot: RepoSnapshot, budget: PlannerBudget, subgoalSection: string) => string;
+  guardSymbols: boolean;
+  subgoals: false | { decomposer: DecomposerStyle; coverage: CoverageMode; multiTag: boolean };
+  // Arguments dropped before execution even if the model sends them.
+  dropArgs?: Partial<Record<string, string[]>>;
+};
 
-export const DEFAULT_AGENT_PROFILE: AgentProfile = 'agentic-v1.1';
+const PROFILES: Record<AgentProfile, ProfileConfig> = {
+  'agentic-v1': { tools: PLANNER_TOOLS, systemPrompt: plannerSystemPrompt, guardSymbols: false, subgoals: false },
+  'agentic-v1.1': {
+    tools: PLANNER_TOOLS_V1_1,
+    systemPrompt: plannerSystemPromptV1_1,
+    guardSymbols: true,
+    subgoals: { decomposer: 'v1.1', coverage: 'any', multiTag: false },
+  },
+  'agentic-v1.2': {
+    tools: PLANNER_TOOLS_V1_2,
+    systemPrompt: plannerSystemPromptV1_2,
+    guardSymbols: true,
+    subgoals: { decomposer: 'conservative', coverage: 'tagged', multiTag: true },
+    dropArgs: { findReferences: ['include'] },
+  },
+};
+
+export const DEFAULT_AGENT_PROFILE: AgentProfile = 'agentic-v1.2';
 
 export type AgentOptions = {
   profile?: AgentProfile;
@@ -132,6 +163,7 @@ export async function runAgent(
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const profileName = options.profile ?? DEFAULT_AGENT_PROFILE;
   const profile = PROFILES[profileName];
+  const coverageMode: CoverageMode = profile.subgoals ? profile.subgoals.coverage : 'any';
   const planner = options.planner ?? createDefaultPlanner([...profile.tools]);
   const answerer = options.answerer ?? createDefaultAnswerer();
   const started = now();
@@ -183,6 +215,7 @@ export async function runAgent(
       trace.subgoals = subgoalStatus(
         trace.subgoals.map((s) => s.text),
         runtime.steps,
+        coverageMode,
       );
     }
   };
@@ -246,7 +279,7 @@ export async function runAgent(
         maxToolCalls: limits.maxToolCalls,
         turnsLeft: limits.maxIterations - state.iterations,
       },
-      profile.subgoals ? subgoalsPromptSection(state.subgoals, runtime.steps) : '',
+      profile.subgoals ? subgoalsPromptSection(state.subgoals, runtime.steps, coverageMode) : '',
     );
     let msg: AIMessage;
     try {
@@ -260,7 +293,8 @@ export async function runAgent(
     const id = call.id ?? `call_${state.iterations + 1}`;
     if (call.name === FINISH_TOOL) {
       if (profile.subgoals) {
-        const check = checkFinish(call.args, state.subgoals, runtime.steps, new Set(store.all().map((e) => e.id)));
+        const gathered = new Set(store.all().map((e) => e.id));
+        const check = checkFinish(call.args, state.subgoals, runtime.steps, gathered, coverageMode);
         trace.finishAttempts.push({ accepted: check.accepted, missing: check.missing, problems: check.problems });
         trace.subgoals = check.subgoals;
         if (!check.accepted) {
@@ -268,7 +302,7 @@ export async function runAgent(
           return {
             messages: [
               new AIMessage({ content: '', tool_calls: [{ id, name: call.name, args: call.args ?? {}, type: 'tool_call' }] }),
-              new ToolMessage({ content: rejectionMessage(check), tool_call_id: id, name: call.name }),
+              new ToolMessage({ content: rejectionMessage(check, coverageMode), tool_call_id: id, name: call.name }),
             ],
             pending: null,
             iterations: state.iterations + 1,
@@ -293,11 +327,18 @@ export async function runAgent(
 
   const act = async (state: S): Promise<Partial<S>> => {
     const pending = state.pending!;
-    const { subgoal, ...args } = pending.args;
-    const outcome = await runtime.execute({ tool: pending.tool, args: profile.subgoals ? args : pending.args });
-    if (profile.subgoals) {
-      const n = state.subgoals.length === 1 ? 1 : Number(subgoal);
-      if (Number.isInteger(n) && n >= 1 && n <= state.subgoals.length) outcome.step.subgoal = n;
+    const { subgoal, subgoals: tags, ...args } = pending.args;
+    for (const key of profile.dropArgs?.[pending.tool] ?? []) delete args[key];
+    const sg = profile.subgoals;
+    const outcome = await runtime.execute({ tool: pending.tool, args: sg ? args : pending.args });
+    const count = state.subgoals.length;
+    const valid = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= count;
+    if (sg && sg.multiTag) {
+      const list = count === 1 ? [1] : [...new Set((Array.isArray(tags) ? tags : [tags]).map(Number).filter(valid))].sort((a, b) => a - b);
+      if (list.length) outcome.step.subgoals = list;
+    } else if (sg) {
+      const n = count === 1 ? 1 : Number(subgoal);
+      if (valid(n)) outcome.step.subgoal = n;
     }
     const progressed = outcome.step.newEvidenceIds.length > 0;
     return {
@@ -350,7 +391,7 @@ export async function runAgent(
 
   // Failure here is not fatal: the question itself becomes the only subgoal.
   const decompose = async (): Promise<Partial<S>> => {
-    const decomposer = options.decomposer ?? createDefaultDecomposer();
+    const decomposer = options.decomposer ?? createDefaultDecomposer(profile.subgoals ? profile.subgoals.decomposer : 'v1.1');
     let subgoals = [question];
     try {
       const out = await callLlm(
@@ -363,7 +404,7 @@ export async function runAgent(
     } catch (err) {
       trace.errors.push(`decompose: ${errorText(err)}`);
     }
-    trace.subgoals = subgoalStatus(subgoals, runtime.steps);
+    trace.subgoals = subgoalStatus(subgoals, runtime.steps, coverageMode);
     return { subgoals };
   };
 
