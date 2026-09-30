@@ -9,7 +9,7 @@ const splitter = new RecursiveCharacterTextSplitter({
 // The splitter's loc.lines is relative to the parent's pageContent; convert it to source-file lines
 // so citations point at the chunk, not the whole parent.
 function toAbsoluteLines(chunk: Document, parent: Document): Document {
-  const { loc, ...rest } = chunk.metadata;
+  const { loc, textStartLine, ...rest } = chunk.metadata;
   const from = loc?.lines?.from;
   const to = loc?.lines?.to;
   if (typeof from !== 'number' || typeof to !== 'number') return chunk;
