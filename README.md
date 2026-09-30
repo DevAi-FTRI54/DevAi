@@ -226,6 +226,38 @@ What the evaluation surfaced:
 - **Misleading errors.** Any retrieval failure, including an OpenAI auth or quota error, was reported as `VECTOR_DB_DOWN`.
 - **Walkthrough prompt never used.** The client sent `WalkThrough` but the server key is `Walkthrough`, so walkthrough requests silently used the Find prompt.
 
+#### RAG v1: corrected baseline (`rag-v1-625d687.json`)
+
+Only the three bugs above were fixed, each in its own commit. Chunking, retrieval, reranking, prompts, and the golden set are unchanged.
+
+- **Chunk line ranges** (`fa492da`): split chunks now carry their real source lines. The splitter's chunk-relative line offsets are converted to file lines, based at the line where the parent text actually begins. That is line 1 for whole-file documents, which previously claimed a later start whenever a file opened with comments, and the leading-trivia line for functions and classes. Verified offline: all 174 chunks and 82 whole-file documents now match the source line for line.
+- **Walkthrough prompt** (`4918264`): the client sends `Walkthrough`, and the server resolves prompt types case-insensitively.
+- **Error taxonomy** (`6056c13`): failures are classified as `MODEL_AUTH`, `MODEL_QUOTA`, `MODEL_RATE_LIMIT`, `MODEL_ERROR`, `VECTOR_DB_DOWN`, or `INTERNAL`, with the pipeline stage and the original cause. The code and stage are sent to the client over SSE. During these runs it correctly reported a real OpenAI credit outage as `MODEL_QUOTA` and a transient Qdrant failure as `VECTOR_DB_DOWN`.
+
+The v0 baseline was a single run, so v0 was re-measured with 3 repeats (without the judge) for a like-for-like comparison:
+
+| Metric | RAG v0 (3 repeats) | RAG v1 (3 repeats) |
+|---|---|---|
+| File recall | 84.9% | 84.4% |
+| Required line-range recall | 67.6% | 66.0% |
+| Citation validity | 45.6% | 50.8% |
+| Citations grounded in retrieved context | 89.2% | 97.5% |
+| Correctness (0–2) / fully correct | 1.00 / 14% (v0 single run) | 1.01 / 15% |
+| Completeness | 44.7% (v0 single run) | 47.9% |
+| Cost per question | $0.0026 | $0.0026 |
+
+Per-repeat citation validity ranged 44–48% for v0 and 45–55% across six v1 repeats. The line fix is a real but modest gain, not a jump. What changed is *why* citations fail:
+
+| Why a citation fails (share of all citations) | v0 | v1 |
+|---|---|---|
+| Real code, wrong line numbers | 21% | 13% |
+| Snippet edited or abbreviated by the model (`...`, rewritten lines) | 25% | 30% |
+| Snippet not verbatim at all | 4% | 5% |
+
+**Takeaway:** retrieval was never the main problem. The right file is retrieved for 85% of required sources, and some relevant file for every question. Fixing the line metadata halved the wrong-line citations and made cited ranges line up with retrieved context (grounded 89% → 98%). But the dominant weakness is generation fidelity: `gpt-4o-mini` paraphrases or elides the code it quotes, and multi-part questions stay weakest (correctness 0.62, completeness 36%). That points the next milestone at citation construction and answer planning (Agentic v1), not at chunking or retrieval tuning.
+
+Latency was 4.7 s p50 for v0 versus 5.3 s for v1, with no pipeline change on the request path. Treat it as provider variance between runs.
+
 ---
 
 ## 📁 Project Structure
