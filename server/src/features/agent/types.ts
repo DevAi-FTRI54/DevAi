@@ -14,6 +14,9 @@ export type AgentLimits = {
   retryBaseDelayMs: number;
   plannerTimeoutMs: number;
   answerTimeoutMs: number;
+  // Retries after the first attempt for transient model failures (timeouts, 429s, network errors).
+  maxLlmRetries: number;
+  llmRetryBaseDelayMs: number;
   // Wall-clock budget for planning and tools; the final answer gets answerTimeoutMs on top.
   runTimeoutMs: number;
   // Characters of evidence shown to the planner per tool result (the store keeps everything).
@@ -31,6 +34,8 @@ export const DEFAULT_AGENT_LIMITS: AgentLimits = {
   retryBaseDelayMs: 250,
   plannerTimeoutMs: 30_000,
   answerTimeoutMs: 60_000,
+  maxLlmRetries: 2,
+  llmRetryBaseDelayMs: 1_000,
   runTimeoutMs: 120_000,
   maxObservationChars: 8_000,
   maxAnswerEvidenceTokens: 12_000,

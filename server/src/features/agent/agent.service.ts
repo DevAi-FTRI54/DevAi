@@ -75,6 +75,16 @@ async function timed<T>(phase: string, ms: number, work: (signal: AbortSignal) =
 const roughTokens = (s: string) => Math.ceil(s.length / 4);
 const errorText = (err: unknown) => String((err as Error)?.message ?? err);
 
+const MAX_HINTED_DELAY_MS = 10_000;
+
+// Rate-limit errors say how long to wait ("Please try again in 1.314s" / "254ms").
+export function retryAfterHintMs(err: unknown): number {
+  const m = /try again in ([\d.]+)\s*(ms|s)\b/i.exec(errorText(err));
+  if (!m) return 0;
+  const ms = Number(m[1]) * (m[2].toLowerCase() === 's' ? 1000 : 1);
+  return Number.isFinite(ms) ? Math.min(Math.ceil(ms), MAX_HINTED_DELAY_MS) : 0;
+}
+
 export async function runAgent(
   input: { snapshot: RepoSnapshot; question: string; type?: string },
   options: AgentOptions = {},
@@ -82,6 +92,7 @@ export async function runAgent(
   const { snapshot, question, type } = input;
   const limits: AgentLimits = { ...DEFAULT_AGENT_LIMITS, ...options.limits };
   const now = options.now ?? (() => performance.now());
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const planner = options.planner ?? createDefaultPlanner();
   const answerer = options.answerer ?? createDefaultAnswerer();
   const started = now();
@@ -136,26 +147,38 @@ export async function runAgent(
   });
   type S = typeof State.State;
 
-  const callPlanner = async (messages: BaseMessage[]): Promise<AIMessage> => {
+  // Bounded retries with exponential backoff (or the provider's hint, if longer) for transient model failures.
+  const callLlm = async <T,>(
+    phase: LlmCallTrace['phase'],
+    timeoutMs: () => number,
+    work: (signal: AbortSignal) => Promise<T>,
+    usage: (value: T) => { promptTokens: number; completionTokens: number },
+  ): Promise<T> => {
     for (let attempt = 0; ; attempt++) {
       const t0 = now();
       try {
-        const ms = Math.max(1, Math.min(limits.plannerTimeoutMs, remainingMs()));
-        const msg = await timed('planner', ms, (signal) => planner(messages, { signal, callbacks: options.callbacks }));
-        recordLlm({
-          phase: 'plan',
-          latencyMs: now() - t0,
-          promptTokens: msg.usage_metadata?.input_tokens ?? 0,
-          completionTokens: msg.usage_metadata?.output_tokens ?? 0,
-        });
-        return msg;
+        const value = await timed(phase === 'plan' ? 'planner' : 'answer', Math.max(1, timeoutMs()), work);
+        recordLlm({ phase, latencyMs: now() - t0, ...usage(value) });
+        return value;
       } catch (err) {
-        recordLlm({ phase: 'plan', latencyMs: now() - t0, promptTokens: 0, completionTokens: 0, error: errorText(err) });
-        const retryable = (err instanceof LlmTimeoutError || isTransient(err)) && remainingMs() > 0;
-        if (!retryable || attempt >= limits.maxToolRetries) throw err;
+        recordLlm({ phase, latencyMs: now() - t0, promptTokens: 0, completionTokens: 0, error: errorText(err) });
+        const retryable = err instanceof LlmTimeoutError || isTransient(err);
+        if (!retryable || attempt >= limits.maxLlmRetries || timeoutMs() <= 0) throw err;
+        await sleep(Math.max(limits.llmRetryBaseDelayMs * 2 ** attempt, retryAfterHintMs(err)));
       }
     }
   };
+
+  const callPlanner = (messages: BaseMessage[]): Promise<AIMessage> =>
+    callLlm(
+      'plan',
+      () => Math.min(limits.plannerTimeoutMs, remainingMs()),
+      (signal) => planner(messages, { signal, callbacks: options.callbacks }),
+      (msg) => ({
+        promptTokens: msg.usage_metadata?.input_tokens ?? 0,
+        completionTokens: msg.usage_metadata?.output_tokens ?? 0,
+      }),
+    );
 
   const plan = async (state: S): Promise<Partial<S>> => {
     const stop = (termination: TerminationReason): Partial<S> => ({ termination, pending: null });
@@ -218,15 +241,18 @@ export async function runAgent(
     }
     trace.answerEvidenceIds = shown.map((e) => e.id);
 
-    const t0 = now();
+    const answerDeadline = now() + limits.answerTimeoutMs;
     try {
-      const { draft, promptTokens, completionTokens } = await timed('answer', limits.answerTimeoutMs, (signal) =>
-        answerer(
-          { system: answerSystemPrompt(type), user: answerUserPrompt(question, store.format(shown)) },
-          { signal, callbacks: options.callbacks },
-        ),
+      const { draft } = await callLlm(
+        'answer',
+        () => answerDeadline - now(),
+        (signal) =>
+          answerer(
+            { system: answerSystemPrompt(type), user: answerUserPrompt(question, store.format(shown)) },
+            { signal, callbacks: options.callbacks },
+          ),
+        ({ promptTokens, completionTokens }) => ({ promptTokens, completionTokens }),
       );
-      recordLlm({ phase: 'answer', latencyMs: now() - t0, promptTokens, completionTokens });
       const refs = (Array.isArray(draft?.citations) ? draft.citations : []).map((c) => ({
         evidenceId: String(c?.evidenceId ?? ''),
         startLine: Number(c?.startLine),
@@ -238,7 +264,6 @@ export async function runAgent(
         result: { answer: String(draft?.answer ?? ''), citations, citationDiagnostics: diagnostics, evidence: shown },
       };
     } catch (err) {
-      recordLlm({ phase: 'answer', latencyMs: now() - t0, promptTokens: 0, completionTokens: 0, error: errorText(err) });
       trace.errors.push(`answer: ${errorText(err)}`);
       throw err;
     }

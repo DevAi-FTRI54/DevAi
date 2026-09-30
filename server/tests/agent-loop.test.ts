@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { AIMessage, ToolMessage, type BaseMessage } from '@langchain/core/messages';
 import { tempDir, writeFiles } from './helpers/fixtures.js';
 import { RepoSnapshot, ToolError } from '../src/features/tools/index.js';
-import { runAgent, AgentError, type AgentOptions } from '../src/features/agent/agent.service.js';
+import { runAgent, AgentError, retryAfterHintMs, type AgentOptions } from '../src/features/agent/agent.service.js';
 import type { Planner } from '../src/features/agent/planner.js';
 import type { Answerer, AnswerDraft } from '../src/features/agent/answerer.js';
 
@@ -171,7 +171,7 @@ test('the run time budget ends the loop', async () => {
 test('a hung planner is timed out, retried a bounded number of times, then the run answers anyway', async () => {
   const { planner, seen } = scripted([() => new Promise<AIMessage>(() => {})]);
   const { answerer } = answering();
-  const { trace } = await run(planner, answerer, { limits: { plannerTimeoutMs: 20, maxToolRetries: 1 } });
+  const { trace } = await run(planner, answerer, { limits: { plannerTimeoutMs: 20, maxLlmRetries: 1 } });
   assert.equal(trace.terminationReason, 'planner_error');
   assert.equal(seen.length, 2);
   assert.deepEqual(
@@ -185,11 +185,18 @@ test('a hung planner is timed out, retried a bounded number of times, then the r
   assert.equal(trace.errors.length, 1);
 });
 
-test('transient planner errors are retried; permanent ones are not', async () => {
-  const flaky = scripted([new Error('fetch failed'), finish()]);
-  const ok = await run(flaky.planner, answering().answerer);
+test('transient planner errors are retried with backoff; permanent ones are not', async () => {
+  const flaky = scripted([new Error('fetch failed'), new Error('fetch failed'), finish()]);
+  const sleeps: number[] = [];
+  const ok = await run(flaky.planner, answering().answerer, {
+    limits: { llmRetryBaseDelayMs: 100 },
+    sleep: async (ms) => {
+      sleeps.push(ms);
+    },
+  });
   assert.equal(ok.trace.terminationReason, 'sufficient_evidence');
-  assert.equal(flaky.seen.length, 2);
+  assert.equal(flaky.seen.length, 3);
+  assert.deepEqual(sleeps, [100, 200]);
 
   const broken = scripted([new Error('Invalid schema for function')]);
   const failed = await run(broken.planner, answering().answerer);
@@ -250,18 +257,58 @@ test('the answer only sees evidence within its token budget and cannot cite anyt
   assert.equal(result.allEvidence.length, 2);
 });
 
-test('an answer failure raises AgentError carrying the trace', async () => {
+test('a rate-limited answer is retried, waiting at least as long as the provider asks', async () => {
   const { planner } = scripted([call('findDefinition', { symbol: 'verify' }), finish()]);
+  let attempts = 0;
   const answerer: Answerer = async () => {
+    if (++attempts === 1) throw new Error('429 Rate limit reached for gpt-4o-mini. Please try again in 1.314s.');
+    return { draft: { answer: 'ok', citations: [{ evidenceId: 'E1', startLine: 2, endLine: 2 }] }, promptTokens: 10, completionTokens: 1 };
+  };
+  const sleeps: number[] = [];
+  const result = await run(planner, answerer, {
+    limits: { llmRetryBaseDelayMs: 100 },
+    sleep: async (ms) => {
+      sleeps.push(ms);
+    },
+  });
+  assert.equal(result.answer, 'ok');
+  assert.equal(result.citations[0].snippet, '  return token.length > 0;');
+  assert.deepEqual(sleeps, [1314]);
+  assert.deepEqual(result.trace.llmCalls.filter((c) => c.phase === 'answer').map((c) => !!c.error), [true, false]);
+  assert.deepEqual(result.trace.errors, []);
+});
+
+test('answer retries are bounded, and a permanent failure raises AgentError carrying the trace', async () => {
+  const { planner } = scripted([call('findDefinition', { symbol: 'verify' }), finish()]);
+  let attempts = 0;
+  const persistent: Answerer = async () => {
+    attempts++;
+    throw new Error('503 Service Unavailable');
+  };
+  await assert.rejects(run(planner, persistent, { limits: { maxLlmRetries: 2 } }), AgentError);
+  assert.equal(attempts, 3);
+
+  const { planner: planner2 } = scripted([call('findDefinition', { symbol: 'verify' }), finish()]);
+  let permanentAttempts = 0;
+  const permanent: Answerer = async () => {
+    permanentAttempts++;
     throw new Error('model unavailable');
   };
-  await assert.rejects(run(planner, answerer), (err: unknown) => {
+  await assert.rejects(run(planner2, permanent), (err: unknown) => {
     assert.ok(err instanceof AgentError);
     assert.equal(err.trace.terminationReason, 'sufficient_evidence');
     assert.equal(err.trace.steps.length, 1);
     assert.deepEqual(err.trace.errors, ['answer: model unavailable']);
     return true;
   });
+  assert.equal(permanentAttempts, 1);
+});
+
+test('retryAfterHintMs reads provider wait hints and caps them', () => {
+  assert.equal(retryAfterHintMs(new Error('Please try again in 1.314s.')), 1314);
+  assert.equal(retryAfterHintMs(new Error('Please try again in 254ms.')), 254);
+  assert.equal(retryAfterHintMs(new Error('Please try again in 90s.')), 10_000);
+  assert.equal(retryAfterHintMs(new Error('fetch failed')), 0);
 });
 
 test('null optional arguments from the model are dropped before the tool runs', async () => {
