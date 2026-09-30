@@ -18,7 +18,7 @@ import {
   assembleCitations,
   buildEvidence,
   formatEvidence,
-  localSourceRoot,
+  snapshotSourceRoot,
   type Citation,
   type CitationDiagnostics,
   type Evidence,
@@ -279,7 +279,7 @@ export async function answerQuestion(
     const { citations, diagnostics } = assembleCitations(
       response.citations,
       evidence,
-      localSourceRoot(repoId),
+      snapshotSourceRoot,
     );
     console.log('--- citation diagnostics ------------');
     console.log(diagnostics);

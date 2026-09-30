@@ -32,6 +32,8 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
   constructor(
     private repoPath: string,
     private repoId: string,
+    // Commit the repoPath snapshot was checked out at; stored on every document.
+    private commitSha?: string,
   ) {
     super();
   }
@@ -103,6 +105,7 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
           pageContent: sourceFile.getFullText(),
           metadata: {
             repoId: this.repoId,
+            ...(this.commitSha && { commitSha: this.commitSha }),
             filePath,
             declarationName: path.basename(absolutePath),
             // getFullText() starts at line 1; getStartLineNumber() would skip leading comments.
@@ -125,6 +128,7 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
             pageContent: node.getFullText(),
             metadata: {
               repoId: this.repoId,
+              ...(this.commitSha && { commitSha: this.commitSha }),
               filePath,
               declarationName: node.getName() ?? '<anonymous>',
               startLine: start,

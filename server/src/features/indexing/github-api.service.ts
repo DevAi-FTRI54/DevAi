@@ -12,6 +12,7 @@ interface GitHubFile {
 interface RepositoryContent {
   files: GitHubFile[];
   repoId: string;
+  commitSha: string;
 }
 
 export class GitHubApiService {
@@ -37,11 +38,19 @@ export class GitHubApiService {
     console.log(`🔍 Fetching content for ${owner}/${repo} at ${sha}`);
 
     try {
+      // Pin the ref to a concrete commit so every file comes from the same snapshot.
+      const { data: commit } = await this.octokit.rest.repos.getCommit({
+        owner,
+        repo,
+        ref: sha,
+      });
+      const commitSha = commit.sha.toLowerCase();
+
       // Get the tree recursively
       const { data: tree } = await this.octokit.rest.git.getTree({
         owner,
         repo,
-        tree_sha: sha,
+        tree_sha: commitSha,
         recursive: 'true', // Get all files recursively
       });
 
@@ -104,6 +113,7 @@ export class GitHubApiService {
       return {
         files: validFiles,
         repoId,
+        commitSha,
       };
     } catch (error) {
       console.error('❌ Failed to fetch repository content:', error);

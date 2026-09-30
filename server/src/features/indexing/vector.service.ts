@@ -172,6 +172,29 @@ export async function createCodeRetriever(repoId: string, k = 8) {
   }
 }
 
+// Commits a repo's indexed points were built from. Empty for indexes created before commitSha was stored;
+// more than one means the repo was re-indexed without clearing old points.
+export async function getIndexedCommitShas(repoId: string): Promise<string[]> {
+  const shas = new Set<string>();
+  let offset: string | number | undefined | null = undefined;
+  do {
+    const page: Awaited<ReturnType<QdrantClient['scroll']>> =
+      await getQdrantClient().scroll(COLLECTION, {
+        filter: { must: [{ key: 'metadata.repoId', match: { value: repoId } }] },
+        with_payload: ['metadata.commitSha'],
+        with_vector: false,
+        limit: 256,
+        ...(offset != null && { offset }),
+      });
+    for (const point of page.points) {
+      const sha = (point.payload?.metadata as { commitSha?: unknown } | undefined)?.commitSha;
+      if (typeof sha === 'string') shas.add(sha);
+    }
+    offset = page.next_page_offset as string | number | null | undefined;
+  } while (offset != null);
+  return [...shas].sort();
+}
+
 // Filtering: https://qdrant.tech/documentation/concepts/filtering/
 // Indexing: https://qdrant.tech/documentation/concepts/indexing/
 // Vector Search Tutorial: https://qdrant.tech/articles/vector-search-filtering/

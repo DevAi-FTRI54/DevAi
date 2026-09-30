@@ -1,17 +1,30 @@
 // Deterministic evidence layer: the model cites evidence IDs and line ranges; the server builds every citation
-// (file, lines, snippet) from source text (a local clone when available, otherwise the indexed text),
+// (file, lines, snippet) from source text (the indexed commit's snapshot when cached, otherwise the indexed text),
 // so no model-written snippet reaches the client.
 import fs from 'fs';
 import path from 'path';
 import { Document } from '@langchain/core/documents';
+import { repoCacheRoot, snapshotPath } from '../indexing/git.service.js';
+
+export type EvidenceSource =
+  | 'semanticSearch'
+  | 'readFile'
+  | 'grepSearch'
+  | 'findDefinition'
+  | 'findReferences';
 
 export type Evidence = {
   id: string;
   repoId: string;
+  // null only for documents indexed before snapshots were recorded.
+  commitSha: string | null;
   filePath: string;
   startLine: number;
   endLine: number;
   content: string;
+  source: EvidenceSource;
+  // Short human-readable description, e.g. a declaration name or a match summary.
+  label?: string;
 };
 
 export type EvidenceReference = {
@@ -56,11 +69,14 @@ export function buildEvidence(docs: Document[], repoId: string): Evidence[] {
     const content = d.pageContent ?? '';
     return {
       id: `E${i + 1}`,
-      repoId: String(d.metadata.repoId ?? repoId),
-      filePath: String(d.metadata.filePath ?? ''),
+      repoId: String(m.repoId ?? repoId),
+      commitSha: m.commitSha ? String(m.commitSha) : null,
+      filePath: String(m.filePath ?? ''),
       startLine,
       endLine: startLine + contentLines(content).length - 1,
       content,
+      source: 'semanticSearch' as const,
+      ...(m.declarationName && { label: String(m.declarationName) }),
     };
   });
 }
@@ -74,15 +90,24 @@ export function formatEvidence(e: Evidence, name?: string): string {
   return `${header}${e.filePath} (lines ${e.startLine}-${e.endLine})\n---\n${body}\n====\n`;
 }
 
-// Production clones live at .cache/repos/<repoId>/<sha>; only trust one when it is unambiguous.
-export function localSourceRoot(repoId: string): string | null {
-  const dir = path.resolve('.cache', 'repos', repoId);
+// Legacy evidence has no commit, so a cached clone is only trusted when it is the repo's only one.
+function unambiguousClone(repoId: string): string | null {
+  const dir = path.join(repoCacheRoot(), repoId);
   try {
-    const shas = fs.readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory());
+    const shas = fs
+      .readdirSync(dir, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && !d.name.startsWith('.'));
     return shas.length === 1 ? path.join(dir, shas[0].name) : null;
   } catch {
     return null;
   }
+}
+
+// The authoritative source for evidence is the snapshot of the commit it was indexed from.
+export function snapshotSourceRoot(ev: Pick<Evidence, 'repoId' | 'commitSha'>): string | null {
+  if (!ev.commitSha) return unambiguousClone(ev.repoId);
+  const root = snapshotPath(ev.repoId, ev.commitSha);
+  return fs.existsSync(root) ? root : null;
 }
 
 const normalizeId = (id: string) => String(id ?? '').trim().replace(/^\[|\]$/g, '').toUpperCase();
@@ -90,7 +115,7 @@ const normalizeId = (id: string) => String(id ?? '').trim().replace(/^\[|\]$/g, 
 export function assembleCitations(
   refs: EvidenceReference[],
   evidence: Evidence[],
-  sourceRoot: string | null = null,
+  resolveSourceRoot: (ev: Evidence) => string | null = () => null,
 ): { citations: Citation[]; diagnostics: CitationDiagnostics } {
   const byId = new Map(evidence.map((e) => [e.id, e]));
   const diagnostics: CitationDiagnostics = {
@@ -104,19 +129,20 @@ export function assembleCitations(
     emptyEvidence: 0,
     duplicates: 0,
   };
-  // undefined: no local clone to check against; null: the file is not in the clone.
+  // undefined: no snapshot to check against; null: the file is not in the snapshot.
   const fileCache = new Map<string, string[] | null>();
-  const sourceFileLines = (filePath: string): string[] | null | undefined => {
+  const sourceFileLines = (ev: Evidence): string[] | null | undefined => {
+    const sourceRoot = resolveSourceRoot(ev);
     if (!sourceRoot) return undefined;
-    if (!fileCache.has(filePath)) {
-      const abs = path.resolve(sourceRoot, filePath);
+    const abs = path.resolve(sourceRoot, ev.filePath);
+    if (!fileCache.has(abs)) {
       const inside = abs.startsWith(path.resolve(sourceRoot) + path.sep);
       fileCache.set(
-        filePath,
+        abs,
         inside && fs.existsSync(abs) ? contentLines(fs.readFileSync(abs, 'utf8')) : null,
       );
     }
-    return fileCache.get(filePath);
+    return fileCache.get(abs);
   };
 
   const seen = new Set<string>();
@@ -127,7 +153,7 @@ export function assembleCitations(
       diagnostics.unknownEvidence++;
       continue;
     }
-    const fileLines = sourceFileLines(ev.filePath);
+    const fileLines = sourceFileLines(ev);
     if (!ev.filePath || fileLines === null) {
       diagnostics.missingFile++;
       continue;
@@ -149,7 +175,7 @@ export function assembleCitations(
     }
 
     // Indexed text can lose the first line's indentation (splitter trimming, declaration leading trivia),
-    // so copy from the source file when a clone is available.
+    // so copy from the snapshot when it is available.
     const evidenceLines = contentLines(ev.content);
     const at = (line: number) =>
       fileLines ? (fileLines[line - 1] ?? '') : (evidenceLines[line - ev.startLine] ?? '');

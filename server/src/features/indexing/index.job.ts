@@ -90,14 +90,14 @@ export function ensureWorker(): Promise<void> {
 
             console.log(`📍 Step 1: Cloning repository ${repoUrl}...`);
 
-            const { localRepoPath, repoId } = await cloneRepo(repoUrl, sha);
+            const { localRepoPath, repoId, commitSha } = await cloneRepo(repoUrl, sha);
             console.log(`✅ Repository cloned to: ${localRepoPath}`);
             await job.updateProgress(15);
 
             console.log(
               `📍 Step 2: Loading documents with TsmorphCodeLoader...`,
             );
-            const loader = new TsmorphCodeLoader(localRepoPath, repoId);
+            const loader = new TsmorphCodeLoader(localRepoPath, repoId, commitSha);
             const bigDocs = await loader.load();
             console.log(`✅ Loader completed`);
 

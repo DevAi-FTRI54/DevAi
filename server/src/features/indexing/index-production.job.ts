@@ -45,7 +45,7 @@ const worker = new Worker(
       console.log('📡 Using GitHub API approach (production)');
 
       const githubService = new GitHubApiService(accessToken);
-      const { files, repoId: apiRepoId } =
+      const { files, repoId: apiRepoId, commitSha } =
         await githubService.fetchRepositoryContent(repoUrl, sha);
 
       repoId = apiRepoId;
@@ -53,7 +53,7 @@ const worker = new Worker(
 
       await job.updateProgress(15);
 
-      const loader = new InMemoryCodeLoader(files, repoId, repoName);
+      const loader = new InMemoryCodeLoader(files, repoId, repoName, commitSha);
       bigDocs = await loader.load();
 
       console.log(`📄 Loaded ${bigDocs.length} documents via GitHub API`);
@@ -61,7 +61,7 @@ const worker = new Worker(
       // DEVELOPMENT: Use local cloning (fallback)
       console.log('💻 Using local clone approach (development)');
 
-      const { localRepoPath, repoId: localRepoId } = await cloneRepo(
+      const { localRepoPath, repoId: localRepoId, commitSha } = await cloneRepo(
         repoUrl,
         sha
       );
@@ -70,7 +70,7 @@ const worker = new Worker(
 
       await job.updateProgress(15);
 
-      const loader = new TsmorphCodeLoader(localRepoPath, repoId);
+      const loader = new TsmorphCodeLoader(localRepoPath, repoId, commitSha);
       bigDocs = await loader.load();
 
       console.log(`📄 Loaded ${bigDocs.length} documents via local clone`);

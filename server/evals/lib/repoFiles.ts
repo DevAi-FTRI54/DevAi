@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import { snapshotPath } from '../../src/features/indexing/git.service.js';
 
-// Matches the cache layout used by cloneRepo in git.service.ts (relative to the server/ cwd).
 export function clonePath(repoId: string, sha: string): string {
-  return path.resolve('.cache', 'repos', repoId, sha);
+  return snapshotPath(repoId, sha);
 }
 
 const cache = new Map<string, string[] | null>();

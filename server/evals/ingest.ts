@@ -51,10 +51,13 @@ async function main() {
     await qdrant.delete(EVAL_COLLECTION, { filter, wait: true });
   }
 
-  const { localRepoPath } = await cloneRepo(golden.repoUrl, golden.sha);
+  const { localRepoPath, commitSha } = await cloneRepo(golden.repoUrl, golden.sha);
+  if (commitSha !== golden.sha.toLowerCase()) {
+    throw new Error(`Clone resolved to ${commitSha}, golden set is pinned to ${golden.sha}`);
+  }
   console.log(`Clone: ${localRepoPath}`);
 
-  const docs = await new TsmorphCodeLoader(localRepoPath, repoId).load();
+  const docs = await new TsmorphCodeLoader(localRepoPath, repoId, commitSha).load();
   const chunked = (await chunkDocuments(docs)).map((doc) =>
     doc.pageContent.trim().length === 0
       ? { ...doc, pageContent: 'Empty file' }
