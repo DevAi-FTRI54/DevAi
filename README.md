@@ -234,19 +234,24 @@ Only the three bugs above were fixed, each in its own commit. Chunking, retrieva
 - **Walkthrough prompt** (`4918264`): the client sends `Walkthrough`, and the server resolves prompt types case-insensitively.
 - **Error taxonomy** (`6056c13`): failures are classified as `MODEL_AUTH`, `MODEL_QUOTA`, `MODEL_RATE_LIMIT`, `MODEL_ERROR`, `VECTOR_DB_DOWN`, or `INTERNAL`, with the pipeline stage and the original cause. The code and stage are sent to the client over SSE. During these runs it correctly reported a real OpenAI credit outage as `MODEL_QUOTA` and a transient Qdrant failure as `VECTOR_DB_DOWN`.
 
-The v0 baseline was a single run, so v0 was re-measured with 3 repeats (without the judge) for a like-for-like comparison:
+The v0 baseline was a single run, so v0 was re-measured with 3 repeats (without the judge) for a like-for-like comparison. The line-range fix was also measured on its own, as a single run, before the other two fixes landed:
 
-| Metric | RAG v0 (3 repeats) | RAG v1 (3 repeats) |
-|---|---|---|
-| File recall | 84.9% | 84.4% |
-| Required line-range recall | 67.6% | 66.0% |
-| Citation validity | 45.6% | 50.8% |
-| Citations grounded in retrieved context | 89.2% | 97.5% |
-| Correctness (0–2) / fully correct | 1.00 / 14% (v0 single run) | 1.01 / 15% |
-| Completeness | 44.7% (v0 single run) | 47.9% |
-| Cost per question | $0.0026 | $0.0026 |
+| Metric | RAG v0 (3 repeats) | Line-range fix only (1 run) | RAG v1 (3 repeats) | Δ v0 → v1 |
+|---|---|---|---|---|
+| File recall | 84.9% | 84.0% | 84.4% | −0.5 pts |
+| Range hit | 94.7% | 92.0% | 92.0% | −2.7 pts |
+| Required line-range recall | 67.6% | 66.0% | 66.0% | −1.6 pts |
+| **Citation validity** | **45.6%** | **65.4%** | **50.8%** | **+5.2 pts** |
+| Citations grounded in retrieved context | 89.2% | 97.4% | 97.5% | +8.3 pts |
+| Citations pointing at an expected file | 88.8% | 88.5% | 89.8% | +1.0 pts |
+| Correctness (0–2) / fully correct | 1.00 / 14% ¹ | 0.96 / 10% | 1.01 / 15% | ≈ 0 |
+| Completeness | 44.7% ¹ | 47.5% | 47.9% | +3.2 pts |
+| Latency p50 / p95 | 4.7 s / 7.7 s | 5.6 s / 11.4 s | 5.3 s / 9.9 s | provider variance |
+| Cost per question | $0.0026 | $0.0026 | $0.0026 | 0 |
 
-Per-repeat citation validity ranged 44–48% for v0 and 45–55% across six v1 repeats. The line fix is a real but modest gain, not a jump. What changed is *why* citations fail:
+¹ From the original single v0 run; the 3-repeat re-measurement skipped the judge.
+
+Per-repeat citation validity ranged 44–48% for v0 and 45–55% across six v1 repeats. The 65.4% line-fix-only run was a lucky draw outside that range. The line fix is a real but modest gain, not a jump. Retrieval metrics moved by amounts within run-to-run noise; embedded text is identical, only line metadata changed. What changed is *why* citations fail:
 
 | Why a citation fails (share of all citations) | v0 | v1 |
 |---|---|---|
@@ -257,6 +262,49 @@ Per-repeat citation validity ranged 44–48% for v0 and 45–55% across six v1 r
 **Takeaway:** retrieval was never the main problem. The right file is retrieved for 85% of required sources, and some relevant file for every question. Fixing the line metadata halved the wrong-line citations and made cited ranges line up with retrieved context (grounded 89% → 98%). But the dominant weakness is generation fidelity: `gpt-4o-mini` paraphrases or elides the code it quotes, and multi-part questions stay weakest (correctness 0.62, completeness 36%). That points the next milestone at citation construction and answer planning (Agentic v1), not at chunking or retrieval tuning.
 
 Latency was 4.7 s p50 for v0 versus 5.3 s for v1, with no pipeline change on the request path. Treat it as provider variance between runs.
+
+#### RAG v2: deterministic evidence layer (`rag-v2-625d687.json`)
+
+v1 showed that citations failed mainly because the model retyped code and line numbers. v2 takes that job away from the model (`344b03e`):
+
+- Every reranked chunk that fits the prompt budget becomes an **evidence item** `{id, repoId, filePath, startLine, endLine, content}` and is shown to the model with an ID (`[E1]`) and numbered source lines.
+- The model returns citations as `{evidenceId, startLine, endLine}` only. It can no longer write a file path or a snippet.
+- At response time the server verifies the evidence ID and checks the file against a local clone when one unambiguously exists. It clamps the line range to the evidence (falling back to the whole evidence item if the range misses it entirely), trims blank edges, removes duplicates, and copies the exact source text into the snippet. No model-written snippet reaches the UI or MongoDB.
+- The prompt budget is still measured on the old un-numbered format, so v2 sees exactly the same chunks as v1.
+
+A small fix landed alongside it (`3dd1587`): chunks split from a function or class had inherited the parent's text-start line, which would have misplaced 13 evidence items.
+
+| Metric | RAG v1 (3 repeats) | RAG v2 (3 repeats) | Δ v1 → v2 |
+|---|---|---|---|
+| File recall | 84.4% | 84.6% | +0.2 pts |
+| Range hit | 92.0% | 94.0% | +2.0 pts |
+| Required line-range recall | 66.0% | 68.1% | +2.1 pts |
+| **Citation validity** | **50.8%** | **93.9%** | **+43.1 pts** |
+| Citations grounded in retrieved context | 97.5% | 100.0% | +2.5 pts |
+| Citations pointing at an expected file | 89.8% | 90.9% | +1.1 pts |
+| Citations per answer / median cited span | 1.6 / 45 lines | 2.2 / 8 lines | tighter |
+| Citations dropped by server verification | n/a | 0 of 330 | — |
+| Correctness (0–2) / fully correct | 1.01 / 15% | 0.97 / 15% | ≈ 0 |
+| Completeness | 47.9% | 42.9% | −5.0 pts |
+| Latency p50 / p95 | 5.3 s / 9.9 s | 4.1 s / 6.2 s | −1.2 s / −3.7 s |
+| Prompt / completion tokens per question | 2,819 / 343 | 3,538 / 214 | line numbers in, snippets out |
+| Cost per question | $0.0026 | $0.0027 | +$0.0001 |
+
+**Citation validity moved dramatically, and the remainder is not a citation-architecture problem.** Every one of the 330 snippets is the exact source text. 22 differ only by the first line's leading indentation (see below). Of the 20 citations the checker still rejects:
+
+- 17 cite comment-only lines. They are verbatim, but the checker strips comments before comparing (a rule designed for model-written snippets), which leaves nothing to match.
+- 2 have a `/* ... */` block comment crossing the edge of the cited window.
+- 1 cites a single blank line. This is a real small gap: the server should reject whitespace-only ranges.
+
+The server kept all 330 citations the model requested. 5 ranges were clamped, and 5 missed their evidence item entirely and fell back to its full range.
+
+Things to watch:
+
+- **Completeness dipped** (−5 pts, with conceptual questions hardest hit: 34% → 23%). Answers got about 10% shorter now that the model isn't writing snippets. It is not yet clear whether this is noise or the new instructions making answers terser.
+- **Indentation without a local clone.** This run had three commit folders cached for the repo, so the server treated the clone as ambiguous and used the indexed text, which is the realistic production path. The splitter trims leading whitespace from chunks, so a citation that starts on a chunk's first line loses that line's indentation. With exactly one clone present, snippets are byte-exact.
+- Latency improved because the model writes far fewer output tokens.
+
+With citations now deterministic, the remaining weaknesses are answer quality: multi-part correctness is 0.57 and overall completeness is 43%. Those point at retrieval coverage for multi-file questions and at answer planning, which is the natural scope for Agentic v1.
 
 ---
 
