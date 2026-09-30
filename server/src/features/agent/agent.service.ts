@@ -1,5 +1,7 @@
-// Agentic v1: a bounded LangGraph loop (plan -> act -> plan ... -> answer) over one pinned snapshot.
+// Agentic loop: a bounded LangGraph loop (plan -> act -> plan ... -> answer) over one pinned snapshot.
 // The planner picks one tool per turn or declares sufficient evidence; hard limits end the loop otherwise.
+// Profiles keep earlier versions reproducible: agentic-v1 is the original planner; agentic-v1.1 adds
+// role-specific tool descriptions and the symbol guard.
 import { randomUUID } from 'crypto';
 import { Annotation, StateGraph } from '@langchain/langgraph';
 import { AIMessage, HumanMessage, SystemMessage, ToolMessage, type BaseMessage } from '@langchain/core/messages';
@@ -8,11 +10,14 @@ import { EvidenceStore, RepoSnapshot, ToolError, type ToolName } from '../tools/
 import type { Citation, CitationDiagnostics, Evidence } from '../queries/evidence.js';
 import { generateUniqueRepoId } from '../indexing/git.service.js';
 import { ToolRuntime, isTransient, type ToolImpl } from './tool-runtime.js';
-import { FINISH_TOOL, createDefaultPlanner, plannerSystemPrompt, type Planner } from './planner.js';
+import { FINISH_TOOL, PLANNER_TOOLS, createDefaultPlanner, plannerSystemPrompt, type Planner } from './planner.js';
+import { PLANNER_TOOLS_V1_1, plannerSystemPromptV1_1 } from './planner-v1_1.js';
+import { symbolGuard } from './symbol-guard.js';
 import { answerSystemPrompt, answerUserPrompt, createDefaultAnswerer, type Answerer } from './answerer.js';
 import {
   DEFAULT_AGENT_LIMITS,
   type AgentLimits,
+  type AgentProfile,
   type AgentTrace,
   type EvidenceDiagnostics,
   type LlmCallTrace,
@@ -29,7 +34,15 @@ export type AgentRunResult = {
   trace: AgentTrace;
 };
 
+const PROFILES = {
+  'agentic-v1': { tools: PLANNER_TOOLS, systemPrompt: plannerSystemPrompt, guardSymbols: false },
+  'agentic-v1.1': { tools: PLANNER_TOOLS_V1_1, systemPrompt: plannerSystemPromptV1_1, guardSymbols: true },
+} as const;
+
+export const DEFAULT_AGENT_PROFILE: AgentProfile = 'agentic-v1.1';
+
 export type AgentOptions = {
+  profile?: AgentProfile;
   limits?: Partial<AgentLimits>;
   planner?: Planner;
   answerer?: Answerer;
@@ -114,7 +127,9 @@ export async function runAgent(
   const limits: AgentLimits = { ...DEFAULT_AGENT_LIMITS, ...options.limits };
   const now = options.now ?? (() => performance.now());
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
-  const planner = options.planner ?? createDefaultPlanner();
+  const profileName = options.profile ?? DEFAULT_AGENT_PROFILE;
+  const profile = PROFILES[profileName];
+  const planner = options.planner ?? createDefaultPlanner([...profile.tools]);
   const answerer = options.answerer ?? createDefaultAnswerer();
   const started = now();
   const remainingMs = () => limits.runTimeoutMs - (now() - started);
@@ -126,9 +141,11 @@ export async function runAgent(
     remainingMs,
     sleep: options.sleep,
     now,
+    guard: profile.guardSymbols ? symbolGuard(snapshot) : undefined,
   });
   const trace: AgentTrace = {
     runId: randomUUID(),
+    profile: profileName,
     question,
     repoId: snapshot.repoId,
     commitSha: snapshot.commitSha,
@@ -209,7 +226,7 @@ export async function runAgent(
     if (runtime.budgetExhausted) return stop('max_tool_calls');
     if (state.noProgress >= limits.maxNoProgressTurns) return stop('no_progress');
 
-    const system = plannerSystemPrompt(snapshot, {
+    const system = profile.systemPrompt(snapshot, {
       toolCallsUsed: runtime.toolCalls,
       maxToolCalls: limits.maxToolCalls,
       turnsLeft: limits.maxIterations - state.iterations,

@@ -107,8 +107,10 @@ export type Planner = (
   options: { signal: AbortSignal; callbacks?: Callbacks },
 ) => Promise<AIMessage>;
 
-export function createDefaultPlanner(model = 'gpt-4o-mini'): Planner {
+export type PlannerToolSpec = (typeof PLANNER_TOOLS)[number];
+
+export function createDefaultPlanner(tools: PlannerToolSpec[] = PLANNER_TOOLS, model = 'gpt-4o-mini'): Planner {
   const llm = new ChatOpenAI({ model, temperature: 0, maxRetries: 2, apiKey: process.env.OPENAI_API_KEY });
-  const bound = llm.bindTools(PLANNER_TOOLS, { tool_choice: 'required', parallel_tool_calls: false });
+  const bound = llm.bindTools(tools, { tool_choice: 'required', parallel_tool_calls: false });
   return (messages, { signal, callbacks }) => bound.invoke(messages, { signal, callbacks, runName: 'agent-plan' });
 }

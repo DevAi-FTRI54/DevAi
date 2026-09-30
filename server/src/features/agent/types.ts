@@ -41,6 +41,8 @@ export const DEFAULT_AGENT_LIMITS: AgentLimits = {
   maxAnswerEvidenceTokens: 12_000,
 };
 
+export type AgentProfile = 'agentic-v1' | 'agentic-v1.1';
+
 export type TerminationReason =
   | 'sufficient_evidence'
   | 'max_tool_calls'
@@ -56,7 +58,9 @@ export type ToolCallStatus =
   | 'timeout'
   | 'duplicate'
   | 'budget_exhausted'
-  | 'unknown_tool';
+  | 'unknown_tool'
+  // Refused by an input guard before running (no budget spent).
+  | 'rejected_input';
 
 export type ToolStepTrace = {
   index: number;
@@ -96,6 +100,7 @@ export type EvidenceDiagnostics = {
 
 export type AgentTrace = {
   runId: string;
+  profile: AgentProfile;
   question: string;
   repoId: string;
   commitSha: string;

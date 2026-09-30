@@ -68,6 +68,8 @@ export type ToolRuntimeOptions = {
   tools?: Partial<Record<ToolName, ToolImpl>>;
   // Remaining run budget in ms; each attempt's timeout is capped by it.
   remainingMs?: () => number;
+  // Returns a message to refuse a call before it runs (no budget spent, not remembered as a duplicate).
+  guard?: (tool: string, args: Record<string, unknown>) => string | null;
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
 };
@@ -159,6 +161,11 @@ export class ToolRuntime {
     }
     if (this.budgetExhausted) {
       return finish('budget_exhausted', `Tool budget exhausted (${this.options.limits.maxToolCalls} calls). Finish now.`);
+    }
+    const refusal = this.options.guard?.(tool, args);
+    if (refusal) {
+      step.errors.push(refusal);
+      return finish('rejected_input', `${tool} call refused (no budget used): ${refusal}`);
     }
 
     this.seen.set(key, step);

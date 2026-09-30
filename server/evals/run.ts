@@ -1,5 +1,5 @@
 // Runs the golden set through one system and records retrieval, citation, judge, latency, and cost metrics.
-// Usage: npm run eval:run -- --system rag-v2.1|agentic-v1 [--only E01,X03] [--category cross_file] [--repeats 1]
+// Usage: npm run eval:run -- --system rag-v2.1|agentic-v1|agentic-v1.1 [--only E01,X03] [--category cross_file] [--repeats 1]
 //        [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path]
 // --save-baseline writes baselines/<label>-<goldenSha7>.json and refuses to overwrite an existing baseline;
 // the label must belong to the system under test (rag-* for rag-v2.1, agentic-* for agentic-v1).
@@ -42,6 +42,7 @@ import type { AgentTrace } from '../src/features/agent/types.js';
 const SYSTEMS = {
   'rag-v2.1': { baselinePrefix: 'rag-' },
   'agentic-v1': { baselinePrefix: 'agentic-' },
+  'agentic-v1.1': { baselinePrefix: 'agentic-' },
 } as const;
 type SystemName = keyof typeof SYSTEMS;
 
@@ -381,8 +382,11 @@ async function main() {
 
     const t0 = performance.now();
     try {
-      if (system === 'agentic-v1') {
-        const res = await answerWithAgent(golden.repoUrl, item.question, item.type, { callbacks: [handler] });
+      if (system !== 'rag-v2.1') {
+        const res = await answerWithAgent(golden.repoUrl, item.question, item.type, {
+          profile: system,
+          callbacks: [handler],
+        });
         trace = res.trace;
         if (res.trace.commitSha !== golden.sha.toLowerCase()) {
           throw new Error(`Agent snapshot ${res.trace.commitSha} is not the golden commit ${golden.sha}`);
