@@ -14,6 +14,23 @@
 
 DevAI is an AI-assisted codebase exploration tool. After you connect a GitHub repository, the backend ingests source files, stores embeddings in a vector database, and supports natural-language questions with answers grounded in retrieved code context (including citations).
 
+## 📈 Measured, not assumed
+
+DevAI demoed well. Answers read confidently and every one came with citations. So before changing anything, I built an evaluation harness: 50 questions about DevAI's own code, each with labeled source lines and required facts, scored by deterministic checks and an LLM judge.
+
+The first run was humbling. Only **14% of answers were fully correct**, and **fewer than half of the citations pointed at code that actually exists at the cited lines**. Retrieval turned out not to be the problem: the right files came back for 85% of required sources. The failures were in grounding. Chunks carried the wrong line numbers, and the model retyped code from memory instead of quoting it.
+
+Each fix was benchmarked against the one before it, and every milestone is kept as a write-once baseline:
+
+| Milestone | What changed | Citation validity | Fully correct |
+|---|---|---|---|
+| RAG v0 | Original implementation, first measured | 46% | 14% |
+| RAG v1 | Deterministic bug fixes: chunk line ranges, prompt routing, error taxonomy | 51% | 15% |
+| RAG v2 | Server-assembled citations from verified evidence; the model cites IDs, never code | **94%** | 15% |
+| Agentic v1 | Next: planning and multi-step retrieval for multi-part and cross-file questions | — | — |
+
+Citations are now solved. Answer quality is not: multi-part questions still score 0.57 out of 2. That is the problem the agentic architecture has to beat, measured on the same benchmark against the same baselines. Details are in [Evaluation](#-evaluation).
+
 ## Proof
 
 Live demo: https://www.dev-ai.app/
@@ -32,7 +49,7 @@ Question and Response:
 ### 🎯 Core Features
 
 - **🤖 Retrieval-augmented Q&A (RAG)**: retrieves relevant code chunks from Qdrant before generating an answer.
-- **📍 Citations**: returns file paths, line ranges, and snippets so answers are verifiable.
+- **📍 Verified citations**: the model cites evidence IDs and line ranges; the server builds each citation (file, lines, exact source snippet) from the retrieved evidence, so every snippet shown is real code.
 - **🔐 GitHub OAuth + GitHub App**: authenticates users and lists repositories accessible via app installation.
 - **⚙️ Background ingestion**: indexing runs asynchronously using BullMQ + Redis.
 - **⚡ Streaming responses**: query responses are streamed to the client (SSE) for incremental rendering.
@@ -187,9 +204,12 @@ DevAI is measured against a fixed golden set rather than spot-checked by hand. T
 
 - **Golden set**: 50 questions about DevAI's own code, pinned to commit `625d687` (`server/evals/golden/devai-625d687.json`). Categories: exact lookup (10), conceptual (8), cross-file (9), dependency tracing (8), configuration (8), multi-part (7). Each question lists expected source files/line ranges and the key facts a complete answer must contain.
 - **Isolation**: the pinned repo is ingested into its own Qdrant collection (`devai_eval_01`), through the same loader, chunker, and embedding code as production. Each question runs through the real `answerQuestion` pipeline.
+- **Can't hit production by accident**: eval scripts take their Qdrant and MongoDB connections only from `server/.env.eval` (local by default, committed, no secrets). API keys still come from `server/.env`. A run refuses to start if an eval target is missing, matches the app's production host or collection, or is remote without an explicit opt-in. Every run prints and records the targets it used.
 - **Deterministic metrics**: retrieval file recall and line-range recall, and citation validity (the cited file exists, the lines are in range, and the snippet actually appears at those lines).
 - **LLM judge** (`gpt-4o`): correctness (0 wrong / 1 partial / 2 correct) and completeness (share of key facts covered), scored separately.
 - **Cost and latency**: tokens, dollars, p50/p95 latency per question.
+
+Prerequisites: local Qdrant on `:6333` and MongoDB on `:27017` (see `server/.env.eval`), plus `OPENAI_API_KEY` and `COHERE_API_KEY` in `server/.env`.
 
 ```bash
 cd server
