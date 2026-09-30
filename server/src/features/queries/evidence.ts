@@ -35,6 +35,9 @@ export type CitationDiagnostics = {
   missingFile: number;
   clamped: number;
   fullEvidenceFallback: number;
+  // Range selected only blank lines: replaced by the whole evidence item (or dropped if that is blank too).
+  whitespaceFallback: number;
+  emptyEvidence: number;
   duplicates: number;
 };
 
@@ -97,6 +100,8 @@ export function assembleCitations(
     missingFile: 0,
     clamped: 0,
     fullEvidenceFallback: 0,
+    whitespaceFallback: 0,
+    emptyEvidence: 0,
     duplicates: 0,
   };
   // undefined: no local clone to check against; null: the file is not in the clone.
@@ -148,8 +153,21 @@ export function assembleCitations(
     const evidenceLines = contentLines(ev.content);
     const at = (line: number) =>
       fileLines ? (fileLines[line - 1] ?? '') : (evidenceLines[line - ev.startLine] ?? '');
-    while (start < end && at(start).trim() === '') start++;
-    while (end > start && at(end).trim() === '') end--;
+    const trimBlankEdges = () => {
+      while (start < end && at(start).trim() === '') start++;
+      while (end > start && at(end).trim() === '') end--;
+    };
+    trimBlankEdges();
+    if (at(start).trim() === '') {
+      start = ev.startLine;
+      end = maxLine;
+      trimBlankEdges();
+      if (at(start).trim() === '') {
+        diagnostics.emptyEvidence++;
+        continue;
+      }
+      diagnostics.whitespaceFallback++;
+    }
 
     const key = `${ev.filePath}:${start}-${end}`;
     if (seen.has(key)) {

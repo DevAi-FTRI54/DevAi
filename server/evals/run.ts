@@ -173,7 +173,7 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
   const a = overall.citations.assembly;
   if (a) {
     lines.push(
-      `Citation assembly: ${a.requested} requested by the model, ${a.emitted} emitted; dropped ${a.unknownEvidence} unknown evidence IDs, ${a.missingFile} missing files, ${a.duplicates} duplicates; ${a.clamped} ranges clamped, ${a.fullEvidenceFallback} fell back to the full evidence range.`,
+      `Citation assembly: ${a.requested} requested by the model, ${a.emitted} emitted; dropped ${a.unknownEvidence} unknown evidence IDs, ${a.missingFile} missing files, ${a.emptyEvidence ?? 0} blank evidence items, ${a.duplicates} duplicates; ${a.clamped} ranges clamped, ${a.fullEvidenceFallback} missed their evidence and ${a.whitespaceFallback ?? 0} selected only blank lines (both fell back to the full evidence range).`,
       '',
     );
   }
