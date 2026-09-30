@@ -81,6 +81,19 @@ export type LlmCallTrace = {
   error?: string;
 };
 
+// How much of the gathered evidence reached the answer and was cited. Tokens are chars/4 of the formatted evidence.
+export type EvidenceDiagnostics = {
+  evidenceItems: number;
+  uniqueFiles: number;
+  evidenceTokens: number;
+  answerEvidenceItems: number;
+  answerEvidenceTokens: number;
+  citedEvidenceItems: number;
+  // Cited items / all gathered items, and / items shown to the answer step.
+  utilization: number | null;
+  answerUtilization: number | null;
+};
+
 export type AgentTrace = {
   runId: string;
   question: string;
@@ -100,6 +113,7 @@ export type AgentTrace = {
   evidenceCount: number;
   answerEvidenceIds: string[];
   citationDiagnostics: CitationDiagnostics | null;
+  diagnostics: EvidenceDiagnostics | null;
   errors: string[];
 };
 

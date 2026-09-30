@@ -119,6 +119,30 @@ test('the trace records tool sequence, arguments, evidence IDs, tokens, latency 
   assert.deepEqual(trace.errors, []);
 });
 
+test('evidence diagnostics count gathered, shown and cited evidence', async () => {
+  const { planner } = scripted([
+    call('readFile', { path: 'src/auth.ts' }),
+    call('readFile', { path: 'src/routes.ts' }),
+    call('grepSearch', { pattern: 'router', contextLines: 0 }),
+    finish(),
+  ]);
+  const { answerer } = answering({
+    citations: [
+      { evidenceId: 'E1', startLine: 1, endLine: 1 },
+      { evidenceId: 'E1', startLine: 2, endLine: 2 },
+    ],
+  });
+  const { trace } = await run(planner, answerer);
+  const d = trace.diagnostics!;
+  assert.equal(d.evidenceItems, 3);
+  assert.equal(d.uniqueFiles, 2);
+  assert.equal(d.answerEvidenceItems, 3);
+  assert.equal(d.citedEvidenceItems, 1);
+  assert.equal(d.utilization, 1 / 3);
+  assert.equal(d.answerUtilization, 1 / 3);
+  assert.ok(d.evidenceTokens > 0 && d.evidenceTokens === d.answerEvidenceTokens);
+});
+
 test('the tool-call limit stops the loop without another planner call', async () => {
   let n = 0;
   const { planner, seen } = scripted([() => call('readFile', { path: 'src/auth.ts', startLine: 1, endLine: ++n })]);

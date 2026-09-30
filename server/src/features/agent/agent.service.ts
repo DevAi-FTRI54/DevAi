@@ -14,6 +14,7 @@ import {
   DEFAULT_AGENT_LIMITS,
   type AgentLimits,
   type AgentTrace,
+  type EvidenceDiagnostics,
   type LlmCallTrace,
   type TerminationReason,
 } from './types.js';
@@ -75,6 +76,26 @@ async function timed<T>(phase: string, ms: number, work: (signal: AbortSignal) =
 const roughTokens = (s: string) => Math.ceil(s.length / 4);
 const errorText = (err: unknown) => String((err as Error)?.message ?? err);
 
+export function evidenceDiagnostics(
+  all: Evidence[],
+  shown: Evidence[],
+  citations: Citation[],
+  tokens: (e: Evidence) => number,
+): EvidenceDiagnostics {
+  const cited = new Set(citations.map((c) => c.evidenceId)).size;
+  const sum = (xs: Evidence[]) => xs.reduce((s, e) => s + tokens(e), 0);
+  return {
+    evidenceItems: all.length,
+    uniqueFiles: new Set(all.map((e) => e.filePath)).size,
+    evidenceTokens: sum(all),
+    answerEvidenceItems: shown.length,
+    answerEvidenceTokens: sum(shown),
+    citedEvidenceItems: cited,
+    utilization: all.length ? cited / all.length : null,
+    answerUtilization: shown.length ? cited / shown.length : null,
+  };
+}
+
 const MAX_HINTED_DELAY_MS = 10_000;
 
 // Rate-limit errors say how long to wait ("Please try again in 1.314s" / "254ms").
@@ -123,6 +144,7 @@ export async function runAgent(
     evidenceCount: 0,
     answerEvidenceIds: [],
     citationDiagnostics: null,
+    diagnostics: null,
     errors: [],
   };
   const recordLlm = (call: LlmCallTrace) => {
@@ -260,6 +282,7 @@ export async function runAgent(
       }));
       const { citations, diagnostics } = store.cite(refs, shown);
       trace.citationDiagnostics = diagnostics;
+      trace.diagnostics = evidenceDiagnostics(store.all(), shown, citations, (e) => roughTokens(store.format([e])));
       return {
         result: { answer: String(draft?.answer ?? ''), citations, citationDiagnostics: diagnostics, evidence: shown },
       };

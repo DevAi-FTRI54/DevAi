@@ -92,17 +92,46 @@ const countBy = <T,>(xs: T[], key: (x: T) => string) =>
     return acc;
   }, {});
 
+// Rows recorded before traces carried diagnostics are derived from the saved context and citations (no token counts).
+function rowDiagnostics(r: ItemResult) {
+  if (!r.trace || r.error) return null;
+  if (r.trace.diagnostics) return r.trace.diagnostics;
+  const items = r.context.length;
+  const shown = r.trace.answerEvidenceIds.length;
+  const cited = new Set(r.citations.map((c) => (c as Citation & { evidenceId?: string }).evidenceId)).size;
+  return {
+    evidenceItems: items,
+    uniqueFiles: new Set(r.context.map((d) => d.filePath)).size,
+    evidenceTokens: null,
+    answerEvidenceItems: shown,
+    answerEvidenceTokens: null,
+    citedEvidenceItems: cited,
+    utilization: items ? cited / items : null,
+    answerUtilization: shown ? cited / shown : null,
+  };
+}
+
 function agentAggregate(results: ItemResult[]) {
   const traces = results.map((r) => r.trace).filter((t): t is AgentTrace => !!t);
   if (!traces.length) return null;
   const steps = traces.flatMap((t) => t.steps);
+  const diags = results.map(rowDiagnostics).filter((d): d is NonNullable<typeof d> => !!d);
+  const meanOf = (pick: (d: (typeof diags)[number]) => number | null) =>
+    mean(diags.flatMap((d) => (pick(d) === null ? [] : [pick(d)!])));
   return {
     runs: traces.length,
+    evidence: {
+      items: meanOf((d) => d.evidenceItems),
+      uniqueFiles: meanOf((d) => d.uniqueFiles),
+      tokens: meanOf((d) => d.evidenceTokens),
+      answerItems: meanOf((d) => d.answerEvidenceItems),
+      citedItems: meanOf((d) => d.citedEvidenceItems),
+      utilization: meanOf((d) => d.utilization),
+      answerUtilization: meanOf((d) => d.answerUtilization),
+    },
     toolCallsMean: mean(traces.map((t) => t.toolCalls)),
     toolCallsMax: Math.max(...traces.map((t) => t.toolCalls)),
     plannerCallsMean: mean(traces.map((t) => t.llmCalls.filter((c) => c.phase === 'plan').length)),
-    evidenceMean: mean(traces.map((t) => t.evidenceCount)),
-    answerEvidenceMean: mean(traces.map((t) => t.answerEvidenceIds.length)),
     terminationReasons: countBy(traces, (t) => t.terminationReason ?? 'error'),
     toolUsage: countBy(steps, (s) => s.tool),
     stepStatus: countBy(steps, (s) => s.status),
@@ -207,7 +236,7 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
     '',
     `Judge cost (not included above): $${fmt(overall.costUsd.judgeTotal, 4)}. Embedding tokens are estimated; chat tokens come from LangChain callbacks.`,
     '',
-    meta.system === 'agentic-v1'
+    String(meta.system).startsWith('agentic')
       ? 'For the agent, "retrieved" means all evidence gathered by its tools. Range hit requires an evidence item that overlaps the expected lines and spans at most max(60, 2x the expected range).'
       : `Range hit requires a retrieved doc that overlaps the expected lines and spans at most max(60, 2x the expected range). ${pct(overall.retrieval.chunkedDocShare)} of retrieved docs are split chunks.`,
     '',
@@ -222,14 +251,14 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
     lines.push(
       '## Agent',
       '',
-      '| Slice | Tool calls/q | Max | Planner calls/q | Evidence/q | Answer evidence/q |',
-      '|---|---|---|---|---|---|',
+      '| Slice | Tool calls/q | Max | Planner calls/q | Evidence items/q | Unique files/q | Evidence tokens/q | Answer evidence/q | Cited items/q | Utilization (cited / gathered) |',
+      '|---|---|---|---|---|---|---|---|---|---|',
       ...rows
         .filter(([, s]) => s.agent)
-        .map(
-          ([name, s]) =>
-            `| ${name} | ${fmt(s.agent!.toolCallsMean, 2)} | ${s.agent!.toolCallsMax} | ${fmt(s.agent!.plannerCallsMean, 2)} | ${fmt(s.agent!.evidenceMean, 1)} | ${fmt(s.agent!.answerEvidenceMean, 1)} |`,
-        ),
+        .map(([name, s]) => {
+          const a = s.agent!;
+          return `| ${name} | ${fmt(a.toolCallsMean, 2)} | ${a.toolCallsMax} | ${fmt(a.plannerCallsMean, 2)} | ${fmt(a.evidence.items, 1)} | ${fmt(a.evidence.uniqueFiles, 1)} | ${fmt(a.evidence.tokens, 0)} | ${fmt(a.evidence.answerItems, 1)} | ${fmt(a.evidence.citedItems, 2)} | ${pct(a.evidence.utilization)} |`;
+        }),
       '',
       `Termination: ${fmtCounts(ag.terminationReasons)}.`,
       '',
