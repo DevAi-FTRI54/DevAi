@@ -102,6 +102,8 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
                   declarationName: name,
                   startLine: start,
                   endLine: end,
+                  // getFullText() includes leading trivia, so the text begins before startLine.
+                  textStartLine: sourceFile.getLineAndColumnAtPos(node.getPos()).line,
                   declarationType:
                     node instanceof ClassDeclaration ? 'class' : 'function',
                 },

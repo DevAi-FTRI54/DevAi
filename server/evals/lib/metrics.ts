@@ -7,7 +7,7 @@ export interface ContextDoc {
   // Line range from metadata, i.e. what the model is shown.
   startLine: number;
   endLine: number;
-  // Real line span of the text: split chunks inherit the parent's start/end, so this uses the splitter's loc.lines.
+  // Real line span of the text (differs from startLine/endLine only for legacy chunks).
   spanStart: number;
   spanEnd: number;
   chunked: boolean;
@@ -21,14 +21,15 @@ export function toContextDoc(d: {
   const startLine = Number(m.startLine ?? 0);
   const endLine = Number(m.endLine ?? 0);
   const loc = m.loc?.lines as { from?: number; to?: number } | undefined;
-  const chunked = !!loc && typeof loc.from === 'number' && typeof loc.to === 'number';
+  // Indexes built before RAG v1 store chunk-relative loc.lines with the parent's range; newer ones store absolute lines.
+  const legacyChunk = !!loc && typeof loc.from === 'number' && typeof loc.to === 'number';
   return {
     filePath: String(m.filePath ?? ''),
     startLine,
     endLine,
-    spanStart: chunked ? startLine + loc!.from! - 1 : startLine,
-    spanEnd: chunked ? startLine + loc!.to! - 1 : endLine,
-    chunked,
+    spanStart: legacyChunk ? startLine + loc!.from! - 1 : startLine,
+    spanEnd: legacyChunk ? startLine + loc!.to! - 1 : endLine,
+    chunked: legacyChunk || m.chunked === true,
     declarationName: m.declarationName,
   };
 }

@@ -105,7 +105,8 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
             repoId: this.repoId,
             filePath,
             declarationName: path.basename(absolutePath),
-            startLine: sourceFile.getStartLineNumber(true),
+            // getFullText() starts at line 1; getStartLineNumber() would skip leading comments.
+            startLine: 1,
             endLine: sourceFile.getEndLineNumber(),
           },
         }),
@@ -128,6 +129,8 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
               declarationName: node.getName() ?? '<anonymous>',
               startLine: start,
               endLine: end,
+              // getFullText() includes leading trivia, so the text begins before startLine.
+              textStartLine: sourceFile.getLineAndColumnAtPos(node.getPos()).line,
             },
           }),
         );
