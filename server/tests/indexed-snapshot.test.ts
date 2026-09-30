@@ -1,4 +1,4 @@
-import { test, before } from 'node:test';
+import { test, before, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
@@ -20,6 +20,8 @@ const REPO = 'github_com_acme_widgets';
 
 before(() => {
   process.env.REPO_CACHE_DIR = tempDir('devai-cache-');
+  // Loader progress logs share stdout with the test runner's result stream and can corrupt it.
+  mock.method(console, 'log', () => {});
 });
 
 const doc = (pageContent: string, metadata: Record<string, unknown>) =>
