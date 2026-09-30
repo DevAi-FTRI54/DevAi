@@ -54,7 +54,7 @@ export type CitationDiagnostics = {
   duplicates: number;
 };
 
-const contentLines = (content: string) => {
+export const contentLines = (content: string) => {
   const lines = content.split('\n');
   if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
   return lines;
