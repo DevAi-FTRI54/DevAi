@@ -126,6 +126,8 @@ export async function answerQuestion(
     Each context block is an evidence item with an ID like [E1] and numbered source lines.
     Cite evidence only by its ID with the startLine/endLine (from the line numbers shown) that support your answer.
     Do not copy code into citations; the server attaches the exact source text.
+    Answer the question completely using all of the available evidence. Citations identify supporting evidence;
+    do not shorten or narrow the explanation because snippets are attached separately.
 
     Context: {context}\n\n
 
