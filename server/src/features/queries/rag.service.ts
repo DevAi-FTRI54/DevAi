@@ -95,7 +95,10 @@ export async function answerQuestion(
 
   // --- SYSTEM PROMPT ---------
   const prompts = SYSTEM_PROMPTS as Record<string, { content: string }>;
-  const systemPromptType = type in prompts ? type : 'Find';
+  const systemPromptType =
+    Object.keys(prompts).find(
+      (key) => key.toLowerCase() === String(type ?? '').toLowerCase(),
+    ) ?? 'Find';
   const selectedSystemPrompt = prompts[systemPromptType].content;
   const finalSystemPrompt = `
   Your system prompt: 

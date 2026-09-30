@@ -9,7 +9,7 @@ type PromptType =
   | 'Find'
   | 'Bugs'
   | 'Debug'
-  | 'WalkThrough'
+  | 'Walkthrough'
   | 'Services';
 
 const QUICK_PROMPTS: Array<{ label: string; text: string; type: PromptType }> =
@@ -32,7 +32,7 @@ const QUICK_PROMPTS: Array<{ label: string; text: string; type: PromptType }> =
     {
       label: 'Walkthrough',
       text: 'Walk me through the data flow for ...',
-      type: 'WalkThrough',
+      type: 'Walkthrough',
     },
     {
       label: 'Services',
