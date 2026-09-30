@@ -35,6 +35,9 @@ const ELLIPSIS = /^\s*(\.\.\.|…)\s*|\s*(\.\.\.|…)\s*$/g;
 // Models elide ("..."), reflow, and drop comments from snippets, so compare comment- and whitespace-free text,
 // and require most non-trivial snippet lines to appear in the cited window.
 function snippetMatches(snippet: string, window: string): boolean {
+  // Verbatim source (e.g. server-assembled snippets, including comment-only ones) matches without comment stripping.
+  const verbatim = snippet.replace(/\s+/g, '');
+  if (verbatim.length >= 4 && window.replace(/\s+/g, '').includes(verbatim)) return true;
   const haystack = compact(window);
   const lines = snippet
     .split('\n')
