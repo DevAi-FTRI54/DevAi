@@ -138,6 +138,25 @@ function agentAggregate(results: ItemResult[]) {
     stepStatus: countBy(steps, (s) => s.status),
     retries: traces.reduce((s, t) => s + t.retries, 0),
     runsWithErrors: traces.filter((t) => t.errors.length).length,
+    coverage: coverageAggregate(traces),
+  };
+}
+
+// agentic-v1.1 subgoal tracking; null for profiles without it.
+function coverageAggregate(traces: AgentTrace[]) {
+  const withSubgoals = traces.filter((t) => t.subgoals);
+  if (!withSubgoals.length) return null;
+  const subgoals = withSubgoals.flatMap((t) => t.subgoals!);
+  const rejections = withSubgoals.map((t) => (t.finishAttempts ?? []).filter((f) => !f.accepted).length);
+  return {
+    subgoalsMean: mean(withSubgoals.map((t) => t.subgoals!.length)),
+    multiSubgoalRuns: withSubgoals.filter((t) => t.subgoals!.length > 1).length,
+    subgoalStatus: countBy(subgoals, (s) => s.status),
+    finishRejections: rejections.reduce((s, n) => s + n, 0),
+    runsWithRejectedFinish: rejections.filter((n) => n > 0).length,
+    runsWithUnresolved: withSubgoals.filter((t) => t.subgoals!.some((s) => s.status === 'unresolved')).length,
+    runsEndedWithOpenSubgoals: withSubgoals.filter((t) => t.subgoals!.some((s) => s.status === 'open')).length,
+    decomposeFailures: withSubgoals.filter((t) => t.errors.some((e) => e.startsWith('decompose:'))).length,
   };
 }
 
@@ -266,6 +285,14 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
       `Tool usage: ${fmtCounts(ag.toolUsage)}. Step outcomes: ${fmtCounts(ag.stepStatus)}. Retries: ${ag.retries}. Runs with errors: ${ag.runsWithErrors}.`,
       '',
     );
+    const c = ag.coverage;
+    if (c) {
+      lines.push(
+        `Subgoals: ${fmt(c.subgoalsMean, 2)}/q (${c.multiSubgoalRuns} of ${ag.runs} runs split into several); final status ${fmtCounts(c.subgoalStatus)}. ` +
+          `Finish rejected ${c.finishRejections} times in ${c.runsWithRejectedFinish} runs. Runs with unresolved subgoals: ${c.runsWithUnresolved}; ended with open subgoals: ${c.runsEndedWithOpenSubgoals}. Decomposition failures: ${c.decomposeFailures}.`,
+        '',
+      );
+    }
   }
   const a = overall.citations.assembly;
   if (a) {
@@ -477,7 +504,10 @@ async function main() {
     results.push(result);
     fs.appendFileSync(jsonlPath, `${JSON.stringify(result)}\n`);
 
-    const agentInfo = trace ? ` tools=${trace.toolCalls} stop=${trace.terminationReason ?? 'error'}` : '';
+    const subgoalInfo = trace?.subgoals
+      ? ` subgoals=${trace.subgoals.filter((s) => s.status === 'covered').length}/${trace.subgoals.length} finishRejected=${trace.finishAttempts.filter((f) => !f.accepted).length}`
+      : '';
+    const agentInfo = trace ? ` tools=${trace.toolCalls} stop=${trace.terminationReason ?? 'error'}${subgoalInfo}` : '';
     out(
       error
         ? `${item.id}#${repeat} ERROR ${error}${agentInfo}`

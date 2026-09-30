@@ -75,10 +75,26 @@ export type ToolStepTrace = {
   truncated: boolean;
   note?: string;
   latencyMs: number;
+  // 1-based subgoal the planner said this call serves (agentic-v1.1).
+  subgoal?: number;
 };
 
+export type SubgoalTrace = {
+  index: number;
+  text: string;
+  // Tool calls that ran for this subgoal, and the evidence they returned.
+  toolCalls: number;
+  gatheredEvidenceIds: string[];
+  // Evidence the planner mapped to it at finish, or why it could not be resolved.
+  coveredBy: string[];
+  unresolved: string | null;
+  status: 'covered' | 'unresolved' | 'open';
+};
+
+export type FinishAttempt = { accepted: boolean; missing: number[]; problems: string[] };
+
 export type LlmCallTrace = {
-  phase: 'plan' | 'answer';
+  phase: 'decompose' | 'plan' | 'answer';
   latencyMs: number;
   promptTokens: number;
   completionTokens: number;
@@ -110,6 +126,9 @@ export type AgentTrace = {
   terminationReason: TerminationReason | null;
   // The planner's stated reason when it declared sufficient evidence.
   finishReason?: string;
+  // agentic-v1.1 only: the question's subgoals with final coverage, and every finish the planner attempted.
+  subgoals: SubgoalTrace[] | null;
+  finishAttempts: FinishAttempt[];
   steps: ToolStepTrace[];
   llmCalls: LlmCallTrace[];
   tokens: { promptTokens: number; completionTokens: number };

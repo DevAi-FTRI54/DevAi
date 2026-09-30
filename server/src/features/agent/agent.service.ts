@@ -13,6 +13,8 @@ import { ToolRuntime, isTransient, type ToolImpl } from './tool-runtime.js';
 import { FINISH_TOOL, PLANNER_TOOLS, createDefaultPlanner, plannerSystemPrompt, type Planner } from './planner.js';
 import { PLANNER_TOOLS_V1_1, plannerSystemPromptV1_1 } from './planner-v1_1.js';
 import { symbolGuard } from './symbol-guard.js';
+import { createDefaultDecomposer, normalizeSubgoals, type Decomposer } from './decomposer.js';
+import { checkFinish, rejectionMessage, subgoalStatus, subgoalsPromptSection } from './coverage.js';
 import { answerSystemPrompt, answerUserPrompt, createDefaultAnswerer, type Answerer } from './answerer.js';
 import {
   DEFAULT_AGENT_LIMITS,
@@ -35,8 +37,8 @@ export type AgentRunResult = {
 };
 
 const PROFILES = {
-  'agentic-v1': { tools: PLANNER_TOOLS, systemPrompt: plannerSystemPrompt, guardSymbols: false },
-  'agentic-v1.1': { tools: PLANNER_TOOLS_V1_1, systemPrompt: plannerSystemPromptV1_1, guardSymbols: true },
+  'agentic-v1': { tools: PLANNER_TOOLS, systemPrompt: plannerSystemPrompt, guardSymbols: false, subgoals: false },
+  'agentic-v1.1': { tools: PLANNER_TOOLS_V1_1, systemPrompt: plannerSystemPromptV1_1, guardSymbols: true, subgoals: true },
 } as const;
 
 export const DEFAULT_AGENT_PROFILE: AgentProfile = 'agentic-v1.1';
@@ -46,6 +48,7 @@ export type AgentOptions = {
   limits?: Partial<AgentLimits>;
   planner?: Planner;
   answerer?: Answerer;
+  decomposer?: Decomposer;
   tools?: Partial<Record<ToolName, ToolImpl>>;
   callbacks?: Callbacks;
   now?: () => number;
@@ -146,6 +149,8 @@ export async function runAgent(
   const trace: AgentTrace = {
     runId: randomUUID(),
     profile: profileName,
+    subgoals: null,
+    finishAttempts: [],
     question,
     repoId: snapshot.repoId,
     commitSha: snapshot.commitSha,
@@ -174,12 +179,19 @@ export async function runAgent(
     trace.toolCalls = runtime.toolCalls;
     trace.retries = runtime.retries;
     trace.evidenceCount = store.all().length;
+    if (trace.subgoals && !trace.finishAttempts.at(-1)?.accepted) {
+      trace.subgoals = subgoalStatus(
+        trace.subgoals.map((s) => s.text),
+        runtime.steps,
+      );
+    }
   };
 
   const State = Annotation.Root({
     messages: Annotation<BaseMessage[]>({ reducer: (a, b) => a.concat(b), default: () => [] }),
     pending: Annotation<{ id: string; tool: string; args: Record<string, unknown> } | null>,
     termination: Annotation<TerminationReason | null>,
+    subgoals: Annotation<string[]>,
     iterations: Annotation<number>,
     noProgress: Annotation<number>,
     result: Annotation<Omit<AgentRunResult, 'trace' | 'allEvidence'> | null>,
@@ -196,7 +208,8 @@ export async function runAgent(
     for (let attempt = 0; ; attempt++) {
       const t0 = now();
       try {
-        const value = await timed(phase === 'plan' ? 'planner' : 'answer', Math.max(1, timeoutMs()), work);
+        const label = phase === 'plan' ? 'planner' : phase === 'decompose' ? 'decomposer' : 'answer';
+        const value = await timed(label, Math.max(1, timeoutMs()), work);
         recordLlm({ phase, latencyMs: now() - t0, ...usage(value) });
         return value;
       } catch (err) {
@@ -226,11 +239,15 @@ export async function runAgent(
     if (runtime.budgetExhausted) return stop('max_tool_calls');
     if (state.noProgress >= limits.maxNoProgressTurns) return stop('no_progress');
 
-    const system = profile.systemPrompt(snapshot, {
-      toolCallsUsed: runtime.toolCalls,
-      maxToolCalls: limits.maxToolCalls,
-      turnsLeft: limits.maxIterations - state.iterations,
-    });
+    const system = profile.systemPrompt(
+      snapshot,
+      {
+        toolCallsUsed: runtime.toolCalls,
+        maxToolCalls: limits.maxToolCalls,
+        turnsLeft: limits.maxIterations - state.iterations,
+      },
+      profile.subgoals ? subgoalsPromptSection(state.subgoals, runtime.steps) : '',
+    );
     let msg: AIMessage;
     try {
       msg = await callPlanner([new SystemMessage(system), ...state.messages]);
@@ -240,11 +257,28 @@ export async function runAgent(
     }
     const call = msg.tool_calls?.[0];
     if (!call) return stop('planner_no_action');
+    const id = call.id ?? `call_${state.iterations + 1}`;
     if (call.name === FINISH_TOOL) {
+      if (profile.subgoals) {
+        const check = checkFinish(call.args, state.subgoals, runtime.steps, new Set(store.all().map((e) => e.id)));
+        trace.finishAttempts.push({ accepted: check.accepted, missing: check.missing, problems: check.problems });
+        trace.subgoals = check.subgoals;
+        if (!check.accepted) {
+          // A rejected finish costs a turn and counts toward the no-progress limit, so it cannot loop forever.
+          return {
+            messages: [
+              new AIMessage({ content: '', tool_calls: [{ id, name: call.name, args: call.args ?? {}, type: 'tool_call' }] }),
+              new ToolMessage({ content: rejectionMessage(check), tool_call_id: id, name: call.name }),
+            ],
+            pending: null,
+            iterations: state.iterations + 1,
+            noProgress: state.noProgress + 1,
+          };
+        }
+      }
       trace.finishReason = typeof call.args?.reason === 'string' ? call.args.reason : undefined;
       return stop('sufficient_evidence');
     }
-    const id = call.id ?? `call_${state.iterations + 1}`;
     // Only one call per turn is executed; history keeps exactly that call so tool messages pair up.
     const turn = new AIMessage({
       content: typeof msg.content === 'string' ? msg.content : '',
@@ -259,7 +293,12 @@ export async function runAgent(
 
   const act = async (state: S): Promise<Partial<S>> => {
     const pending = state.pending!;
-    const outcome = await runtime.execute({ tool: pending.tool, args: pending.args });
+    const { subgoal, ...args } = pending.args;
+    const outcome = await runtime.execute({ tool: pending.tool, args: profile.subgoals ? args : pending.args });
+    if (profile.subgoals) {
+      const n = state.subgoals.length === 1 ? 1 : Number(subgoal);
+      if (Number.isInteger(n) && n >= 1 && n <= state.subgoals.length) outcome.step.subgoal = n;
+    }
     const progressed = outcome.step.newEvidenceIds.length > 0;
     return {
       messages: [new ToolMessage({ content: outcome.observation, tool_call_id: pending.id, name: pending.tool })],
@@ -309,12 +348,33 @@ export async function runAgent(
     }
   };
 
+  // Failure here is not fatal: the question itself becomes the only subgoal.
+  const decompose = async (): Promise<Partial<S>> => {
+    const decomposer = options.decomposer ?? createDefaultDecomposer();
+    let subgoals = [question];
+    try {
+      const out = await callLlm(
+        'decompose',
+        () => Math.min(limits.plannerTimeoutMs, remainingMs()),
+        (signal) => decomposer({ question, type }, { signal, callbacks: options.callbacks }),
+        (v) => ({ promptTokens: v.promptTokens ?? 0, completionTokens: v.completionTokens ?? 0 }),
+      );
+      subgoals = normalizeSubgoals(out.subgoals, question);
+    } catch (err) {
+      trace.errors.push(`decompose: ${errorText(err)}`);
+    }
+    trace.subgoals = subgoalStatus(subgoals, runtime.steps);
+    return { subgoals };
+  };
+
   const graph = new StateGraph(State)
+    .addNode('decompose', decompose)
     .addNode('plan', plan)
     .addNode('act', act)
     .addNode('answer', answer)
-    .addEdge('__start__', 'plan')
-    .addConditionalEdges('plan', (s: S) => (s.termination ? 'answer' : 'act'), ['act', 'answer'])
+    .addConditionalEdges('__start__', () => (profile.subgoals ? 'decompose' : 'plan'), ['decompose', 'plan'])
+    .addEdge('decompose', 'plan')
+    .addConditionalEdges('plan', (s: S) => (s.termination ? 'answer' : s.pending ? 'act' : 'plan'), ['act', 'answer', 'plan'])
     .addEdge('act', 'plan')
     .addEdge('answer', '__end__')
     .compile();
@@ -322,8 +382,16 @@ export async function runAgent(
   const firstTurn = `Question${type ? ` (${type})` : ''}: ${question}`;
   try {
     const final = await graph.invoke(
-      { messages: [new HumanMessage(firstTurn)], pending: null, termination: null, iterations: 0, noProgress: 0, result: null },
-      { recursionLimit: 2 * limits.maxIterations + 5, runName: 'agentic-v1', callbacks: options.callbacks },
+      {
+        messages: [new HumanMessage(firstTurn)],
+        pending: null,
+        termination: null,
+        subgoals: [question],
+        iterations: 0,
+        noProgress: 0,
+        result: null,
+      },
+      { recursionLimit: 2 * limits.maxIterations + 6, runName: profileName, callbacks: options.callbacks },
     );
     finalizeTrace();
     return { ...final.result!, allEvidence: store.all(), trace };

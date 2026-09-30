@@ -86,7 +86,7 @@ async function runProfile(profile: 'agentic-v1' | 'agentic-v1.1') {
   const planner: Planner = async () => script[Math.min(turn++, script.length - 1)];
   return runAgent(
     { snapshot: snap, question: 'Who logs users out?', type: 'Find' },
-    { profile, planner, answerer, sleep: async () => {} },
+    { profile, planner, answerer, sleep: async () => {}, decomposer: async ({ question }) => ({ subgoals: [question] }) },
   );
 }
 

@@ -107,7 +107,7 @@ export type Planner = (
   options: { signal: AbortSignal; callbacks?: Callbacks },
 ) => Promise<AIMessage>;
 
-export type PlannerToolSpec = (typeof PLANNER_TOOLS)[number];
+export type PlannerToolSpec = { name: string; description: string; schema: z.AnyZodObject };
 
 export function createDefaultPlanner(tools: PlannerToolSpec[] = PLANNER_TOOLS, model = 'gpt-4o-mini'): Planner {
   const llm = new ChatOpenAI({ model, temperature: 0, maxRetries: 2, apiKey: process.env.OPENAI_API_KEY });

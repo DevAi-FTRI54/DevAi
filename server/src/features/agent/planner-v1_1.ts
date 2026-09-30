@@ -7,7 +7,7 @@ const globs = z
   .array(z.string())
   .describe('Optional globs over repo-relative paths, e.g. ["server/**/*.ts"]. Leave empty to search everywhere.');
 
-export const PLANNER_TOOLS_V1_1: PlannerToolSpec[] = [
+const RESEARCH_TOOLS: PlannerToolSpec[] = [
   {
     name: 'semanticSearch',
     description:
@@ -74,13 +74,27 @@ export const PLANNER_TOOLS_V1_1: PlannerToolSpec[] = [
       contextLines: z.number().int().min(0).max(10).optional(),
     }),
   },
+];
+
+const subgoal = z.number().int().min(1).describe('Number of the subgoal this call investigates.');
+
+export const PLANNER_TOOLS_V1_1: PlannerToolSpec[] = [
+  ...RESEARCH_TOOLS.map((t) => ({ ...t, schema: t.schema.extend({ subgoal }) })),
   {
     name: FINISH_TOOL,
     description:
-      'Declare that the gathered evidence is sufficient to answer the question completely, or that further ' +
-      'tool calls are unlikely to help. The answer is written in a separate step from the gathered evidence.',
+      'Declare that every subgoal is covered by gathered evidence. Map each subgoal to the evidence IDs that answer ' +
+      'it. A subgoal you investigated but could not answer may be listed as unresolved instead. Finish is rejected ' +
+      'while any subgoal is neither covered nor investigated-and-unresolved. The answer is written in a separate step.',
     schema: z.object({
-      reason: z.string().describe('One sentence on why the evidence is sufficient (or why more searching will not help).'),
+      reason: z.string().describe('One sentence on why the evidence is sufficient.'),
+      coverage: z
+        .array(z.object({ subgoal: z.number().int().min(1), evidenceIds: z.array(z.string()).describe('e.g. ["E2", "E5"]') }))
+        .describe('One entry per covered subgoal.'),
+      unresolved: z
+        .array(z.object({ subgoal: z.number().int().min(1), reason: z.string() }))
+        .optional()
+        .describe('Subgoals already investigated with tool calls whose answer is not in the repository evidence.'),
     }),
   },
 ];
@@ -90,6 +104,7 @@ const MAX_LISTED_FILES = 400;
 export function plannerSystemPromptV1_1(
   snapshot: RepoSnapshot,
   budget: { toolCallsUsed: number; maxToolCalls: number; turnsLeft: number },
+  subgoals = '',
 ): string {
   const files = snapshot.listFiles();
   const listed = files.slice(0, MAX_LISTED_FILES).join('\n');
@@ -103,10 +118,10 @@ How to work:
 - Tool roles: semanticSearch discovers where to look; grepSearch finds exact text and real spellings; readFile reads code you have located; findDefinition opens the declaration of a name you have seen; findReferences traces who uses a name you have seen.
 - Only pass exact names you have seen in evidence to findDefinition or findReferences. Never guess names.
 - Evidence items are labeled E1, E2, ... Do not re-fetch evidence you already have; follow up on it instead.
-- For multi-part or cross-file questions, make sure every part is covered before finishing.
-- Call ${FINISH_TOOL} as soon as the evidence is sufficient, or when more calls are unlikely to help. Do not write the answer yourself.
+- Tag every tool call with the number of the subgoal it investigates. Having some relevant evidence is not enough: each subgoal needs evidence of its own.
+- Call ${FINISH_TOOL} once every subgoal is covered, mapping each to the evidence IDs that answer it. Do not write the answer yourself.
 
-Budget: ${budget.toolCallsUsed} of ${budget.maxToolCalls} tool calls used; at most ${budget.turnsLeft} turns left. Repeated calls with the same arguments are rejected.
+${subgoals ? `${subgoals}\n\n` : ''}Budget: ${budget.toolCallsUsed} of ${budget.maxToolCalls} tool calls used; at most ${budget.turnsLeft} turns left. Repeated calls with the same arguments are rejected. Spread the budget across subgoals.
 
 Repository files:
 ${listed}${more}`;

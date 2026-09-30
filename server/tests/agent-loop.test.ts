@@ -53,6 +53,7 @@ function answering(draft: Partial<AnswerDraft> & Record<string, unknown> = {}) {
 
 const run = (planner: Planner, answerer: Answerer, options: AgentOptions = {}) =>
   runAgent({ snapshot: snap, question: 'How are tokens verified?', type: 'Find' }, {
+    profile: 'agentic-v1',
     planner,
     answerer,
     sleep: async () => {},
