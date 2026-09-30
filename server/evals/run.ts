@@ -48,6 +48,8 @@ interface ItemResult {
   retrieval: RetrievalMetrics | null;
   citationChecks: CitationCheck[];
   citationMetrics: CitationMetrics;
+  // Server-side citation assembly counts (RAG v2+); null for systems without the evidence layer.
+  citationDiagnostics: Record<string, number> | null;
   judge: (Omit<JudgeResult, 'usage'>) | null;
   judgeError: string | null;
   latencyMs: number;
@@ -102,6 +104,12 @@ function aggregate(results: ItemResult[]) {
     citations: {
       ...citationMetrics(allChecks),
       answersWithNoCitations: ok.filter((r) => r.citations.length === 0).length,
+      assembly: ok.reduce<Record<string, number> | null>((acc, r) => {
+        if (!r.citationDiagnostics) return acc;
+        const sum = acc ?? {};
+        for (const [k, v] of Object.entries(r.citationDiagnostics)) sum[k] = (sum[k] ?? 0) + v;
+        return sum;
+      }, null),
     },
     judge: {
       judged: judged.length,
@@ -162,6 +170,13 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
     `Range hit requires a retrieved doc that overlaps the expected lines and spans at most max(60, 2x the expected range). ${pct(overall.retrieval.chunkedDocShare)} of retrieved docs are split chunks.`,
     '',
   ];
+  const a = overall.citations.assembly;
+  if (a) {
+    lines.push(
+      `Citation assembly: ${a.requested} requested by the model, ${a.emitted} emitted; dropped ${a.unknownEvidence} unknown evidence IDs, ${a.missingFile} missing files, ${a.duplicates} duplicates; ${a.clamped} ranges clamped, ${a.fullEvidenceFallback} fell back to the full evidence range.`,
+      '',
+    );
+  }
   return lines.join('\n');
 }
 
@@ -250,6 +265,7 @@ async function main() {
     let answer = '';
     let citations: Citation[] = [];
     let context: ContextDoc[] = [];
+    let citationDiagnostics: ItemResult['citationDiagnostics'] = null;
 
     const t0 = performance.now();
     try {
@@ -260,6 +276,7 @@ async function main() {
       answer = String(response.answer ?? '');
       citations = Array.isArray(response.citations) ? response.citations : [];
       context = ((res.result as any).context ?? []).map(toContextDoc);
+      citationDiagnostics = (res.result as any).citationDiagnostics ?? null;
     } catch (err: any) {
       error = err?.message ?? String(err);
     }
@@ -302,6 +319,7 @@ async function main() {
       retrieval: error ? null : retrievalMetrics(item, context),
       citationChecks,
       citationMetrics: citationMetrics(citationChecks),
+      citationDiagnostics,
       judge,
       judgeError,
       latencyMs,

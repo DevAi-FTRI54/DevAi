@@ -14,6 +14,15 @@ import type { Callbacks } from '@langchain/core/callbacks/manager';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { SYSTEM_PROMPTS } from './prompts.js';
 import { toRagError } from './rag.errors.js';
+import {
+  assembleCitations,
+  buildEvidence,
+  formatEvidence,
+  localSourceRoot,
+  type Citation,
+  type CitationDiagnostics,
+  type Evidence,
+} from './evidence.js';
 import Conversation from '../../models/conversation.model.js';
 import { Message } from '../../models/conversation.model.js';
 
@@ -29,15 +38,14 @@ const llm = new ChatOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Define response schema such that we handle multiple queries (multiple responses)
+// The model references evidence by ID; file paths and snippets are filled in server-side (see evidence.ts).
 const qa = z.object({
   answer: z.string(),
   citations: z.array(
     z.object({
-      file: z.string(),
+      evidenceId: z.string(),
       startLine: z.number(),
       endLine: z.number(),
-      snippet: z.string(),
     }),
   ),
 });
@@ -115,6 +123,10 @@ export async function answerQuestion(
   // --- USER PROMPT ---------
   const USERPROMPT = `Use the following pieces of context to answer the question at the end.
 
+    Each context block is an evidence item with an ID like [E1] and numbered source lines.
+    Cite evidence only by its ID with the startLine/endLine (from the line numbers shown) that support your answer.
+    Do not copy code into citations; the server attaches the exact source text.
+
     Context: {context}\n\n
 
     Question: {question}
@@ -139,7 +151,9 @@ export async function answerQuestion(
   const WorkingState = Annotation.Root({
     question: Annotation<string>,
     context: Annotation<Document[]>,
-    response: Annotation<typeof qa.shape>,
+    evidence: Annotation<Evidence[]>,
+    response: Annotation<{ answer: string; citations: Citation[] }>,
+    citationDiagnostics: Annotation<CitationDiagnostics>,
   });
 
   // --- STEP 3: Define Application Steps ------------------------------------
@@ -217,12 +231,18 @@ export async function answerQuestion(
     //   )
     //   .join('\n');
 
-    // Option #2: Avoid $50+ API calls by limiting the numbre of tokens allowed to be spend on the prompt
+    // Option #2: Avoid $50+ API calls by limiting the numbre of tokens allowed to be spend on the prompt.
+    // The budget is measured on the plain doc format so line numbering does not change which docs are included.
+    const allEvidence = buildEvidence(state.context, repoId);
+    const evidence: Evidence[] = [];
+    let budgetBody = '';
     let promptBody = '';
-    for (const doc of state.context) {
+    for (const [i, doc] of state.context.entries()) {
       const nextChunk = formatDoc(doc);
-      if (roughTokens(promptBody + nextChunk) > MAX_TOKENS) break;
-      promptBody += nextChunk;
+      if (roughTokens(budgetBody + nextChunk) > MAX_TOKENS) break;
+      budgetBody += nextChunk;
+      evidence.push(allEvidence[i]);
+      promptBody += formatEvidence(allEvidence[i], doc.metadata.declarationName);
     }
     /* Example format:
 
@@ -254,6 +274,14 @@ export async function answerQuestion(
     console.log('--- response ------------');
     console.log(response);
 
+    const { citations, diagnostics } = assembleCitations(
+      response.citations,
+      evidence,
+      localSourceRoot(repoId),
+    );
+    console.log('--- citation diagnostics ------------');
+    console.log(diagnostics);
+
     // --- STEP 5: Store the Result in MongoDB ---------------------------------
     // Store the assistant's message:
     await Conversation.updateOne(
@@ -266,14 +294,18 @@ export async function answerQuestion(
             {
               role: 'assistant',
               content: response.answer,
-              citations: response.citations,
+              citations,
             },
           ],
         },
       },
     );
 
-    return { response };
+    return {
+      evidence,
+      response: { answer: response.answer, citations },
+      citationDiagnostics: diagnostics,
+    };
   };
 
   // --- STEP 6: Compile & Test the Application ------------------------------
@@ -309,46 +341,12 @@ export async function answerQuestion(
     },
   );
 
-  // Normalize citation file paths: LLM often returns only filename (e.g. "github.service.ts").
-  // Replace with full repo-relative path from retrieved docs so the file viewer can load from GitHub.
-  const context: Document[] = Array.isArray(result.context)
-    ? result.context
-    : [];
-  const rawCitations = result.response?.citations;
-  const citations: Array<{
-    file: string;
-    startLine: number;
-    endLine: number;
-    snippet: string;
-  }> = Array.isArray(rawCitations) ? rawCitations : [];
-  let resultToReturn = result;
-  if (citations.length > 0 && context.length > 0) {
-    const normalizedCitations = citations.map((c) => {
-      const hasPath = c.file.includes('/') || c.file.includes('\\');
-      if (hasPath) return c;
-      const doc = context.find(
-        (d) =>
-          (d.metadata.startLine === c.startLine &&
-            d.metadata.endLine === c.endLine) ||
-          (d.metadata.filePath && String(d.metadata.filePath).endsWith(c.file)),
-      );
-      if (doc?.metadata?.filePath) {
-        return { ...c, file: String(doc.metadata.filePath) };
-      }
-      return c;
-    });
-    resultToReturn = {
-      ...result,
-      response: { ...result.response, citations: normalizedCitations },
-    } as unknown as typeof result;
-  }
-
-  const traceUrl = (resultToReturn as any)[RUN_KEY]?.url ?? null; // LLM observability
-  const tokens = (resultToReturn as any)[RUN_KEY]?.totalTokens ?? undefined;
-  const latency = (resultToReturn as any)[RUN_KEY]?.durationMs ?? undefined;
+  const traceUrl = (result as any)[RUN_KEY]?.url ?? null; // LLM observability
+  const tokens = (result as any)[RUN_KEY]?.totalTokens ?? undefined;
+  const latency = (result as any)[RUN_KEY]?.durationMs ?? undefined;
 
   return {
-    result: resultToReturn,
+    result,
     traceUrl,
     tokens,
     latency,
