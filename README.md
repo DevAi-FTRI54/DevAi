@@ -361,10 +361,21 @@ Every citation the server returned passes the checker, and completeness is back 
 
 **Known follow-ups** (deliberately not part of Phase 1):
 
-- **Tie the source of truth to the indexed commit.** The server currently reads snippet text from a local clone only when exactly one cached clone exists for the repo, and otherwise uses the indexed text. The authoritative source should be the exact commit that was indexed: store its SHA in the index payload and name clone folders by the resolved SHA, not `HEAD`. This matters once agent tools such as `readFile` exist, because every tool call and every citation must read the same repo snapshot.
+- **Tie the source of truth to the indexed commit.** The server currently reads snippet text from a local clone only when exactly one cached clone exists for the repo, and otherwise uses the indexed text. The authoritative source should be the exact commit that was indexed: store its SHA in the index payload and name clone folders by the resolved SHA, not `HEAD`. This matters once agent tools such as `readFile` exist, because every tool call and every citation must read the same repo snapshot. *(Done in Phase 2, below.)*
 - **Transient local Qdrant failures.** Two of roughly 900 eval questions run so far failed with `fetch failed` against local Qdrant, correctly classified as `VECTOR_DB_DOWN`. This is worth a retry policy on retrieval.
 
 With citations solved and measured cleanly, Phase 1 is complete. The open problems are answer quality on multi-part (0.62) and cross-file (0.89) questions, which is where Agentic v1 starts.
+
+#### Phase 2 groundwork: pinned snapshots and code tools (no agent yet)
+
+An agent that reads files, greps, and searches can only be trusted if every one of those calls sees the same code the index was built from. So before any agent loop, this step makes the commit explicit and builds the tools on top of it. RAG v2.1 retrieval, chunking, reranking, and generation are unchanged.
+
+- **One commit, end to end.** Indexing resolves the repo (`HEAD`, a branch, a tag, or a SHA) to a full commit SHA, caches the checkout at `.cache/repos/<repoId>/<sha>`, and stores `commitSha` on every indexed document and chunk. Citation snippets are read from that commit's snapshot. Older indexes without a SHA keep the previous rule.
+- **Tools over the pinned snapshot** (`server/src/features/tools/`): `readFile`, `grepSearch`, `semanticSearch` (the v2.1 retriever and reranker wrapped as a tool, which drops hits from any other commit), `findDefinition`, and `findReferences` (ts-morph, syntax-aware, so comments and strings don't count).
+- **One evidence shape for all tools:** repo, commit, file, line range, exact snapshot text, and which tool produced it. An `EvidenceStore` numbers evidence from any mix of tools as `E1…En`, and the same deterministic citation layer from v2 turns the model's evidence references into citations.
+- **Deterministic tests** for each tool and for the snapshot and citation plumbing (`npm test` in `server/`, using local git fixtures with no network or API keys).
+
+Check that nothing regressed: after re-ingesting the eval collection with commit SHAs, a no-judge run of all 50 questions matched v2.1 (file recall 86.3% vs 85.6%, range hit 92.0% vs 92.0%, citation validity 100% vs 100%, 0 errors). No new baseline was saved, since behavior did not change. The agent loop and tool routing come next.
 
 ---
 
@@ -377,11 +388,12 @@ DevAi/
 │   └── package.json
 ├── server/                          # Express + TypeScript backend
 │   ├── src/
-│   │   ├── features/                # auth, indexing, queries, chatHistory, training
+│   │   ├── features/                # auth, indexing, queries, tools, chatHistory, training
 │   │   ├── middleware/
 │   │   ├── models/
 │   │   └── app.ts
 │   ├── evals/                       # golden set, eval harness, milestone baselines
+│   ├── tests/                       # deterministic unit tests (npm test)
 │   ├── .env.example
 │   └── package.json
 └── package.json                     # root scripts (runs client + server)
@@ -391,14 +403,22 @@ DevAi/
 
 ## 🧪 Testing
 
-Answer quality is measured by the golden-set evaluation harness (see [Evaluation](#-evaluation)). There is no unit/integration test suite yet. A practical smoke test is:
+Answer quality is measured by the golden-set evaluation harness (see [Evaluation](#-evaluation)). Deterministic unit tests cover commit snapshots, indexed-commit citations, and the code tools. They run offline against local git fixtures:
+
+```bash
+cd server
+npm test            # node:test via tsx
+npm run test:types  # typecheck src + tests
+```
+
+A practical end-to-end smoke test is:
 
 1. Start services and the app (`npm run dev`).
 2. Confirm `GET /api/health` returns 200.
 3. Complete GitHub OAuth, select a repo, and trigger ingestion.
 4. Ask a question and verify that citations reference real files/lines from the repo.
   
-   Planned next: automated tests for ingestion and query endpoints (unit + integration).
+   Planned next: integration tests for the ingestion and query endpoints.
 
 ---
 
