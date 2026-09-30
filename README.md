@@ -26,10 +26,13 @@ Each fix was benchmarked against the one before it, and every milestone is kept 
 |---|---|---|---|
 | RAG v0 | Original implementation, first measured | 46% | 14% |
 | RAG v1 | Deterministic bug fixes: chunk line ranges, prompt routing, error taxonomy | 51% | 15% |
-| RAG v2 | Server-assembled citations from verified evidence; the model cites IDs, never code | **94%** | 15% |
+| RAG v2 | Server-assembled citations from verified evidence; the model cites IDs, never code | 94% ¹ | 15% |
+| RAG v2.1 | Stabilization: no whitespace-only citations, a checker that accepts verbatim comments, and a one-line prompt fix for a completeness regression | **100%** | 20% |
 | Agentic v1 | Next: planning and multi-step retrieval for multi-part and cross-file questions | — | — |
 
-Citations are now solved. Answer quality is not: multi-part questions still score 0.57 out of 2. That is the problem the agentic architecture has to beat, measured on the same benchmark against the same baselines. Details are in [Evaluation](#-evaluation).
+¹ 93.9% passed the checker, and 100% of returned snippets were sourced from retrieved code. The checker at the time rejected verbatim comment-only snippets; see [RAG v2.1](#rag-v21-stabilization-rag-v21-625d687json).
+
+Citations are now solved. Answer quality is not: multi-part questions still score 0.62 out of 2, and completeness is stuck below 50%. That is the problem the agentic architecture has to beat, measured on the same benchmark against the same baselines. Details are in [Evaluation](#-evaluation).
 
 ## Proof
 
@@ -310,7 +313,7 @@ A small fix landed alongside it (`3dd1587`): chunks split from a function or cla
 | Prompt / completion tokens per question | 2,819 / 343 | 3,538 / 214 | line numbers in, snippets out |
 | Cost per question | $0.0026 | $0.0027 | +$0.0001 |
 
-**Citation validity moved dramatically, and the remainder is not a citation-architecture problem.** Every one of the 330 snippets is the exact source text. 22 differ only by the first line's leading indentation (see below). Of the 20 citations the checker still rejects:
+**Result: 93.9% checker-valid citations, with 100% of returned snippets deterministically sourced from retrieved code.** The remaining 6% are not bad citations. Every one of the 330 snippets is the exact source text. 22 differ only by the first line's leading indentation (see below). Of the 20 citations the checker rejected:
 
 - 17 cite comment-only lines. They are verbatim, but the checker strips comments before comparing (a rule designed for model-written snippets), which leaves nothing to match.
 - 2 have a `/* ... */` block comment crossing the edge of the cited window.
@@ -325,6 +328,43 @@ Things to watch:
 - Latency improved because the model writes far fewer output tokens.
 
 With citations now deterministic, the remaining weaknesses are answer quality: multi-part correctness is 0.57 and overall completeness is 43%. Those point at retrieval coverage for multi-file questions and at answer planning, which is the natural scope for Agentic v1.
+
+#### RAG v2.1: stabilization (`rag-v2.1-625d687.json`)
+
+A small correctness pass before Agentic v1. It is not an optimization phase: chunking, retrieval, MultiQuery, MMR, and reranking are unchanged.
+
+- **No whitespace-only citations** (`fc510bd`). If the model's range selects only blank lines, the server falls back to the whole evidence item, or drops the citation if the evidence itself is blank. This fired once in the targeted rerun below.
+- **Checker accepts verbatim snippets** (`79179f4`). The eval now checks for a whitespace-insensitive verbatim match before applying the comment-stripping comparison built for model-written snippets. The existing baselines are left untouched. Re-scoring their saved answers with the new checker shows the change is symmetric and does not flatter v2 alone:
+
+  | Saved run | Old checker | New checker |
+  |---|---|---|
+  | RAG v0 (original run) | 47.6% | 48.8% |
+  | RAG v1 | 50.8% | 53.3% |
+  | RAG v2 | 93.9% | 99.7% (the one miss was the blank-line citation) |
+
+- **Completeness regression, investigated then fixed** (`58d4d34`). In v2, completeness fell 5 points, concentrated in conceptual questions (35.6% → 23.3% against six v1 repeats). Inspecting C01–C08 ruled out the obvious explanations. Retrieval was identical (same files for every question), answers were only 4% shorter, and the judge sees citation paths and line ranges, never snippets, so every credited fact came from the answer text. The real change was **narrower** answers: the model described only the one or two tight ranges it cited and dropped facts from other retrieved evidence. For example, C06 lost "tokens are estimated by `roughTokens`" (6/6 v1 repeats → 0/3), and C04 lost "the retrieve node invokes the retriever" (6/6 → 0/3). One added instruction, to answer completely from all the evidence and not narrow the explanation because snippets are attached separately, recovered it. A targeted rerun of the three regressed categories came first (conceptual 23.3% → 33.1%, dependency tracing 43.5% → 48.1%), then the full run below.
+
+| Metric | RAG v1 (3 repeats) | RAG v2 (3 repeats) | RAG v2.1 (3 repeats) | Δ v2 → v2.1 |
+|---|---|---|---|---|
+| File recall | 84.4% | 84.6% | 85.6% | +1.0 pts |
+| Required line-range recall | 66.0% | 68.1% | 67.4% | −0.7 pts |
+| **Citation validity** (checker of the time) | 50.8% | 93.9% | **100.0%** | +6.1 pts |
+| Citations grounded in retrieved context | 97.5% | 100.0% | 100.0% | 0 |
+| Citations pointing at an expected file | 89.8% | 90.9% | 86.6% | −4.3 pts |
+| Citations per answer / median cited span | 1.6 / 45 lines | 2.2 / 8 lines | 2.6 / 6 lines | broader, tighter |
+| Correctness (0–2) / fully correct | 1.01 / 15% | 0.97 / 15% | 1.01 / **20%** | +5 pts fully correct |
+| **Completeness** | 47.9% | 42.9% | **47.1%** | +4.2 pts |
+| Latency p50 / p95 | 5.3 s / 9.9 s | 4.1 s / 6.2 s | 4.3 s / 6.3 s | ≈ |
+| Cost per question | $0.0026 | $0.0027 | $0.0027 | 0 |
+
+Every citation the server returned passes the checker, and completeness is back to v1's level while keeping v2's citation guarantees. The rise to 20% fully correct is encouraging, but it is within the range of run-to-run noise until another run confirms it. Broader answers now also cite files outside the labeled sources more often (expected-file share 90.9% → 86.6%, mostly in configuration questions). Those citations are real code, but not always the most relevant file.
+
+**Known follow-ups** (deliberately not part of Phase 1):
+
+- **Tie the source of truth to the indexed commit.** The server currently reads snippet text from a local clone only when exactly one cached clone exists for the repo, and otherwise uses the indexed text. The authoritative source should be the exact commit that was indexed: store its SHA in the index payload and name clone folders by the resolved SHA, not `HEAD`. This matters once agent tools such as `readFile` exist, because every tool call and every citation must read the same repo snapshot.
+- **Transient local Qdrant failures.** Two of roughly 900 eval questions run so far failed with `fetch failed` against local Qdrant, correctly classified as `VECTOR_DB_DOWN`. This is worth a retry policy on retrieval.
+
+With citations solved and measured cleanly, Phase 1 is complete. The open problems are answer quality on multi-part (0.62) and cross-file (0.89) questions, which is where Agentic v1 starts.
 
 ---
 
