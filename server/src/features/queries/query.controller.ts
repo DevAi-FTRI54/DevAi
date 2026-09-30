@@ -6,6 +6,7 @@ import Conversation from '../../models/conversation.model.js';
 import Query from '../../models/query.model.js';
 import User from '../../models/user.model.js';
 import { appendQueryLog } from '../../utils/usageReport.js';
+import type { RagError } from './rag.errors.js';
 
 export const askController = async (
   req: Request,
@@ -91,25 +92,18 @@ export const askController = async (
     console.log('--- Error inside askController ------------');
     console.error(err);
 
+    const ragError: RagError | null = err?.name === 'RagError' ? err : null;
     res.write(
-      `data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`,
+      `data: ${JSON.stringify({
+        type: 'error',
+        code: ragError?.code ?? 'INTERNAL',
+        stage: ragError?.stage,
+        message: ragError?.userMessage ?? err.message,
+      })}\n\n`,
     );
     res.end();
   }
 };
-
-// if (err instanceof OpenAIError) {
-//   res
-//     .status(502)
-//     .json({ message: 'askController: LLM failed', detail: err.message });
-// }
-// if (err.message === 'VECTOR_DB_DOWN') {
-//   res.status(503).json({ msg: 'askController: Vector store unavailable' });
-// } else {
-//   res
-//     .status(500)
-//     .json({ message: 'askController: Unexpected server error' });
-// }
 
 export const addMessage = async (
   req: Request,

@@ -55,7 +55,7 @@ const QDRANT_UNAVAILABLE_HINT =
   'If using Qdrant Cloud free tier, the cluster may be suspended after inactivity — check the Qdrant dashboard or try again after it resumes.';
 
 // Only true when the error clearly indicates Qdrant or network/connection failure (not e.g. OpenAI or validation errors).
-function isQdrantConnectionError(err: any): boolean {
+export function isQdrantConnectionError(err: any): boolean {
   const code = err?.code ?? '';
   const msg = (err?.message || String(err)).toLowerCase();
   if (code === 'ECONNREFUSED' || code === 'ETIMEDOUT') return true;

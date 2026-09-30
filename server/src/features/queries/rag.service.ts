@@ -13,6 +13,7 @@ import { RUN_KEY } from '@langchain/core/outputs';
 import type { Callbacks } from '@langchain/core/callbacks/manager';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { SYSTEM_PROMPTS } from './prompts.js';
+import { toRagError } from './rag.errors.js';
 import Conversation from '../../models/conversation.model.js';
 import { Message } from '../../models/conversation.model.js';
 
@@ -80,7 +81,9 @@ export async function answerQuestion(
   console.log('🔗 RepoUrl:', repoUrl);
 
   const repoId = generateUniqueRepoId(repoUrl);
-  const retriever = await createCodeRetriever(repoId, 8);
+  const retriever = await createCodeRetriever(repoId, 8).catch((err) => {
+    throw toRagError(err, 'retrieve');
+  });
 
   // --- STEP 1: Define Prompt -----------------------------------------------
   // --- PROVIDE PAST CONVERSATIONS AS CONTEXT ---------
@@ -154,7 +157,7 @@ export async function answerQuestion(
 
       return { context: retrievedDocs }; // merges into  WorkingState, thus the WorkingState has now access to both question + context
     } catch (err) {
-      throw new Error('VECTOR_DB_DOWN');
+      throw toRagError(err, 'retrieve');
     }
   };
 
@@ -237,13 +240,17 @@ export async function answerQuestion(
     // pipe: https://v03.api.js.langchain.com/classes/_langchain_openai.ChatOpenAI.html#pipe
     // Create a new runnable sequence that runs each individual runnable in series, piping the output of one runnable into another runnable or runnable-like.
     const answerChain = promptTemplate.pipe(structuredLlm);
-    const response = await answerChain.invoke(
-      {
-        question: state.question,
-        context: promptBody,
-      },
-      config,
-    );
+    const response = await answerChain
+      .invoke(
+        {
+          question: state.question,
+          context: promptBody,
+        },
+        config,
+      )
+      .catch((err) => {
+        throw toRagError(err, 'generate');
+      });
     console.log('--- response ------------');
     console.log(response);
 
