@@ -8,7 +8,9 @@
     "start": "node dist/server.js",
     "eval:ingest": "tsx evals/ingest.ts",
     "eval:validate": "tsx evals/validate-golden.ts",
-    "eval:run": "tsx evals/run.ts"
+    "eval:run": "tsx evals/run.ts",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "test:types": "tsc -p tests/tsconfig.json"
   },
   "keywords": [],
   "author": "",
