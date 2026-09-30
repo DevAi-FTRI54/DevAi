@@ -61,7 +61,11 @@ export class EvidenceStore {
     return items.map((e) => formatEvidence(e, e.label)).join('\n');
   }
 
-  cite(refs: EvidenceReference[]): { citations: Citation[]; diagnostics: CitationDiagnostics } {
-    return assembleCitations(refs, this.items, this.resolveSourceRoot);
+  // Restrict to the items a model was actually shown so it cannot cite evidence it never saw.
+  cite(
+    refs: EvidenceReference[],
+    items: Evidence[] = this.items,
+  ): { citations: Citation[]; diagnostics: CitationDiagnostics } {
+    return assembleCitations(refs, items, this.resolveSourceRoot);
   }
 }

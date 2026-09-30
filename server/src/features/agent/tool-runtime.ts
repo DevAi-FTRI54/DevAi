@@ -117,7 +117,12 @@ export class ToolRuntime {
 
   async execute(request: ToolCallRequest): Promise<ToolOutcome> {
     const { tool } = request;
-    const args = request.args && typeof request.args === 'object' ? request.args : {};
+    // Models often send null for omitted optional arguments.
+    const args = Object.fromEntries(
+      Object.entries(request.args && typeof request.args === 'object' ? request.args : {}).filter(
+        ([, v]) => v !== null && v !== undefined,
+      ),
+    );
     const started = this.now();
     const step: ToolStepTrace = {
       index: this.steps.length + 1,
