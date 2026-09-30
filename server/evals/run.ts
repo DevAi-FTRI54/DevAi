@@ -159,7 +159,7 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
     '',
     `Judge cost (not included above): $${fmt(overall.costUsd.judgeTotal, 4)}. Embedding tokens are estimated; chat tokens come from LangChain callbacks.`,
     '',
-    `Range hit requires a retrieved doc that overlaps the expected lines and spans at most max(60, 2x the expected range). ${pct(overall.retrieval.chunkedDocShare)} of retrieved docs are split chunks whose metadata still shows the parent document's full line range to the model.`,
+    `Range hit requires a retrieved doc that overlaps the expected lines and spans at most max(60, 2x the expected range). ${pct(overall.retrieval.chunkedDocShare)} of retrieved docs are split chunks.`,
     '',
   ];
   return lines.join('\n');
