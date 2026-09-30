@@ -181,6 +181,53 @@ Useful endpoints:
 
 ---
 
+## 📊 Evaluation
+
+DevAI is measured against a fixed golden set rather than spot-checked by hand. The harness lives in `server/evals/`.
+
+- **Golden set**: 50 questions about DevAI's own code, pinned to commit `625d687` (`server/evals/golden/devai-625d687.json`). Categories: exact lookup (10), conceptual (8), cross-file (9), dependency tracing (8), configuration (8), multi-part (7). Each question lists expected source files/line ranges and the key facts a complete answer must contain.
+- **Isolation**: the pinned repo is ingested into its own Qdrant collection (`devai_eval_01`), through the same loader, chunker, and embedding code as production. Each question runs through the real `answerQuestion` pipeline.
+- **Deterministic metrics**: retrieval file recall and line-range recall, and citation validity (the cited file exists, the lines are in range, and the snippet actually appears at those lines).
+- **LLM judge** (`gpt-4o`): correctness (0 wrong / 1 partial / 2 correct) and completeness (share of key facts covered), scored separately.
+- **Cost and latency**: tokens, dollars, p50/p95 latency per question.
+
+```bash
+cd server
+npm run eval:ingest                    # clone the pinned repo and index it (use -- --reset to rebuild)
+npm run eval:validate                  # check every golden label against the pinned source
+npm run eval:run -- --repeats 3        # full run; results land in server/evals/results/
+npm run eval:run -- --repeats 3 --save-baseline rag-v1   # record a milestone (never overwrites)
+```
+
+Milestone baselines are committed in `server/evals/baselines/` and are write-once, so the history stays honest.
+
+### Milestones
+
+#### RAG v0: original implementation (`baseline-625d687.json`)
+
+Where DevAI stood before systematic evaluation: LangGraph retrieve → rerank → generate; multi-query retrieval over Qdrant MMR (k=8), Cohere `rerank-v3.5` top 5, `gpt-4o-mini` with structured citations. Single run, 50 questions.
+
+| Metric | RAG v0 |
+|---|---|
+| File recall (required files retrieved) | 84.3% |
+| Required line-range recall | 69.3% |
+| Citation validity | 47.6% |
+| Citations grounded in retrieved context | 91.5% |
+| Correctness (0–2) / fully correct | 1.00 / 14% |
+| Completeness (key facts covered) | 44.7% |
+| Latency p50 / p95 | 4.4 s / 7.4 s |
+| Cost per question | $0.0026 |
+
+By category, multi-part questions were weakest (correctness 0.57, completeness 25%) and cross-file retrieval had the lowest file recall (63%).
+
+What the evaluation surfaced:
+
+- **Wrong citation line numbers.** Large files are split into chunks, but each chunk kept its parent file's full line range. 56% of retrieved documents were chunks, so the model was told the wrong lines for most of its context.
+- **Misleading errors.** Any retrieval failure, including an OpenAI auth or quota error, was reported as `VECTOR_DB_DOWN`.
+- **Walkthrough prompt never used.** The client sent `WalkThrough` but the server key is `Walkthrough`, so walkthrough requests silently used the Find prompt.
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -194,6 +241,7 @@ DevAi/
 │   │   ├── middleware/
 │   │   ├── models/
 │   │   └── app.ts
+│   ├── evals/                       # golden set, eval harness, milestone baselines
 │   ├── .env.example
 │   └── package.json
 └── package.json                     # root scripts (runs client + server)
@@ -203,7 +251,7 @@ DevAi/
 
 ## 🧪 Testing
 
-This `main` branch does not include a dedicated automated test suite yet. A practical smoke test is:
+Answer quality is measured by the golden-set evaluation harness (see [Evaluation](#-evaluation)). There is no unit/integration test suite yet. A practical smoke test is:
 
 1. Start services and the app (`npm run dev`).
 2. Confirm `GET /api/health` returns 200.
