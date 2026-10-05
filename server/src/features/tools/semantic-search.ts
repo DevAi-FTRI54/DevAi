@@ -2,6 +2,7 @@
 // results are checked against the pinned snapshot and re-read from it.
 import type { Document } from '@langchain/core/documents';
 import { buildEvidence } from '../queries/evidence.js';
+import { cohereApiKey } from '../../config/cohere.js';
 import type { RepoSnapshot } from './snapshot.js';
 import { ToolError, type ToolEvidence, type ToolResult } from './types.js';
 
@@ -22,11 +23,12 @@ const MAX_K = 8;
 export const defaultSemanticRetriever: SemanticRetriever = async (query, repoId) => {
   const { createCodeRetriever } = await import('../indexing/vector.service.js');
   const docs = await (await createCodeRetriever(repoId, RETRIEVE_K)).invoke(query);
-  if (!docs.length || !process.env.COHERE_API_KEY) return docs;
+  const apiKey = cohereApiKey();
+  if (!docs.length || !apiKey) return docs;
   try {
     const { CohereRerank } = await import('@langchain/cohere');
     const reranker = new CohereRerank({
-      apiKey: process.env.COHERE_API_KEY,
+      apiKey,
       model: 'rerank-v3.5',
       topN: Math.min(RERANK_TOP_N, docs.length),
     });

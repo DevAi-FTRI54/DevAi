@@ -14,6 +14,7 @@ import type { Callbacks } from '@langchain/core/callbacks/manager';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { SYSTEM_PROMPTS } from './prompts.js';
 import { toRagError } from './rag.errors.js';
+import { cohereApiKey, COHERE_KEY_VAR } from '../../config/cohere.js';
 import {
   assembleCitations,
   buildEvidence,
@@ -188,14 +189,15 @@ export async function answerQuestion(
     }
 
     try {
-      if (!process.env.COHERE_API_KEY) {
-        console.error('COHERE_API_KEY is missing!');
+      const apiKey = cohereApiKey();
+      if (!apiKey) {
+        console.error(`${COHERE_KEY_VAR} is missing!`);
         return { context: state.context }; // Return original docs
       }
 
       // https://docs.cohere.com/v2/docs/models
       const reranker = new CohereRerank({
-        apiKey: process.env.COHERE_API_KEY,
+        apiKey,
         model: 'rerank-v3.5',
         topN: Math.min(5, state.context.length),
       });

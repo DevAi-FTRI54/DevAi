@@ -28,6 +28,6 @@ test('agent fallbacks are read from semanticSearch notes; other tools and failed
 });
 
 test('preflight reports a missing key without calling the network', async () => {
-  assert.equal(await preflightRerank(undefined), 'COHERE_API_KEY is not set');
-  assert.equal(await preflightRerank(''), 'COHERE_API_KEY is not set');
+  assert.equal(await preflightRerank(undefined), 'COHERE_API_KEY_TRIAL is not set');
+  assert.equal(await preflightRerank(''), 'COHERE_API_KEY_TRIAL is not set');
 });

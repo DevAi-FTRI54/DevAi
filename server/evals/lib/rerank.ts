@@ -1,12 +1,13 @@
 // Both pipelines swallow Cohere errors and fall back to the unranked pool, which silently changes what the
 // answer model sees. Evals check the reranker up front and detect fallbacks per row instead.
 import type { AgentTrace } from '../../src/features/agent/types.js';
+import { COHERE_KEY_VAR } from '../../src/config/cohere.js';
 
 // Must match the rerank topN in rag.service.ts and tools/semantic-search.ts.
 export const RERANK_TOP_N = 5;
 
 export async function preflightRerank(apiKey: string | undefined): Promise<string | null> {
-  if (!apiKey) return 'COHERE_API_KEY is not set';
+  if (!apiKey) return `${COHERE_KEY_VAR} is not set`;
   try {
     const res = await fetch('https://api.cohere.com/v2/rerank', {
       method: 'POST',

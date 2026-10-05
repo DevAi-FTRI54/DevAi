@@ -40,6 +40,7 @@ import {
 } from './lib/tokens.js';
 import { judgeAnswer, JUDGE_MODEL, type JudgeResult } from './lib/judge.js';
 import { preflightRerank, ragRerankFellBack, agentRerankFallbacks } from './lib/rerank.js';
+import { cohereApiKey } from '../src/config/cohere.js';
 import type { AgentTrace } from '../src/features/agent/types.js';
 
 const SYSTEMS = {
@@ -373,10 +374,10 @@ async function main() {
     throw new Error(`Pinned clone missing at ${root}. Run npm run eval:ingest first.`);
   }
 
-  const rerankProblem = await preflightRerank(process.env.COHERE_API_KEY);
+  const rerankProblem = await preflightRerank(cohereApiKey());
   if (rerankProblem && !allowNoRerank) {
     throw new Error(
-      `Reranker unavailable (${rerankProblem}). Both pipelines would silently answer from the unranked pool; fix the Cohere key or pass --allow-no-rerank.`,
+      `Reranker unavailable (${rerankProblem}). Both pipelines would silently answer from the unranked pool; fix COHERE_API_KEY_TRIAL or pass --allow-no-rerank.`,
     );
   }
 

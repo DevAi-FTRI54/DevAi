@@ -137,7 +137,7 @@ QDRANT_API_KEY= # optional
 
 # LLM + reranking (Cohere is optional)
 OPENAI_API_KEY=...
-COHERE_API_KEY=
+COHERE_API_KEY_TRIAL=
 
 # Server
 PORT=4000
@@ -214,7 +214,7 @@ DevAI is measured against a fixed golden set rather than spot-checked by hand. T
 - **LLM judge** (`gpt-4o`): correctness (0 wrong / 1 partial / 2 correct) and completeness (share of key facts covered), scored separately.
 - **Cost and latency**: tokens, dollars, p50/p95 latency per question.
 
-Prerequisites: local Qdrant on `:6333` and MongoDB on `:27017` (see `server/.env.eval`), plus `OPENAI_API_KEY` and `COHERE_API_KEY` in `server/.env`.
+Prerequisites: local Qdrant on `:6333` and MongoDB on `:27017` (see `server/.env.eval`), plus `OPENAI_API_KEY` and `COHERE_API_KEY_TRIAL` in `server/.env`.
 
 ```bash
 cd server
