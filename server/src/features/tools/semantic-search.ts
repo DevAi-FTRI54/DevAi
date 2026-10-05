@@ -26,14 +26,8 @@ export const defaultSemanticRetriever: SemanticRetriever = async (query, repoId)
   const apiKey = cohereApiKey();
   if (!docs.length || !apiKey) return docs;
   try {
-    const { CohereRerank } = await import('@langchain/cohere');
-    const reranker = new CohereRerank({
-      apiKey,
-      model: 'rerank-v3.5',
-      topN: Math.min(RERANK_TOP_N, docs.length),
-    });
-    const ranks = await reranker.rerank(docs, query);
-    return ranks.map((r: { index: number }) => docs[r.index]);
+    const { rerankDocuments } = await import('../queries/rerank.js');
+    return await rerankDocuments(docs, query, RERANK_TOP_N);
   } catch {
     return docs;
   }

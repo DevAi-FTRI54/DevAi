@@ -1,9 +1,12 @@
 // Both pipelines swallow Cohere errors and fall back to the unranked pool, which silently changes what the
 // answer model sees. Evals check the reranker up front and detect fallbacks per row instead.
+import path from 'path';
 import type { AgentTrace } from '../../src/features/agent/types.js';
 import { COHERE_KEY_VAR } from '../../src/config/cohere.js';
 
-// Must match the rerank topN in rag.service.ts and tools/semantic-search.ts.
+export const RERANK_CACHE_FILE = path.resolve('.cache', 'rerank-scores.json');
+
+// Must match the v2.1 rerank topN in rag.service.ts and tools/semantic-search.ts.
 export const RERANK_TOP_N = 5;
 
 export async function preflightRerank(apiKey: string | undefined): Promise<string | null> {
@@ -22,9 +25,9 @@ export async function preflightRerank(apiKey: string | undefined): Promise<strin
   }
 }
 
-// A reranked result never has more than RERANK_TOP_N chunks; more means the unranked pool was used.
-export function ragRerankFellBack(contextSize: number): boolean {
-  return contextSize > RERANK_TOP_N;
+// A reranked result never has more than topN chunks; more means the unranked pool was used.
+export function ragRerankFellBack(contextSize: number, topN = RERANK_TOP_N): boolean {
+  return contextSize > topN;
 }
 
 // semanticSearch notes "<shown> of <n> retrieved chunks", where n is the post-rerank count.

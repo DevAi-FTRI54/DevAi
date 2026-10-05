@@ -8,7 +8,7 @@ import { Document } from '@langchain/core/documents';
 import { z } from 'zod';
 import { createCodeRetriever } from '../indexing/vector.service.js';
 import { generateUniqueRepoId } from '../indexing/git.service.js';
-import { CohereRerank } from '@langchain/cohere';
+import { rerankDocuments } from './rerank.js';
 import { RUN_KEY } from '@langchain/core/outputs';
 import type { Callbacks } from '@langchain/core/callbacks/manager';
 import type { RunnableConfig } from '@langchain/core/runnables';
@@ -189,34 +189,13 @@ export async function answerQuestion(
     }
 
     try {
-      const apiKey = cohereApiKey();
-      if (!apiKey) {
+      if (!cohereApiKey()) {
         console.error(`${COHERE_KEY_VAR} is missing!`);
         return { context: state.context }; // Return original docs
       }
 
-      // https://docs.cohere.com/v2/docs/models
-      const reranker = new CohereRerank({
-        apiKey,
-        model: 'rerank-v3.5',
-        topN: Math.min(5, state.context.length),
-      });
-
       console.log(`Reranking ${state.context.length} documents...`);
-
-      const ranks = await reranker.rerank(state.context, state.question);
-      // console.log('--- ranks ---------');
-      // console.log(ranks);
-
-      if (!ranks || !Array.isArray(ranks)) {
-        console.error('Reranker returned invalid result: ', ranks);
-      }
-
-      const topDocs = ranks.map((r: any) => state.context[r.index]);
-      // console.log('--- topDocs ---------');
-      // console.log(topDocs);
-
-      return { context: topDocs };
+      return { context: await rerankDocuments(state.context, state.question, 5) };
     } catch (err) {
       console.error('Error during reranking:', err);
       return { context: state.context }; // Return original docs

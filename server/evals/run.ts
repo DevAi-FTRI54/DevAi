@@ -1,6 +1,9 @@
 // Runs the golden set through one system and records retrieval, citation, judge, latency, and cost metrics.
-// Usage: npm run eval:run -- --system rag-v2.1|agentic-v1|agentic-v1.1|agentic-v1.2 [--only E01,X03] [--category cross_file] [--repeats 1]
-//        [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path] [--allow-no-rerank]
+// Usage: npm run eval:run -- --system rag-v2.1|agentic-v1|agentic-v1.1|agentic-v1.2 [--only E01,X03] [--category cross_file]
+//        [--repeats 1] [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path] [--allow-no-rerank]
+//        [--no-rerank-cache]
+// Rerank scores are cached per (query, chunk) in .cache/rerank-scores.json, so repeat runs over the frozen eval
+// index make no Cohere calls for queries already scored (see evals/prewarm-rerank.ts); --no-rerank-cache disables it.
 // --save-baseline writes baselines/<label>-<goldenSha7>.json and refuses to overwrite an existing baseline;
 // the label must belong to the system under test (rag-* for rag-v2.1, agentic-* for agentic-v1).
 // The run aborts if the Cohere reranker is unavailable, and exits non-zero without saving a baseline if any row
@@ -39,8 +42,9 @@ import {
   type ModelUsage,
 } from './lib/tokens.js';
 import { judgeAnswer, JUDGE_MODEL, type JudgeResult } from './lib/judge.js';
-import { preflightRerank, ragRerankFellBack, agentRerankFallbacks } from './lib/rerank.js';
+import { preflightRerank, ragRerankFellBack, agentRerankFallbacks, RERANK_CACHE_FILE } from './lib/rerank.js';
 import { cohereApiKey } from '../src/config/cohere.js';
+import { installRerankCache, rerankStats } from '../src/features/queries/rerank.js';
 import type { AgentTrace } from '../src/features/agent/types.js';
 
 const SYSTEMS = {
@@ -254,6 +258,11 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
     `- System under test: DevAI \`${String(meta.codeSha).slice(0, 7)}\`${meta.codeDirty ? ' (uncommitted changes)' : ''}`,
     `- Collection: \`${meta.collection}\`, judge: \`${meta.judgeModel}\`, repeats: ${meta.repeats}`,
     ...(meta.rerank !== 'ok' ? [`- **Reranker: ${meta.rerank}**`] : []),
+    ...(meta.cohere
+      ? [
+          `- Cohere rerank: ${(meta.cohere as typeof rerankStats).apiCalls} API calls (plus 1 preflight), ${(meta.cohere as typeof rerankStats).cachedScores} cached scores, ${(meta.cohere as typeof rerankStats).newScores} new, ${(meta.cohere as typeof rerankStats).failures} failures; cache: ${meta.rerankCache ?? 'off'}`,
+        ]
+      : []),
     ...(overall.rerankFallbacks && meta.rerank === 'ok'
       ? [`- **${overall.rerankFallbacks} of ${overall.n} rows fell back to the unranked pool (reranker failed mid-run); not comparable to reranked runs.**`]
       : []),
@@ -335,6 +344,7 @@ async function main() {
   const useJudge = !hasFlag('no-judge');
   const verbose = hasFlag('verbose');
   const allowNoRerank = hasFlag('allow-no-rerank');
+  if (!hasFlag('no-rerank-cache')) installRerankCache(RERANK_CACHE_FILE);
 
   const system = argValue('system') as SystemName | undefined;
   if (!system || !(system in SYSTEMS)) {
@@ -396,6 +406,8 @@ async function main() {
     targets: EVAL_TARGETS,
     judgeModel: useJudge ? JUDGE_MODEL : null,
     rerank: rerankProblem ? `disabled (${rerankProblem})` : 'ok',
+    rerankCache: hasFlag('no-rerank-cache') ? null : path.relative(process.cwd(), RERANK_CACHE_FILE),
+    cohere: null as null | typeof rerankStats,
     repeats,
     concurrency,
     filters: { only: only ?? null, category: category ?? null },
@@ -440,9 +452,9 @@ async function main() {
 
     const t0 = performance.now();
     try {
-      if (system !== 'rag-v2.1') {
+      if (!system.startsWith('rag-')) {
         const res = await answerWithAgent(golden.repoUrl, item.question, item.type, {
-          profile: system,
+          profile: system as Exclude<SystemName, 'rag-v2.1'>,
           callbacks: [handler],
         });
         trace = res.trace;
@@ -498,6 +510,7 @@ async function main() {
         : estimateQueryEmbeddingTokens(item.question);
     const agentRerank = agentRerankFallbacks(trace);
     const rerankFallback = trace ? agentRerank.fallbacks > 0 : !error && ragRerankFellBack(context.length);
+    // What production would pay per question (the eval cache can make the actual calls fewer).
     const rerankSearches = rerankProblem
       ? 0
       : trace
@@ -557,6 +570,7 @@ async function main() {
   );
 
   results.sort((a, b) => a.id.localeCompare(b.id) || a.repeat - b.repeat);
+  meta.cohere = { ...rerankStats };
   const overall = aggregate(results);
   const byCategory: Record<string, Summary> = {};
   for (const cat of [...new Set(results.map((r) => r.category))]) {
@@ -569,11 +583,11 @@ async function main() {
   fs.writeFileSync(path.join(outDir, 'summary.md'), md);
   out(`\n${md}`);
 
-  if (overall.rerankFallbacks && !allowNoRerank) {
+  if ((overall.rerankFallbacks || rerankStats.failures) && !allowNoRerank) {
     appLog.end();
     await mongoose.disconnect();
     throw new Error(
-      `${overall.rerankFallbacks} of ${overall.n} rows fell back to the unranked pool because the reranker failed mid-run${baselineFile ? '; baseline not saved' : ''}. Results are in ${path.relative(process.cwd(), outDir)}.`,
+      `Reranker failed mid-run (${rerankStats.failures} failed calls; ${overall.rerankFallbacks} of ${overall.n} rows answered from the unranked pool)${baselineFile ? '; baseline not saved' : ''}. Results are in ${path.relative(process.cwd(), outDir)}.`,
     );
   }
 
