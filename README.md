@@ -70,6 +70,12 @@ If available, the app has been deployed at `https://www.dev-ai.app/`.
 
 > Note: the demo may take a few seconds to "wake up" on first load if the backend has been idle.
 
+The hosted app deploys from the `production` branch once CI passes. Work lands on `main`; to release, fast-forward `production` to a green `main`:
+
+```bash
+git push origin main:production
+```
+
 ---
 
 ### Option 2: Run DevAI Locally (Development)
