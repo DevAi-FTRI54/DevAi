@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { glob } from 'glob';
 import type { Document } from '@langchain/core/documents';
-import { snapshotPath } from '../indexing/git.service.js';
+import { cloneRepo, snapshotPath } from '../indexing/git.service.js';
 
 const IMPORT_RE = /(?:from\s+|import\s*\(\s*|import\s+)['"](\.[^'"]+)['"]/g;
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '/index.ts', '/index.tsx'];
@@ -55,6 +55,18 @@ export function snapshotImportGraph(repoId: string, commitSha: string): ImportGr
   const graph = buildImportGraph(files, (f) => fs.readFileSync(path.join(root, f), 'utf8'));
   graphCache.set(root, graph);
   return graph;
+}
+
+// Hosts with ephemeral disks lose snapshots on restart. Start one background clone per missing snapshot so
+// later queries get the import graph; the current query expands same-file only.
+const pendingClones = new Map<string, Promise<unknown>>();
+export function ensureSnapshotInBackground(repoUrl: string, repoId: string, commitSha: string): void {
+  const root = snapshotPath(repoId, commitSha);
+  if (fs.existsSync(root) || pendingClones.has(root)) return;
+  const clone = cloneRepo(repoUrl, commitSha)
+    .catch((err) => console.error(`Background snapshot clone failed for ${repoId}@${commitSha}:`, err))
+    .finally(() => pendingClones.delete(root));
+  pendingClones.set(root, clone);
 }
 
 export const docKey = (d: Document) => `${d.metadata?.filePath}:${d.metadata?.startLine}-${d.metadata?.endLine}`;

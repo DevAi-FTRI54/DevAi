@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { createCodeRetriever, getChunksForFiles } from '../indexing/vector.service.js';
 import { generateUniqueRepoId } from '../indexing/git.service.js';
 import { rankDocuments } from './rerank.js';
-import { dedupeDocs, expansionFiles, snapshotImportGraph } from './expansion.js';
+import { dedupeDocs, ensureSnapshotInBackground, expansionFiles, snapshotImportGraph } from './expansion.js';
 import { RUN_KEY } from '@langchain/core/outputs';
 import type { Callbacks } from '@langchain/core/callbacks/manager';
 import type { RunnableConfig } from '@langchain/core/runnables';
@@ -77,6 +77,7 @@ const formatConversationHistory = (messages: Message[]) => {
     .join('\n\n');
 };
 
+// Production default is v2.2; evals pass the version explicitly.
 // v2.1: rerank the retrieved pool, keep 5.
 // v2.2: rerank the pool, add every chunk of the top 5's files and their one-hop import neighbors, rerank
 //       again and keep 8 (see evals/experiments/retrieval-pool-rag-v2.1-625d687.md).
@@ -94,7 +95,7 @@ export async function answerQuestion(
   sessionId: string,
   options?: { callbacks?: Callbacks; retrieval?: RetrievalVersion },
 ) {
-  const retrieval = RETRIEVAL[options?.retrieval ?? 'v2.1'];
+  const retrieval = RETRIEVAL[options?.retrieval ?? 'v2.2'];
   console.log('--- RAG SERVICE STARTED ---------------');
   console.log('📝 Question:', question);
   console.log('🆔 SessionId:', sessionId);
@@ -214,6 +215,7 @@ export async function answerQuestion(
         const top = ranked.slice(0, retrieval.expandFrom);
         const commitSha = (top[0]?.metadata?.commitSha as string | undefined) ?? null;
         const graph = commitSha ? snapshotImportGraph(repoId, commitSha) : null;
+        if (commitSha && !graph) ensureSnapshotInBackground(repoUrl, repoId, commitSha);
         const extra = await getChunksForFiles(repoId, expansionFiles(top, graph), commitSha);
         const candidates = dedupeDocs([...ranked, ...extra]);
         console.log(`Expanded to ${candidates.length} candidates (${graph ? 'with' : 'without'} import graph)`);
