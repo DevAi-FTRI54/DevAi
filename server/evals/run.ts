@@ -1,8 +1,10 @@
 // Runs the golden set through one system and records retrieval, citation, judge, latency, and cost metrics.
 // Usage: npm run eval:run -- --system rag-v2.1|agentic-v1|agentic-v1.1|agentic-v1.2 [--only E01,X03] [--category cross_file] [--repeats 1]
-//        [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path]
+//        [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path] [--allow-no-rerank]
 // --save-baseline writes baselines/<label>-<goldenSha7>.json and refuses to overwrite an existing baseline;
 // the label must belong to the system under test (rag-* for rag-v2.1, agentic-* for agentic-v1).
+// The run aborts if the Cohere reranker is unavailable, and exits non-zero without saving a baseline if any row
+// fell back to the unranked pool; --allow-no-rerank runs anyway and records it in the run metadata.
 import { EVAL_COLLECTION, EVAL_TARGETS } from './lib/env.js';
 import fs from 'fs';
 import path from 'path';
@@ -37,6 +39,7 @@ import {
   type ModelUsage,
 } from './lib/tokens.js';
 import { judgeAnswer, JUDGE_MODEL, type JudgeResult } from './lib/judge.js';
+import { preflightRerank, ragRerankFellBack, agentRerankFallbacks } from './lib/rerank.js';
 import type { AgentTrace } from '../src/features/agent/types.js';
 
 const SYSTEMS = {
@@ -68,6 +71,8 @@ interface ItemResult {
   usage: Record<string, ModelUsage>;
   estEmbeddingTokens: number;
   rerankSearches: number;
+  // True when the pipeline answered from the unranked pool because the reranker failed.
+  rerankFallback: boolean;
   costUsd: number;
   judgeCostUsd: number;
   // Agentic runs only.
@@ -190,6 +195,7 @@ function aggregate(results: ItemResult[]) {
   return {
     n: results.length,
     errors: results.length - ok.length,
+    rerankFallbacks: results.filter((r) => r.rerankFallback).length,
     retrieval: {
       fileRecall: mean(ok.map((r) => r.retrieval!.fileRecall)),
       anyHitRate: mean(ok.map((r) => (r.retrieval!.anyHit ? 1 : 0))),
@@ -246,6 +252,10 @@ function summaryMarkdown(meta: Record<string, unknown>, overall: Summary, byCate
     `- Golden repo: ${meta.repoUrl} @ \`${String(meta.goldenSha).slice(0, 7)}\``,
     `- System under test: DevAI \`${String(meta.codeSha).slice(0, 7)}\`${meta.codeDirty ? ' (uncommitted changes)' : ''}`,
     `- Collection: \`${meta.collection}\`, judge: \`${meta.judgeModel}\`, repeats: ${meta.repeats}`,
+    ...(meta.rerank !== 'ok' ? [`- **Reranker: ${meta.rerank}**`] : []),
+    ...(overall.rerankFallbacks && meta.rerank === 'ok'
+      ? [`- **${overall.rerankFallbacks} of ${overall.n} rows fell back to the unranked pool (reranker failed mid-run); not comparable to reranked runs.**`]
+      : []),
     '',
     '## Quality',
     '',
@@ -323,6 +333,7 @@ async function main() {
   const concurrency = Math.max(1, Number(argValue('concurrency') ?? 1));
   const useJudge = !hasFlag('no-judge');
   const verbose = hasFlag('verbose');
+  const allowNoRerank = hasFlag('allow-no-rerank');
 
   const system = argValue('system') as SystemName | undefined;
   if (!system || !(system in SYSTEMS)) {
@@ -362,6 +373,13 @@ async function main() {
     throw new Error(`Pinned clone missing at ${root}. Run npm run eval:ingest first.`);
   }
 
+  const rerankProblem = await preflightRerank(process.env.COHERE_API_KEY);
+  if (rerankProblem && !allowNoRerank) {
+    throw new Error(
+      `Reranker unavailable (${rerankProblem}). Both pipelines would silently answer from the unranked pool; fix the Cohere key or pass --allow-no-rerank.`,
+    );
+  }
+
   const runId = new Date().toISOString().replace(/[:.]/g, '-');
   const codeSha = git('rev-parse HEAD');
   const meta = {
@@ -376,6 +394,7 @@ async function main() {
     collection: EVAL_COLLECTION,
     targets: EVAL_TARGETS,
     judgeModel: useJudge ? JUDGE_MODEL : null,
+    rerank: rerankProblem ? `disabled (${rerankProblem})` : 'ok',
     repeats,
     concurrency,
     filters: { only: only ?? null, category: category ?? null },
@@ -476,11 +495,13 @@ async function main() {
       : error
         ? 0
         : estimateQueryEmbeddingTokens(item.question);
-    const rerankSearches = !process.env.COHERE_API_KEY
+    const agentRerank = agentRerankFallbacks(trace);
+    const rerankFallback = trace ? agentRerank.fallbacks > 0 : !error && ragRerankFellBack(context.length);
+    const rerankSearches = rerankProblem
       ? 0
       : trace
-        ? semanticAttempts.length
-        : !error && context.length
+        ? Math.max(0, semanticAttempts.length - agentRerank.fallbacks)
+        : !error && context.length && !rerankFallback
           ? 1
           : 0;
     const costUsd =
@@ -508,6 +529,7 @@ async function main() {
       usage: handler.usage,
       estEmbeddingTokens,
       rerankSearches,
+      rerankFallback,
       costUsd,
       judgeCostUsd,
       trace,
@@ -519,10 +541,11 @@ async function main() {
       ? ` subgoals=${trace.subgoals.filter((s) => s.status === 'covered').length}/${trace.subgoals.length} finishRejected=${trace.finishAttempts.filter((f) => !f.accepted).length}`
       : '';
     const agentInfo = trace ? ` tools=${trace.toolCalls} stop=${trace.terminationReason ?? 'error'}${subgoalInfo}` : '';
+    const rerankInfo = rerankFallback && !rerankProblem ? ' RERANK-FALLBACK' : '';
     out(
       error
         ? `${item.id}#${repeat} ERROR ${error}${agentInfo}`
-        : `${item.id}#${repeat} recall=${pct(result.retrieval!.fileRecall)} cites=${citations.length} valid=${pct(result.citationMetrics.validRate)} correct=${judge?.correctness ?? (judgeError ? 'judge-err' : '-')} complete=${judge ? pct(judge.completeness) : '-'}${agentInfo} ${Math.round(latencyMs)}ms`,
+        : `${item.id}#${repeat} recall=${pct(result.retrieval!.fileRecall)} cites=${citations.length} valid=${pct(result.citationMetrics.validRate)} correct=${judge?.correctness ?? (judgeError ? 'judge-err' : '-')} complete=${judge ? pct(judge.completeness) : '-'}${agentInfo}${rerankInfo} ${Math.round(latencyMs)}ms`,
     );
   };
 
@@ -544,6 +567,14 @@ async function main() {
   const md = summaryMarkdown(meta, overall, byCategory);
   fs.writeFileSync(path.join(outDir, 'summary.md'), md);
   out(`\n${md}`);
+
+  if (overall.rerankFallbacks && !allowNoRerank) {
+    appLog.end();
+    await mongoose.disconnect();
+    throw new Error(
+      `${overall.rerankFallbacks} of ${overall.n} rows fell back to the unranked pool because the reranker failed mid-run${baselineFile ? '; baseline not saved' : ''}. Results are in ${path.relative(process.cwd(), outDir)}.`,
+    );
+  }
 
   if (baselineFile) {
     fs.mkdirSync(path.dirname(baselineFile), { recursive: true });
