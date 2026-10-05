@@ -6,9 +6,10 @@ import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { Annotation, StateGraph } from '@langchain/langgraph';
 import { Document } from '@langchain/core/documents';
 import { z } from 'zod';
-import { createCodeRetriever } from '../indexing/vector.service.js';
+import { createCodeRetriever, getChunksForFiles } from '../indexing/vector.service.js';
 import { generateUniqueRepoId } from '../indexing/git.service.js';
-import { rerankDocuments } from './rerank.js';
+import { rankDocuments } from './rerank.js';
+import { dedupeDocs, expansionFiles, snapshotImportGraph } from './expansion.js';
 import { RUN_KEY } from '@langchain/core/outputs';
 import type { Callbacks } from '@langchain/core/callbacks/manager';
 import type { RunnableConfig } from '@langchain/core/runnables';
@@ -76,14 +77,24 @@ const formatConversationHistory = (messages: Message[]) => {
     .join('\n\n');
 };
 
+// v2.1: rerank the retrieved pool, keep 5.
+// v2.2: rerank the pool, add every chunk of the top 5's files and their one-hop import neighbors, rerank
+//       again and keep 8 (see evals/experiments/retrieval-pool-rag-v2.1-625d687.md).
+export type RetrievalVersion = 'v2.1' | 'v2.2';
+const RETRIEVAL = {
+  'v2.1': { topN: 5, expandFrom: 0 },
+  'v2.2': { topN: 8, expandFrom: 5 },
+} as const;
+
 // --- answerQuestion function -----------------------------------------------
 export async function answerQuestion(
   repoUrl: string,
   question: string,
   type: string,
   sessionId: string,
-  options?: { callbacks?: Callbacks },
+  options?: { callbacks?: Callbacks; retrieval?: RetrievalVersion },
 ) {
+  const retrieval = RETRIEVAL[options?.retrieval ?? 'v2.1'];
   console.log('--- RAG SERVICE STARTED ---------------');
   console.log('📝 Question:', question);
   console.log('🆔 SessionId:', sessionId);
@@ -195,7 +206,23 @@ export async function answerQuestion(
       }
 
       console.log(`Reranking ${state.context.length} documents...`);
-      return { context: await rerankDocuments(state.context, state.question, 5) };
+      const ranked = (await rankDocuments(state.context, state.question)).map((r) => r.doc);
+      if (!retrieval.expandFrom) return { context: ranked.slice(0, retrieval.topN) };
+
+      // Expansion failures keep the reranked pool rather than dropping to the unranked one.
+      try {
+        const top = ranked.slice(0, retrieval.expandFrom);
+        const commitSha = (top[0]?.metadata?.commitSha as string | undefined) ?? null;
+        const graph = commitSha ? snapshotImportGraph(repoId, commitSha) : null;
+        const extra = await getChunksForFiles(repoId, expansionFiles(top, graph), commitSha);
+        const candidates = dedupeDocs([...ranked, ...extra]);
+        console.log(`Expanded to ${candidates.length} candidates (${graph ? 'with' : 'without'} import graph)`);
+        const final = (await rankDocuments(candidates, state.question)).map((r) => r.doc);
+        return { context: final.slice(0, retrieval.topN) };
+      } catch (err) {
+        console.error('Error during candidate expansion:', err);
+        return { context: ranked.slice(0, retrieval.topN) };
+      }
     } catch (err) {
       console.error('Error during reranking:', err);
       return { context: state.context }; // Return original docs

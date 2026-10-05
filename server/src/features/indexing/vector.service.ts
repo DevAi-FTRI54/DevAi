@@ -7,7 +7,7 @@ import { OpenAIEmbeddings } from '@langchain/openai';
 import { QdrantVectorStore } from '@langchain/qdrant';
 import { TsmorphCodeLoader } from './loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
-import type { Document } from '@langchain/core/documents';
+import { Document } from '@langchain/core/documents';
 import { MultiQueryRetriever } from 'langchain/retrievers/multi_query';
 // import { MultiQueryRetriever } from '@langchain/community/retrievers/multi_query';
 import { ChatOpenAI } from '@langchain/openai';
@@ -170,6 +170,33 @@ export async function createCodeRetriever(repoId: string, k = 8) {
     console.error('Error creating code retriever: ', err);
     throw err;
   }
+}
+
+// Every indexed chunk of the given files, as Documents with the same content and metadata the retriever returns.
+export async function getChunksForFiles(repoId: string, filePaths: string[], commitSha?: string | null): Promise<Document[]> {
+  if (!filePaths.length) return [];
+  const must: Record<string, unknown>[] = [
+    { key: 'metadata.repoId', match: { value: repoId } },
+    { key: 'metadata.filePath', match: { any: filePaths } },
+  ];
+  if (commitSha) must.push({ key: 'metadata.commitSha', match: { value: commitSha } });
+  const docs: Document[] = [];
+  let offset: string | number | undefined | null = undefined;
+  do {
+    const page: Awaited<ReturnType<QdrantClient['scroll']>> = await getQdrantClient().scroll(COLLECTION, {
+      filter: { must },
+      with_payload: true,
+      with_vector: false,
+      limit: 256,
+      ...(offset != null && { offset }),
+    });
+    for (const point of page.points) {
+      const payload = point.payload as { content?: string; metadata?: Record<string, unknown> } | null;
+      if (payload?.content !== undefined) docs.push(new Document({ pageContent: payload.content, metadata: payload.metadata ?? {} }));
+    }
+    offset = page.next_page_offset as string | number | null | undefined;
+  } while (offset != null);
+  return docs;
 }
 
 // Commits a repo's indexed points were built from. Empty for indexes created before commitSha was stored;

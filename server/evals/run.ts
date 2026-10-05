@@ -1,5 +1,5 @@
 // Runs the golden set through one system and records retrieval, citation, judge, latency, and cost metrics.
-// Usage: npm run eval:run -- --system rag-v2.1|agentic-v1|agentic-v1.1|agentic-v1.2 [--only E01,X03] [--category cross_file]
+// Usage: npm run eval:run -- --system rag-v2.1|rag-v2.2|agentic-v1|agentic-v1.1|agentic-v1.2 [--only E01,X03] [--category cross_file]
 //        [--repeats 1] [--concurrency 1] [--no-judge] [--verbose] [--save-baseline rag-v1] [--golden path] [--allow-no-rerank]
 //        [--no-rerank-cache]
 // Rerank scores are cached per (query, chunk) in .cache/rerank-scores.json, so repeat runs over the frozen eval
@@ -49,6 +49,7 @@ import type { AgentTrace } from '../src/features/agent/types.js';
 
 const SYSTEMS = {
   'rag-v2.1': { baselinePrefix: 'rag-' },
+  'rag-v2.2': { baselinePrefix: 'rag-' },
   'agentic-v1': { baselinePrefix: 'agentic-' },
   'agentic-v1.1': { baselinePrefix: 'agentic-' },
   'agentic-v1.2': { baselinePrefix: 'agentic-' },
@@ -454,7 +455,7 @@ async function main() {
     try {
       if (!system.startsWith('rag-')) {
         const res = await answerWithAgent(golden.repoUrl, item.question, item.type, {
-          profile: system as Exclude<SystemName, 'rag-v2.1'>,
+          profile: system as Exclude<SystemName, 'rag-v2.1' | 'rag-v2.2'>,
           callbacks: [handler],
         });
         trace = res.trace;
@@ -468,6 +469,7 @@ async function main() {
       } else {
         const res = await answerQuestion(golden.repoUrl, item.question, item.type, sessionId, {
           callbacks: [handler],
+          retrieval: system === 'rag-v2.2' ? 'v2.2' : 'v2.1',
         });
         const response = (res.result as any).response ?? {};
         answer = String(response.answer ?? '');
@@ -509,14 +511,17 @@ async function main() {
         ? 0
         : estimateQueryEmbeddingTokens(item.question);
     const agentRerank = agentRerankFallbacks(trace);
-    const rerankFallback = trace ? agentRerank.fallbacks > 0 : !error && ragRerankFellBack(context.length);
+    const ragTopN = system === 'rag-v2.2' ? 8 : 5;
+    const rerankFallback = trace ? agentRerank.fallbacks > 0 : !error && ragRerankFellBack(context.length, ragTopN);
     // What production would pay per question (the eval cache can make the actual calls fewer).
     const rerankSearches = rerankProblem
       ? 0
       : trace
         ? Math.max(0, semanticAttempts.length - agentRerank.fallbacks)
         : !error && context.length && !rerankFallback
-          ? 1
+          ? system === 'rag-v2.2'
+            ? 2
+            : 1
           : 0;
     const costUsd =
       chatCost(handler.usage) +
