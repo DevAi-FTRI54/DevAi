@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "devai": {
+      "type": "stdio",
+      "command": "/Users/kyleheadley/.nvm/versions/node/v22.14.0/bin/node",
+      "args": [
+        "--import",
+        "${workspaceFolder}/mcp/node_modules/tsx/dist/loader.mjs",
+        "${workspaceFolder}/mcp/src/index.ts"
+      ],
+      "env": {
+        "DEVAI_REPO_ROOT": "${workspaceFolder}"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "devai": {
+      "command": "npm",
+      "args": ["start"],
+      "cwd": "mcp"
+    }
+  }
+}
