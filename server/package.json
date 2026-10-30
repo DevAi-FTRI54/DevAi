@@ -4,9 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec node --loader ts-node/esm src/server.ts",
-    "start": "node --loader ts-node/esm src/server.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "eval:ingest": "tsx evals/ingest.ts",
+    "eval:validate": "tsx evals/validate-golden.ts",
+    "eval:run": "tsx evals/run.ts",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "test:types": "tsc -p tests/tsconfig.json"
   },
   "keywords": [],
   "author": "",
@@ -17,7 +21,6 @@
     "@langchain/community": "^0.3.44",
     "@langchain/core": "^0.3.57",
     "@langchain/langgraph": "^0.2.73",
-    "@langchain/ollama": "^0.2.2",
     "@langchain/openai": "^0.5.11",
     "@langchain/qdrant": "^0.1.2",
     "@langchain/textsplitters": "^0.1.0",
@@ -35,6 +38,7 @@
     "mongoose": "^8.15.0",
     "nodemon": "^3.1.10",
     "octokit": "^5.0.3",
+    "picomatch": "^4.0.7",
     "simple-git": "^3.27.0"
   },
   "devDependencies": {
@@ -43,9 +47,11 @@
     "@types/express": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.15.18",
+    "@types/picomatch": "^4.0.3",
     "concurrently": "^9.1.2",
     "ngrok": "^5.0.0-beta.2",
     "ts-morph": "^25.0.1",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.15"
   }
 }

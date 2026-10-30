@@ -29,18 +29,13 @@ import { glob } from 'glob';
 
 export class TsmorphCodeLoader extends BaseDocumentLoader {
   // super() initializes the parent BaseDocumentLoader
-  constructor(private repoPath: string, private repoId: string) {
+  constructor(
+    private repoPath: string,
+    private repoId: string,
+    // Commit the repoPath snapshot was checked out at; stored on every document.
+    private commitSha?: string,
+  ) {
     super();
-  }
-
-  // Helper method to convert absolute file path to repository-relative path
-  private getRelativeFilePath(absolutePath: string): string {
-    // Remove the repo path prefix to get repository-relative path
-    const relativePath = path.relative(this.repoPath, absolutePath);
-    // Normalize path separators for consistency
-    const normalizedPath = relativePath.replace(/\\/g, '/');
-    console.log(`🔄 Path conversion: ${absolutePath} -> ${normalizedPath}`);
-    return normalizedPath;
   }
 
   async load(): Promise<Document[]> {
@@ -94,23 +89,30 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
 
     */
     const docs: Document[] = [];
+    // Store repo-relative paths so citations work with GitHub Contents API (which expects paths relative to repo root).
+    const toRepoRelative = (absolutePath: string): string => {
+      const rel = path.relative(this.repoPath, absolutePath);
+      return rel.replace(/\\/g, '/');
+    };
 
     sourceFiles.forEach((sourceFile: any) => {
-      // STEP 3.1: First add ENTIRE file content
-      const absoluteFilePath = sourceFile.getFilePath();
-      const relativeFilePath = this.getRelativeFilePath(absoluteFilePath);
+      const absolutePath = sourceFile.getFilePath();
+      const filePath = toRepoRelative(absolutePath);
 
+      // STEP 3.1: First add ENTIRE file content
       docs.push(
         new Document({
           pageContent: sourceFile.getFullText(),
           metadata: {
             repoId: this.repoId,
-            filePath: relativeFilePath, // Use relative path instead of absolute
-            declarationName: path.basename(relativeFilePath),
-            startLine: sourceFile.getStartLineNumber(true),
+            ...(this.commitSha && { commitSha: this.commitSha }),
+            filePath,
+            declarationName: path.basename(absolutePath),
+            // getFullText() starts at line 1; getStartLineNumber() would skip leading comments.
+            startLine: 1,
             endLine: sourceFile.getEndLineNumber(),
           },
-        })
+        }),
       );
 
       // STEP 3.2: Second add individual functions and classes
@@ -120,18 +122,21 @@ export class TsmorphCodeLoader extends BaseDocumentLoader {
         const end = node.getEndLineNumber();
 
         // For each source file, push new document containing both content and metadata.
-        // Metadata format: filepath - declarationName - startLine - endLine
+        // Metatada format: filepath - declarationName - startLine - endLine
         docs.push(
           new Document({
             pageContent: node.getFullText(),
             metadata: {
               repoId: this.repoId,
-              filePath: relativeFilePath, // Use relative path instead of absolute
+              ...(this.commitSha && { commitSha: this.commitSha }),
+              filePath,
               declarationName: node.getName() ?? '<anonymous>',
               startLine: start,
               endLine: end,
+              // getFullText() includes leading trivia, so the text begins before startLine.
+              textStartLine: sourceFile.getLineAndColumnAtPos(node.getPos()).line,
             },
-          })
+          }),
         );
       };
       // For each source file, get all functions and classess

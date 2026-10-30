@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getCurrentUser, formatDisplayName } from '../utils/auth';
+import { formatDisplayName } from '../utils/auth';
+import { getCurrentUserFromApi } from '../api';
 
 interface UseCurrentUserReturn {
   user: {
@@ -11,7 +12,7 @@ interface UseCurrentUserReturn {
 }
 
 /**
- * Hook to get current user information and formatted display name
+ * Hook to get current user for display (cookies-only: server reads JWT from cookie, returns public info only).
  */
 export function useCurrentUser(): UseCurrentUserReturn {
   const [user, setUser] = useState<{
@@ -21,9 +22,9 @@ export function useCurrentUser(): UseCurrentUserReturn {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const userInfo = getCurrentUser();
-    setUser(userInfo);
-    setIsLoading(false);
+    getCurrentUserFromApi()
+      .then(setUser)
+      .finally(() => setIsLoading(false));
   }, []);
 
   const displayName = user ? formatDisplayName(user.githubUsername) : '';

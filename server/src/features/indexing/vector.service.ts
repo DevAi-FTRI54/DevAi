@@ -7,7 +7,7 @@ import { OpenAIEmbeddings } from '@langchain/openai';
 import { QdrantVectorStore } from '@langchain/qdrant';
 import { TsmorphCodeLoader } from './loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
-import type { Document } from '@langchain/core/documents';
+import { Document } from '@langchain/core/documents';
 import { MultiQueryRetriever } from 'langchain/retrievers/multi_query';
 // import { MultiQueryRetriever } from '@langchain/community/retrievers/multi_query';
 import { ChatOpenAI } from '@langchain/openai';
@@ -20,15 +20,12 @@ dotenv.config({
 });
 
 // Why Qdrant over Pinecone - https://qdrant.tech/blog/comparing-qdrant-vs-pinecone-vector-databases
-// Lazy client initialization to avoid module-level environment access
+// Lazy client initialization to avoid module-level environment access and improve startup speed
 let client: QdrantClient | null = null;
 
 function getQdrantClient(): QdrantClient {
   if (!client) {
     console.log('🔍 Initializing Qdrant client...');
-    console.log('🔍 Qdrant URL being used:', process.env.QDRANT_URL);
-    console.log('🔍 Qdrant API Key set:', !!process.env.QDRANT_API_KEY);
-
     client = new QdrantClient({
       url: process.env.QDRANT_URL!,
       apiKey: process.env.QDRANT_API_KEY,
@@ -51,38 +48,83 @@ const embeddings = new OpenAIEmbeddings({
 });
 
 // --- A Single Collection For All Users ------------------------------
-const COLLECTION = 'devai_collection_01';
-
-// Index creation state tracking
-let indexCreationAttempted = false;
-let indexCreationSuccessful = false;
+const COLLECTION = process.env.QDRANT_COLLECTION ?? 'devai_collection_01';
 
 // Supporting documentation: https://js.langchain.com/docs/integrations/retrievers/self_query/qdrant/
-export async function upsert(docs: Document[]) {
-  const vectorStore = QdrantVectorStore.fromDocuments(docs, embeddings, {
-    client: getQdrantClient(),
-    collectionName: COLLECTION,
-  });
+const QDRANT_UNAVAILABLE_HINT =
+  'If using Qdrant Cloud free tier, the cluster may be suspended after inactivity — check the Qdrant dashboard or try again after it resumes.';
 
-  return vectorStore;
+// Only true when the error clearly indicates Qdrant or network/connection failure (not e.g. OpenAI or validation errors).
+export function isQdrantConnectionError(err: any): boolean {
+  const code = err?.code ?? '';
+  const msg = (err?.message || String(err)).toLowerCase();
+  if (code === 'ECONNREFUSED' || code === 'ETIMEDOUT') return true;
+  return (
+    msg.includes('qdrant') ||
+    msg.includes('econnrefused') ||
+    msg.includes('etimedout') ||
+    msg.includes('connection refused') ||
+    msg.includes('fetch failed') ||
+    msg.includes('service unavailable') ||
+    msg.includes('502') ||
+    msg.includes('503') ||
+    msg.includes('network error')
+  );
+}
+
+// Upsert documents to vector store - handles batching automatically for efficiency
+export async function upsert(docs: Document[]) {
+  if (!docs || docs.length === 0) {
+    console.warn('⚠️ upsert called with empty documents array');
+    return;
+  }
+
+  try {
+    const vectorStore = QdrantVectorStore.fromDocuments(docs, embeddings, {
+      client: getQdrantClient(),
+      collectionName: COLLECTION,
+    });
+    return vectorStore;
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    if (isQdrantConnectionError(err)) {
+      console.error(
+        '❌ INGESTION ERROR: Qdrant upsert failed (no connection or Qdrant unavailable).',
+        {
+          error: msg,
+          docCount: docs.length,
+          hint: QDRANT_UNAVAILABLE_HINT,
+        },
+      );
+    } else {
+      console.error('❌ INGESTION ERROR: Upsert failed.', {
+        error: msg,
+        docCount: docs.length,
+      });
+    }
+    console.error('❌ Ingestion failure details:', err?.stack || err);
+    throw err;
+  }
 }
 
 // -- asRetriever ----------------------------------------------------
 // Factory asRetriever so chat can pull retriever later
 // https://js.langchain.com/docs/how_to/vectorstore_retriever/
+// Index creation state tracking - only create index once per server session
+let indexCreationAttempted = false;
+
 export async function createRetriever(repoId: string, k = 8) {
-  // Ensure index exists (only try once per server session)
+  // Ensure index exists (only try once per server session for better performance)
   if (!indexCreationAttempted) {
     indexCreationAttempted = true;
     try {
       console.log('🔄 Creating Qdrant index on first query...');
       await ensureQdrantIndexes();
-      indexCreationSuccessful = true;
       console.log('✅ Qdrant index created successfully on first query');
     } catch (err) {
       console.warn(
-        '⚠️ Failed to create Qdrant index on first query, continuing without index:',
-        err instanceof Error ? err.message : err
+        '⚠️ Failed to create Qdrant index on first query, continuing:',
+        err instanceof Error ? err.message : err,
       );
       // Continue without index - filtering will still work, just slower
     }
@@ -94,8 +136,8 @@ export async function createRetriever(repoId: string, k = 8) {
   });
 
   try {
-    const client = getQdrantClient();
-    const points = await client.scroll(COLLECTION, {
+    const qdrantClient = getQdrantClient();
+    const points = await qdrantClient.scroll(COLLECTION, {
       filter: { must: [{ key: 'metadata.repoId', match: { value: repoId } }] },
       limit: 5,
     });
@@ -130,15 +172,65 @@ export async function createCodeRetriever(repoId: string, k = 8) {
   }
 }
 
+// Every indexed chunk of the given files, as Documents with the same content and metadata the retriever returns.
+export async function getChunksForFiles(repoId: string, filePaths: string[], commitSha?: string | null): Promise<Document[]> {
+  if (!filePaths.length) return [];
+  const must: Record<string, unknown>[] = [
+    { key: 'metadata.repoId', match: { value: repoId } },
+    { key: 'metadata.filePath', match: { any: filePaths } },
+  ];
+  if (commitSha) must.push({ key: 'metadata.commitSha', match: { value: commitSha } });
+  const docs: Document[] = [];
+  let offset: string | number | undefined | null = undefined;
+  do {
+    const page: Awaited<ReturnType<QdrantClient['scroll']>> = await getQdrantClient().scroll(COLLECTION, {
+      filter: { must },
+      with_payload: true,
+      with_vector: false,
+      limit: 256,
+      ...(offset != null && { offset }),
+    });
+    for (const point of page.points) {
+      const payload = point.payload as { content?: string; metadata?: Record<string, unknown> } | null;
+      if (payload?.content !== undefined) docs.push(new Document({ pageContent: payload.content, metadata: payload.metadata ?? {} }));
+    }
+    offset = page.next_page_offset as string | number | null | undefined;
+  } while (offset != null);
+  return docs;
+}
+
+// Commits a repo's indexed points were built from. Empty for indexes created before commitSha was stored;
+// more than one means the repo was re-indexed without clearing old points.
+export async function getIndexedCommitShas(repoId: string): Promise<string[]> {
+  const shas = new Set<string>();
+  let offset: string | number | undefined | null = undefined;
+  do {
+    const page: Awaited<ReturnType<QdrantClient['scroll']>> =
+      await getQdrantClient().scroll(COLLECTION, {
+        filter: { must: [{ key: 'metadata.repoId', match: { value: repoId } }] },
+        with_payload: ['metadata.commitSha'],
+        with_vector: false,
+        limit: 256,
+        ...(offset != null && { offset }),
+      });
+    for (const point of page.points) {
+      const sha = (point.payload?.metadata as { commitSha?: unknown } | undefined)?.commitSha;
+      if (typeof sha === 'string') shas.add(sha);
+    }
+    offset = page.next_page_offset as string | number | null | undefined;
+  } while (offset != null);
+  return [...shas].sort();
+}
+
 // Filtering: https://qdrant.tech/documentation/concepts/filtering/
 // Indexing: https://qdrant.tech/documentation/concepts/indexing/
+// Vector Search Tutorial: https://qdrant.tech/articles/vector-search-filtering/
 export async function ensureQdrantIndexes() {
   try {
-    const client = getQdrantClient();
-
+    const qdrantClient = getQdrantClient();
     // First, check if collection exists and create it if it doesn't
     try {
-      const collectionInfo = await client.getCollection(COLLECTION);
+      const collectionInfo = await qdrantClient.getCollection(COLLECTION);
       console.log(`✅ Collection '${COLLECTION}' already exists`);
     } catch (err: any) {
       // Collection doesn't exist, create it
@@ -153,12 +245,12 @@ export async function ensureQdrantIndexes() {
 
       if (isNotFoundError) {
         console.log(
-          `🔄 Collection '${COLLECTION}' doesn't exist, creating it...`
+          `🔄 Collection '${COLLECTION}' doesn't exist, creating it...`,
         );
 
         // text-embedding-3-large produces 3072-dimensional vectors
         try {
-          await client.createCollection(COLLECTION, {
+          await qdrantClient.createCollection(COLLECTION, {
             vectors: {
               size: 3072,
               distance: 'Cosine',
@@ -174,22 +266,45 @@ export async function ensureQdrantIndexes() {
             createErrorMessage.includes('already exist')
           ) {
             console.log(
-              `✅ Collection '${COLLECTION}' was created by another process`
+              `✅ Collection '${COLLECTION}' was created by another process`,
             );
           } else {
+            if (isQdrantConnectionError(createErr)) {
+              console.error(
+                '❌ QDRANT CONNECTION ERROR: Failed to create collection.',
+                {
+                  error: createErr?.message || createErr,
+                  hint: QDRANT_UNAVAILABLE_HINT,
+                },
+              );
+            } else {
+              console.error(
+                '❌ Failed to create collection:',
+                createErr?.message || createErr,
+              );
+            }
             throw createErr;
           }
         }
       } else {
-        // Re-throw if it's a different error
-        console.error('❌ Unexpected error checking collection:', err);
+        if (isQdrantConnectionError(err)) {
+          console.error(
+            '❌ QDRANT CONNECTION ERROR: Could not reach Qdrant or collection check failed.',
+            { error: err?.message || err, hint: QDRANT_UNAVAILABLE_HINT },
+          );
+        } else {
+          console.error(
+            '❌ Unexpected error checking collection:',
+            err?.message || err,
+          );
+        }
         throw err;
       }
     }
 
     // Now create the index on the collection (whether it existed or was just created)
     console.log('Creating index for metadata.repoId...');
-    await client.createPayloadIndex(COLLECTION, {
+    await qdrantClient.createPayloadIndex(COLLECTION, {
       field_name: 'metadata.repoId',
       field_schema: 'keyword',
     });
@@ -199,7 +314,17 @@ export async function ensureQdrantIndexes() {
       console.log('✅ Index for metadata.repoId already exists');
       return;
     }
-    console.error('❌ Failed to create index:', err);
+    if (isQdrantConnectionError(err)) {
+      console.error(
+        '❌ QDRANT CONNECTION ERROR: Failed to create or ensure Qdrant index.',
+        { error: err?.message || err, hint: QDRANT_UNAVAILABLE_HINT },
+      );
+    } else {
+      console.error(
+        '❌ Failed to create or ensure Qdrant index:',
+        err?.message || err,
+      );
+    }
     throw err;
   }
 }
@@ -208,14 +333,14 @@ export async function ensureQdrantIndexes() {
 
 # Delete all points (preserves collection structure)
 curl -X POST \
-  "https://0f6afb8c-4472-4502-be39-0a91ca34a202.us-east4-0.gcp.cloud.qdrant.io:6333/collections/devai_collection_01/points/delete" \
+  "$QDRANT_URL/collections/devai_collection_01/points/delete" \
   -H "Content-Type: application/json" \
-  -H "api-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.c2o3HTYK_ITBNNga99GCfAo628GNaoFfLi1kArxiJsE" \
+  -H "api-key: $QDRANT_API_KEY" \
   -d '{"filter": {}}'
 
 # OR delete entire collection
 curl -X DELETE \
-  "https://0f6afb8c-4472-4502-be39-0a91ca34a202.us-east4-0.gcp.cloud.qdrant.io:6333/collections/devai_collection_01" \
-  -H "api-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.c2o3HTYK_ITBNNga99GCfAo628GNaoFfLi1kArxiJsE"
+  "$QDRANT_URL/collections/devai_collection_01" \
+  -H "api-key: $QDRANT_API_KEY"
 
  */

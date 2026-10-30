@@ -12,6 +12,7 @@ interface GitHubFile {
 interface RepositoryContent {
   files: GitHubFile[];
   repoId: string;
+  commitSha: string;
 }
 
 export class GitHubApiService {
@@ -33,21 +34,36 @@ export class GitHubApiService {
   ): Promise<RepositoryContent> {
     const { owner, repo } = this.parseRepoUrl(repoUrl);
     const repoId = this.generateUniqueRepoId(repoUrl);
-    
+
     console.log(`🔍 Fetching content for ${owner}/${repo} at ${sha}`);
 
     try {
+      // Pin the ref to a concrete commit so every file comes from the same snapshot.
+      const { data: commit } = await this.octokit.rest.repos.getCommit({
+        owner,
+        repo,
+        ref: sha,
+      });
+      const commitSha = commit.sha.toLowerCase();
+
       // Get the tree recursively
       const { data: tree } = await this.octokit.rest.git.getTree({
         owner,
         repo,
-        tree_sha: sha,
+        tree_sha: commitSha,
         recursive: 'true', // Get all files recursively
       });
 
       // Filter for TypeScript/JavaScript files
-      const codeFiles = tree.tree.filter(
-        (item) =>
+      interface GitHubTreeItem {
+        path?: string;
+        type?: string;
+        sha?: string;
+        size?: number;
+      }
+
+      const codeFiles: GitHubTreeItem[] = tree.tree.filter(
+        (item: GitHubTreeItem) =>
           item.type === 'blob' &&
           item.path &&
           /\.(ts|tsx|js|jsx)$/.test(item.path) &&
@@ -69,7 +85,9 @@ export class GitHubApiService {
             });
 
             // Decode base64 content
-            const content = Buffer.from(blob.content, 'base64').toString('utf-8');
+            const content = Buffer.from(blob.content, 'base64').toString(
+              'utf-8'
+            );
 
             return {
               path: file.path!,
@@ -86,13 +104,16 @@ export class GitHubApiService {
       );
 
       // Filter out failed fetches
-      const validFiles = fileResults.filter((file): file is GitHubFile => file !== null);
-      
+      const validFiles = fileResults.filter(
+        (file): file is GitHubFile => file !== null
+      );
+
       console.log(`✅ Successfully fetched ${validFiles.length} files`);
 
       return {
         files: validFiles,
         repoId,
+        commitSha,
       };
     } catch (error) {
       console.error('❌ Failed to fetch repository content:', error);
@@ -106,7 +127,7 @@ export class GitHubApiService {
     // https://github.com/owner/repo.git
     // git@github.com:owner/repo.git
     const match = url.match(/github\.com[/:]([\w-]+)\/([\w-]+)(?:\.git)?/);
-    
+
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }

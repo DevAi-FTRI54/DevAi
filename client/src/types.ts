@@ -16,7 +16,7 @@ export interface ChatInputProps {
     snippet: string,
     file: string,
     startLine: number,
-    endLine: number
+    endLine: number,
   ) => void;
   addUserMessage: (userPrompt: string) => void;
   setStreamingAnswer?: (answer: string) => void;
@@ -126,7 +126,6 @@ export interface RepoViewerProps {
 export interface SidebarProps {
   owner: string;
   repo: string;
-  token: string;
   onFileSelect: (filePath: string) => void;
   org?: string;
   installationId?: string | null;

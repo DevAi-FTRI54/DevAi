@@ -1,4 +1,5 @@
 // Production-ready indexing job that works without local file cloning
+import IORedis from 'ioredis';
 import { Worker, Queue, Job } from 'bullmq';
 import { cloneRepo } from './git.service.js';
 import { TsmorphCodeLoader } from './loader.service.js';
@@ -7,21 +8,27 @@ import { InMemoryCodeLoader } from './memory-loader.service.js';
 import { chunkDocuments } from './chunk.service.js';
 import { upsert } from './vector.service.js';
 
-const redisOptions = {
-  host: process.env.REDIS_HOST ?? 'localhost',
-  port: Number(process.env.REDIS_PORT) || 6379,
-};
+console.log('🔍 REDIS_URL:', process.env.REDIS_URL);
 
-export const indexQueue = new Queue('index', { connection: redisOptions });
+const redisClient = new IORedis(process.env.REDIS_URL!, {
+  maxRetriesPerRequest: null,
+});
+
+export const indexQueue = new Queue('index', {
+  connection: redisClient,
+});
 
 // Determine if we're in production or development
 const isProduction =
   process.env.NODE_ENV === 'production' || process.env.RENDER;
 
 // --- Worker ------------------------------------------------------------
+// Production worker with error handling - supports both GitHub API and local cloning
 const worker = new Worker(
   'index',
   async (job: Job<{ repoUrl: string; sha: string; accessToken?: string }>) => {
+    // Wrap everything in try-catch to catch and log all errors
+    try {
     const { repoUrl, sha, accessToken } = job.data;
 
     console.log(`🚀 Starting indexing job for ${repoUrl}`);
@@ -38,7 +45,7 @@ const worker = new Worker(
       console.log('📡 Using GitHub API approach (production)');
 
       const githubService = new GitHubApiService(accessToken);
-      const { files, repoId: apiRepoId } =
+      const { files, repoId: apiRepoId, commitSha } =
         await githubService.fetchRepositoryContent(repoUrl, sha);
 
       repoId = apiRepoId;
@@ -46,7 +53,7 @@ const worker = new Worker(
 
       await job.updateProgress(15);
 
-      const loader = new InMemoryCodeLoader(files, repoId, repoName);
+      const loader = new InMemoryCodeLoader(files, repoId, repoName, commitSha);
       bigDocs = await loader.load();
 
       console.log(`📄 Loaded ${bigDocs.length} documents via GitHub API`);
@@ -54,7 +61,7 @@ const worker = new Worker(
       // DEVELOPMENT: Use local cloning (fallback)
       console.log('💻 Using local clone approach (development)');
 
-      const { localRepoPath, repoId: localRepoId } = await cloneRepo(
+      const { localRepoPath, repoId: localRepoId, commitSha } = await cloneRepo(
         repoUrl,
         sha
       );
@@ -63,16 +70,36 @@ const worker = new Worker(
 
       await job.updateProgress(15);
 
-      const loader = new TsmorphCodeLoader(localRepoPath, repoId);
+      const loader = new TsmorphCodeLoader(localRepoPath, repoId, commitSha);
       bigDocs = await loader.load();
 
       console.log(`📄 Loaded ${bigDocs.length} documents via local clone`);
     }
 
+      // Validate documents before proceeding
+      if (!bigDocs || !Array.isArray(bigDocs)) {
+        throw new Error(`Invalid documents array: ${typeof bigDocs}`);
+      }
+      
+      if (bigDocs.length === 0) {
+        throw new Error('No documents loaded from repository');
+      }
+
     await job.updateProgress(30);
 
+      // Chunk documents with error handling
+      let chunkedDocs;
+      try {
+        console.log('🔄 Starting to chunk documents...');
+        chunkedDocs = await chunkDocuments(bigDocs);
+        console.log(`✅ Chunked into ${chunkedDocs.length} documents`);
+      } catch (chunkError: any) {
+        console.error('❌ Error during chunking:', chunkError);
+        throw new Error(`Failed to chunk documents: ${chunkError.message}`);
+      }
+
     // Rest of the processing is the same for both approaches
-    const chunkedDocs = (await chunkDocuments(bigDocs)).map((doc) => {
+      chunkedDocs = chunkedDocs.map((doc) => {
       if (!doc.pageContent || doc.pageContent.trim().length === 0) {
         return {
           ...doc,
@@ -90,9 +117,11 @@ const worker = new Worker(
     console.log(`📊 Total documents to process: ${total}`);
     await job.updateProgress(36);
 
-    // Batch processing configuration
-    const BATCH_SIZE = 10;
-    const CONCURRENT_BATCHES = 3;
+      // Batch processing: Instead of processing one document at a time (slow and expensive),
+      // we process 50 documents together. This is much faster and reduces API costs.
+      // Processing 5 batches at the same time speeds things up even more.
+      const BATCH_SIZE = 50; // Documents per batch
+      const CONCURRENT_BATCHES = 5; // How many batches to process simultaneously
 
     const processBatch = async (
       batch: typeof chunkedDocs,
@@ -121,11 +150,13 @@ const worker = new Worker(
       `📦 Split into ${batches.length} batches of up to ${BATCH_SIZE} documents each`
     );
 
-    // Process batches with limited concurrency
+      // Process multiple batches at the same time for speed
+      // This processes CONCURRENT_BATCHES batches simultaneously instead of waiting for each one
     let processedCount = 0;
-    const progressRange = 64;
+      const progressRange = 64; // Progress from 36% to 100%
 
     for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
+        // Process CONCURRENT_BATCHES batches at once
       const currentBatches = batches.slice(i, i + CONCURRENT_BATCHES);
 
       const results = await Promise.all(
@@ -145,12 +176,19 @@ const worker = new Worker(
     console.log(
       `🎉 Successfully processed all ${total} documents for ${repoName}!`
     );
-  },
-  { connection: redisOptions }
+    } catch (error: any) {
+      // Log full error details before re-throwing
+      console.error('❌ Job failed with error:', error);
+      console.error('Error stack:', error.stack);
+      throw error; // Re-throw to mark job as failed
+    }
+  }
 )
   .on('completed', (job) => {
     console.log(`${job.id} has completed!`);
   })
   .on('failed', (job, err) => {
-    console.log(`${job!.id} has failed with ${err.message}`);
+    // Enhanced error logging for failed jobs
+    console.error(`❌ Job ${job?.id} has failed with error:`, err.message);
+    console.error('Full error:', err);
   });

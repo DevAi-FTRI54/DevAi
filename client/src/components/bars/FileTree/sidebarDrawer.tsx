@@ -25,7 +25,6 @@ import {
 const Sidebar: React.FC<SidebarProps> = ({
   owner,
   repo,
-  token,
   onFileSelect,
   org,
   installationId,
@@ -39,22 +38,21 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     const fetchRoot = async () => {
       try {
-        const data = await getRepoContents(owner, repo, '', token);
+        const data = await getRepoContents(owner, repo, '');
         setRootItems(data);
       } catch (err: unknown) {
-        // handle error
         console.error('found Error', err);
         setRootItems([]);
       }
     };
     fetchRoot();
-  }, [owner, repo, token]);
+  }, [owner, repo]);
 
   const handleToggle = async (path: string) => {
     setExpandedMap((prev) => ({ ...prev, [path]: !prev[path] }));
     if (!childrenMap[path]) {
       try {
-        const data = await getRepoContents(owner, repo, path, token);
+        const data = await getRepoContents(owner, repo, path);
         setChildrenMap((prev) => ({ ...prev, [path]: data }));
       } catch (err) {
         // handle error, optionally
@@ -143,7 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const ext = item.name.split('.').pop()?.toLowerCase();
     if (
       ['py', 'rb', 'java', 'go', 'c', 'cpp', 'cs', 'php', 'sh'].includes(
-        ext || ''
+        ext || '',
       )
     ) {
       return <VscFileCode className='w-4 h-4 text-[#5ea9ea]' />;
@@ -180,7 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const renderTree = (
     items: GitHubContentItem[],
-    level = 0
+    level = 0,
   ): React.ReactElement[] => {
     return items.map((item) => {
       const isDir = item.type === 'dir';

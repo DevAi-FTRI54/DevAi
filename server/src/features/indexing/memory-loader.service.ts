@@ -26,7 +26,9 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
   constructor(
     private files: GitHubFile[],
     private repoId: string,
-    private repoName: string
+    private repoName: string,
+    // Commit the files were fetched at; stored on every document.
+    private commitSha?: string
   ) {
     super();
   }
@@ -74,6 +76,7 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
             metadata: {
               repoId: this.repoId,
               repoName: this.repoName,
+              ...(this.commitSha && { commitSha: this.commitSha }),
               filePath: filePath,
               declarationName: path.basename(filePath),
               startLine: 1,
@@ -98,10 +101,13 @@ export class InMemoryCodeLoader extends BaseDocumentLoader {
                 metadata: {
                   repoId: this.repoId,
                   repoName: this.repoName,
+                  ...(this.commitSha && { commitSha: this.commitSha }),
                   filePath: sourceFile.getFilePath(),
                   declarationName: name,
                   startLine: start,
                   endLine: end,
+                  // getFullText() includes leading trivia, so the text begins before startLine.
+                  textStartLine: sourceFile.getLineAndColumnAtPos(node.getPos()).line,
                   declarationType:
                     node instanceof ClassDeclaration ? 'class' : 'function',
                 },

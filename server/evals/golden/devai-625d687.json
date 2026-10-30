@@ -1,0 +1,906 @@
+{
+  "name": "devai-625d687",
+  "repoUrl": "https://github.com/DevAi-FTRI54/DevAi",
+  "sha": "625d687b412f1349889c5e8058290387dafc308a",
+  "repoId": "github_com_DevAi_FTRI54_DevAi",
+  "items": [
+    {
+      "id": "E01",
+      "category": "exact_lookup",
+      "question": "Where is exchangeCodeForToken defined and what endpoint does it call?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/services/github.service.ts", "symbol": "export async function exchangeCodeForToken", "lines": [53, 86], "required": true }
+      ],
+      "key_facts": [
+        "exchangeCodeForToken is defined in server/src/features/auth/services/github.service.ts",
+        "It POSTs to https://github.com/login/oauth/access_token",
+        "It sends client_id, client_secret, code, and redirect_uri",
+        "It throws a friendly 'expired or already used' error for expired/invalid/bad_verification_code responses",
+        "It returns data.access_token"
+      ]
+    },
+    {
+      "id": "E02",
+      "category": "exact_lookup",
+      "question": "Where is the user JWT created, and what claims and expiry does it use?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/services/jwt.service.ts", "symbol": "export function generateUserJWTToken", "lines": [15, 24], "required": true },
+        { "file": "server/src/features/auth/services/jwt.service.ts", "symbol": "JWT_EXPIRY_SECONDS", "lines": [11, 13], "required": false }
+      ],
+      "key_facts": [
+        "The JWT is created by generateUserJWTToken in jwt.service.ts",
+        "The payload contains userId and githubUsername",
+        "It is signed with JWT_SECRET",
+        "Expiry defaults to 7 days",
+        "Expiry can be overridden with the JWT_EXPIRY_SECONDS environment variable"
+      ]
+    },
+    {
+      "id": "E03",
+      "category": "exact_lookup",
+      "question": "Where is the text splitter for chunking configured?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/chunk.service.ts", "symbol": "RecursiveCharacterTextSplitter", "lines": [4, 7], "required": true },
+        { "file": "server/src/features/indexing/chunk.service.ts", "symbol": "export async function chunkDocuments", "lines": [9, 22], "required": false }
+      ],
+      "key_facts": [
+        "The splitter is configured in server/src/features/indexing/chunk.service.ts",
+        "It uses LangChain's RecursiveCharacterTextSplitter",
+        "chunkSize is 2000 and chunkOverlap is 400",
+        "Only documents whose pageContent is longer than 6000 characters are split; smaller docs are kept whole"
+      ]
+    },
+    {
+      "id": "E04",
+      "category": "exact_lookup",
+      "question": "Which function creates the Qdrant collection, and with what vector size and distance?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "export async function ensureQdrantIndexes", "lines": [178, 280], "required": true }
+      ],
+      "key_facts": [
+        "ensureQdrantIndexes in vector.service.ts creates the collection if it does not exist",
+        "Vectors are 3072-dimensional (matching text-embedding-3-large)",
+        "Distance metric is Cosine",
+        "It also creates a keyword payload index on metadata.repoId"
+      ]
+    },
+    {
+      "id": "E05",
+      "category": "exact_lookup",
+      "question": "Where is the Cohere reranker used, and how many docs does it keep?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "const rerank = async", "lines": [154, 194], "required": true }
+      ],
+      "key_facts": [
+        "The reranker is the rerank node in rag.service.ts",
+        "It uses CohereRerank with model rerank-v3.5",
+        "topN is min(5, number of retrieved docs)",
+        "If COHERE_API_KEY is missing or reranking throws, it returns the original unranked docs"
+      ]
+    },
+    {
+      "id": "E06",
+      "category": "exact_lookup",
+      "question": "Where is requireAuth defined, and where does it look for the token?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/middleware/authMiddleware.ts", "symbol": "export const requireAuth", "lines": [28, 75], "required": true }
+      ],
+      "key_facts": [
+        "requireAuth is defined in server/src/middleware/authMiddleware.ts",
+        "It checks the Authorization: Bearer header first",
+        "It falls back to the 'token' cookie",
+        "Missing token returns 401; expired token returns 401 'Token expired'; other invalid tokens return 403",
+        "On success it attaches the decoded payload to req.user"
+      ]
+    },
+    {
+      "id": "E07",
+      "category": "exact_lookup",
+      "question": "Where is the repoId generated from a GitHub URL?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/git.service.ts", "symbol": "export const generateUniqueRepoId", "lines": [8, 17], "required": true },
+        { "file": "server/src/features/indexing/github-api.service.ts", "symbol": "private generateUniqueRepoId", "lines": [131, 136], "required": false }
+      ],
+      "key_facts": [
+        "generateUniqueRepoId in git.service.ts builds the repoId",
+        "It strips the protocol prefix and trailing .git",
+        "It replaces runs of non-word characters with underscores",
+        "Despite a comment about hashing, no hashing is performed",
+        "A duplicate private implementation exists in GitHubApiService"
+      ]
+    },
+    {
+      "id": "E08",
+      "category": "exact_lookup",
+      "question": "Where is the structured answer schema defined?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "const qa = z.object", "lines": [30, 40], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "withStructuredOutput", "lines": [42, 45], "required": false }
+      ],
+      "key_facts": [
+        "The schema is the zod object 'qa' in rag.service.ts",
+        "It has an answer string and a citations array",
+        "Each citation has file, startLine, endLine, and snippet",
+        "It is applied with llm.withStructuredOutput using method jsonSchema and strict: true"
+      ]
+    },
+    {
+      "id": "E09",
+      "category": "exact_lookup",
+      "question": "Which React component polls ingestion progress?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "client/src/components/auth/promptbaringeststatus.tsx", "symbol": "const ProgressBar", "lines": [19, 121], "required": true },
+        { "file": "client/src/api.ts", "symbol": "export async function getIngestionStatus", "lines": [71, 80], "required": false }
+      ],
+      "key_facts": [
+        "ProgressBar in client/src/components/auth/promptbaringeststatus.tsx polls progress",
+        "It calls getIngestionStatus, which hits GET /index/status/:jobId",
+        "It polls every 1000ms with setInterval",
+        "It calls onComplete when progress >= 100 or status is 'completed'",
+        "It shows 'Worker waking up' when status is 'waiting'"
+      ]
+    },
+    {
+      "id": "E10",
+      "category": "exact_lookup",
+      "question": "Where is findOrCreateUser, and what does it update for existing users?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/services/user.service.ts", "symbol": "export const findOrCreateUser", "lines": [22, 44], "required": true }
+      ],
+      "key_facts": [
+        "findOrCreateUser is in server/src/features/auth/services/user.service.ts",
+        "It looks up the user by githubId",
+        "New users are created with username, avatarUrl, email (falling back to a users.noreply.github.com address), and accessToken",
+        "For existing users it updates and saves accessToken"
+      ]
+    },
+    {
+      "id": "C01",
+      "category": "conceptual",
+      "question": "How does authentication work?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "export const handleGitHubCallback", "lines": [50, 132], "required": true },
+        { "file": "server/src/middleware/authMiddleware.ts", "symbol": "export const requireAuth", "lines": [28, 75], "required": true },
+        { "file": "server/src/features/auth/services/github.service.ts", "symbol": "export async function exchangeCodeForToken", "lines": [53, 86], "required": false },
+        { "file": "server/src/features/auth/services/jwt.service.ts", "symbol": "export function generateUserJWTToken", "lines": [15, 24], "required": false }
+      ],
+      "key_facts": [
+        "Users log in with GitHub OAuth",
+        "The OAuth code is exchanged for a GitHub access token",
+        "The GitHub profile is fetched and a Mongo user is found or created",
+        "The server issues its own JWT",
+        "Tokens are stored in httpOnly cookies (github_access_token, token, installation_id)",
+        "requireAuth verifies the JWT on protected routes"
+      ]
+    },
+    {
+      "id": "C02",
+      "category": "conceptual",
+      "question": "How does the ingestion worker avoid using resources when idle?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/index.job.ts", "symbol": "function scheduleWorkerSleep", "lines": [45, 61], "required": true },
+        { "file": "server/src/features/indexing/index.job.ts", "symbol": "export function ensureWorker", "lines": [64, 326], "required": true },
+        { "file": "server/src/features/indexing/index.controller.ts", "symbol": "ensureWorker", "lines": [19, 39], "required": false }
+      ],
+      "key_facts": [
+        "The BullMQ worker is created lazily by ensureWorker",
+        "indexRepo calls ensureWorker before adding a job",
+        "After a job completes or fails, scheduleWorkerSleep closes the worker after 15 minutes idle (IDLE_SLEEP_MS)",
+        "The Redis client uses lazyConnect so it does not connect at startup"
+      ]
+    },
+    {
+      "id": "C03",
+      "category": "conceptual",
+      "question": "How does the loader decide what becomes a document?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/loader.service.ts", "symbol": "export class TsmorphCodeLoader", "lines": [30, 143], "required": true }
+      ],
+      "key_facts": [
+        "TsmorphCodeLoader uses ts-morph to parse the cloned repo",
+        "It globs .ts, .tsx, .js, and .jsx files, ignoring node_modules and dist",
+        "Each file becomes one document with its full text",
+        "Each function declaration and class declaration becomes its own document",
+        "Metadata includes repoId, repo-relative filePath, declarationName, startLine, and endLine",
+        "Arrow functions assigned to consts do not get separate documents"
+      ]
+    },
+    {
+      "id": "C04",
+      "category": "conceptual",
+      "question": "How does retrieval work before the LLM sees code?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "export async function createCodeRetriever", "lines": [159, 173], "required": true },
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "export async function createRetriever", "lines": [116, 157], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "const retrieve = async", "lines": [140, 150], "required": false }
+      ],
+      "key_facts": [
+        "createCodeRetriever wraps the base retriever in a MultiQueryRetriever",
+        "The MultiQueryRetriever uses gpt-4o-mini to generate 3 search queries",
+        "The base retriever uses MMR search with k = 8",
+        "Results are filtered on metadata.repoId",
+        "The retrieve node in rag.service.ts invokes the retriever with the question"
+      ]
+    },
+    {
+      "id": "C05",
+      "category": "conceptual",
+      "question": "How are different repos kept separate in the vector DB?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "metadata.repoId", "lines": [150, 156], "required": true },
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "createPayloadIndex", "lines": [255, 261], "required": false },
+        { "file": "server/src/features/indexing/loader.service.ts", "symbol": "repoId: this.repoId", "lines": [101, 111], "required": false }
+      ],
+      "key_facts": [
+        "All repos share a single Qdrant collection (devai_collection_01)",
+        "Each document stores repoId in its metadata at ingestion",
+        "The retriever filters on metadata.repoId",
+        "A keyword payload index on metadata.repoId keeps the filter fast"
+      ]
+    },
+    {
+      "id": "C06",
+      "category": "conceptual",
+      "question": "How is prompt cost kept bounded?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "MAX_TOKENS", "lines": [48, 51], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "roughTokens(promptBody + nextChunk)", "lines": [206, 211], "required": false },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "const formatConversationHistory", "lines": [56, 66], "required": false }
+      ],
+      "key_facts": [
+        "Context is capped at MAX_TOKENS = 6000",
+        "Tokens are estimated as characters / 4 (roughTokens)",
+        "Docs are appended until the budget would be exceeded",
+        "Only the last 30 conversation messages are included",
+        "Reranking keeps at most 5 docs"
+      ]
+    },
+    {
+      "id": "C07",
+      "category": "conceptual",
+      "question": "How does the server stay responsive during cold starts?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/server.ts", "symbol": "function startServer", "lines": [19, 55], "required": true },
+        { "file": "server/src/app.ts", "symbol": "/api/keep-alive", "lines": [130, 136], "required": false },
+        { "file": "server/src/features/queries/query.controller.ts", "symbol": "await import('./rag.service.js')", "lines": [30, 31], "required": false },
+        { "file": "server/src/features/indexing/index.controller.ts", "symbol": "async function getIndexQueue", "lines": [6, 16], "required": false }
+      ],
+      "key_facts": [
+        "The server calls app.listen before loading heavy dependencies",
+        "Mongo, Qdrant setup, and the index worker load after listen via dynamic imports",
+        "rag.service and index.job are lazy-loaded on first use",
+        "A /api/keep-alive endpoint keeps the Render service warm",
+        "/api/health always returns 200 and reports Mongo state"
+      ]
+    },
+    {
+      "id": "C08",
+      "category": "conceptual",
+      "question": "How are Qdrant connection failures detected and reported?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "function isQdrantConnectionError", "lines": [54, 73], "required": true },
+        { "file": "server/src/features/indexing/index.job.ts", "symbol": "isQdrantConnection", "lines": [170, 208], "required": false },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "VECTOR_DB_DOWN", "lines": [140, 150], "required": false }
+      ],
+      "key_facts": [
+        "Errors are classified by code and message string matching (ECONNREFUSED, ETIMEDOUT, 'qdrant', 'fetch failed', 502, 503, etc.)",
+        "Logs include a hint that the Qdrant Cloud free tier may be suspended after inactivity",
+        "Ingestion batch errors are logged and rethrown so the BullMQ job fails",
+        "At query time the retrieve node throws VECTOR_DB_DOWN"
+      ]
+    },
+    {
+      "id": "X01",
+      "category": "cross_file",
+      "question": "Trace GitHub login through JWT creation.",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "export const handleGitHubCallback", "lines": [50, 132], "required": true },
+        { "file": "server/src/features/auth/services/github.service.ts", "symbol": "export async function exchangeCodeForToken", "lines": [53, 86], "required": true },
+        { "file": "server/src/features/auth/services/jwt.service.ts", "symbol": "export function generateUserJWTToken", "lines": [15, 24], "required": true },
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "export const getGitHubLoginURL", "lines": [39, 47], "required": false },
+        { "file": "server/src/features/auth/services/user.service.ts", "symbol": "export const findOrCreateUser", "lines": [22, 44], "required": false },
+        { "file": "server/src/features/auth/auth.routes.ts", "symbol": "router.get('/callback'", "lines": [22, 23], "required": false }
+      ],
+      "key_facts": [
+        "GET /api/auth/github redirects to GitHub OAuth authorize with scope read:org",
+        "GitHub redirects back to /api/auth/callback handled by handleGitHubCallback",
+        "exchangeCodeForToken swaps the code for an access token",
+        "getGitHubUserProfile fetches the GitHub profile",
+        "findOrCreateUser upserts the Mongo user",
+        "generateUserJWTToken signs a JWT with userId and githubUsername",
+        "Cookies are set and the user is redirected to /orgselector or /install-github-app"
+      ]
+    },
+    {
+      "id": "X02",
+      "category": "cross_file",
+      "question": "Trace a question from the chat input to the SSE response.",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "client/src/components/chat/chatinput.tsx", "symbol": "const handleSubmit", "lines": [182, 220], "required": true },
+        { "file": "server/src/features/queries/query.controller.ts", "symbol": "export const askController", "lines": [10, 99], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "export async function answerQuestion", "lines": [68, 330], "required": true },
+        { "file": "client/src/api.ts", "symbol": "export async function postUserPrompt", "lines": [190, 208], "required": false },
+        { "file": "server/src/features/queries/query.routes.ts", "symbol": "router.post('/question'", "lines": [8, 8], "required": false }
+      ],
+      "key_facts": [
+        "handleSubmit stores the user message, then calls postUserPrompt",
+        "postUserPrompt POSTs to /query/question with url, prompt, type, sessionId",
+        "The route is protected by requireAuth and handled by askController",
+        "askController sets SSE headers and lazily imports answerQuestion",
+        "answerQuestion runs retrieve, rerank, and generate",
+        "askController writes answer_chunk, citations, and complete events",
+        "The client reads the stream in processStreamingResponse"
+      ]
+    },
+    {
+      "id": "X03",
+      "category": "cross_file",
+      "question": "Trace how a citation becomes the file shown in the viewer.",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "normalizedCitations", "lines": [286, 318], "required": true },
+        { "file": "client/src/components/chat/filepreview.tsx", "symbol": "const FilePreview", "lines": [211, 231], "required": true },
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "export const getGitHubFileContent", "lines": [708, 758], "required": true },
+        { "file": "client/src/components/chat/chatinput.tsx", "symbol": "case 'complete'", "lines": [146, 166], "required": false },
+        { "file": "client/src/wrappers/chatbotpage/chatwrap.tsx", "symbol": "const handleFileSelect", "lines": [194, 199], "required": false },
+        { "file": "client/src/api.ts", "symbol": "export async function getRepoFileContent", "lines": [122, 136], "required": false }
+      ],
+      "key_facts": [
+        "rag.service normalizes bare filenames in citations to full repo-relative paths using retrieved doc metadata",
+        "askController sends citations in an SSE 'citations' event",
+        "The client only keeps the first citation's file, lines, and snippet for the message",
+        "Clicking the file calls handleFileSelect which sets the selected path",
+        "FilePreview calls getRepoFileContent, which hits /auth/github-file-content",
+        "getGitHubFileContent proxies the GitHub contents API with the cookie token and base64-decodes the content"
+      ]
+    },
+    {
+      "id": "X04",
+      "category": "cross_file",
+      "question": "Trace how the repo list is fetched for a selected org.",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "export const listRepos", "lines": [520, 646], "required": true },
+        { "file": "server/src/features/auth/services/github.service.ts", "symbol": "export async function getRepositoriesWithMeta", "lines": [255, 291], "required": true },
+        { "file": "client/src/components/auth/reposelector.tsx", "symbol": "const fetchRepos", "lines": [111, 167], "required": false },
+        { "file": "client/src/api.ts", "symbol": "export async function getReposForOrg", "lines": [83, 104], "required": false },
+        { "file": "server/src/features/auth/services/github.service.ts", "symbol": "export async function fetchRepositories", "lines": [153, 219], "required": false }
+      ],
+      "key_facts": [
+        "RepoSelector's fetchRepos calls getReposForOrg which hits GET /auth/repos?org=...",
+        "listRepos looks up the user's app installations and finds the one whose account login matches the org",
+        "getRepositoriesWithMeta gets an installation token (via a GitHub App JWT)",
+        "fetchRepositories paginates /installation/repositories 100 per page",
+        "fetchCommitInfo adds the default-branch commit sha for each repo",
+        "listRepos has a simple circuit breaker (5 failures, 30s reset)"
+      ]
+    },
+    {
+      "id": "X05",
+      "category": "cross_file",
+      "question": "How does the selected repo's commit SHA flow into the clone?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/git.service.ts", "symbol": "export async function cloneRepo", "lines": [21, 53], "required": true },
+        { "file": "server/src/features/auth/services/github.service.ts", "symbol": "export async function fetchCommitInfo", "lines": [222, 252], "required": true },
+        { "file": "client/src/components/auth/reposelector.tsx", "symbol": "const handleSelect", "lines": [183, 201], "required": false },
+        { "file": "server/src/features/indexing/index.controller.ts", "symbol": "export const indexRepo", "lines": [19, 39], "required": false },
+        { "file": "server/src/features/indexing/index.job.ts", "symbol": "cloneRepo(repoUrl, sha)", "lines": [89, 95], "required": false }
+      ],
+      "key_facts": [
+        "fetchCommitInfo gets the sha of the repo's default branch",
+        "handleSelect sends repoUrl and sha via startRepoIngestion to POST /index/ingest",
+        "indexRepo adds a BullMQ job with repoUrl and sha",
+        "The worker calls cloneRepo(repoUrl, sha)",
+        "A non-HEAD sha triggers a full clone plus checkout; HEAD uses a shallow --depth 1 clone",
+        "Clones are cached at .cache/repos/<repoId>/<sha>"
+      ]
+    },
+    {
+      "id": "X06",
+      "category": "cross_file",
+      "question": "Trace the GitHub App installation check after login.",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/services/installation.service.ts", "symbol": "export function checkIfAppInstalled", "lines": [45, 61], "required": true },
+        { "file": "server/src/features/auth/services/installation.service.ts", "symbol": "export async function getAppInstallations", "lines": [23, 42], "required": true },
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "checkIfAppInstalled(installations)", "lines": [80, 125], "required": false },
+        { "file": "client/src/components/auth/authcallback.tsx", "symbol": "navigate('/install-github-app')", "lines": [33, 50], "required": false }
+      ],
+      "key_facts": [
+        "getAppInstallations calls GET https://api.github.com/user/installations with the user token",
+        "checkIfAppInstalled matches an installation by app_id or app_slug",
+        "The installation id is stored in an installation_id cookie",
+        "Installed users are redirected to /orgselector, others to /install-github-app"
+      ]
+    },
+    {
+      "id": "X07",
+      "category": "cross_file",
+      "question": "How does logout clear the session on client and server?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "export const logout", "lines": [801, 821], "required": true },
+        { "file": "client/src/api.ts", "symbol": "export async function logoutUser", "lines": [211, 216], "required": false },
+        { "file": "client/src/components/settings/logout.tsx", "symbol": "const useLogout", "lines": [4, 20], "required": false }
+      ],
+      "key_facts": [
+        "The useLogout hook calls logoutUser and then navigates to /login",
+        "logoutUser POSTs to /auth/logout with credentials",
+        "The server logout handler clears github_access_token, token, and installation_id cookies",
+        "The token cookie is cleared with secure: false and sameSite: lax, which does not match how it is set in production (secure, sameSite none)"
+      ]
+    },
+    {
+      "id": "X08",
+      "category": "cross_file",
+      "question": "How does the frontend know who the current user is?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "client/src/hooks/useCurrentUser.ts", "symbol": "export function useCurrentUser", "lines": [17, 37], "required": true },
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "export const getMe", "lines": [687, 705], "required": true },
+        { "file": "client/src/api.ts", "symbol": "export async function getCurrentUserFromApi", "lines": [219, 228], "required": false },
+        { "file": "client/src/utils/auth.ts", "symbol": "export function formatDisplayName", "lines": [69, 185], "required": false }
+      ],
+      "key_facts": [
+        "useCurrentUser calls getCurrentUserFromApi on mount",
+        "getCurrentUserFromApi fetches GET /auth/me with credentials",
+        "getMe verifies the JWT from the token cookie and returns userId and githubUsername only",
+        "No token is sent to the client",
+        "formatDisplayName turns the GitHub username into a display name"
+      ]
+    },
+    {
+      "id": "X09",
+      "category": "cross_file",
+      "question": "What happens when the frontend /auth/callback page loads?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "client/src/components/auth/authcallback.tsx", "symbol": "const doAuth", "lines": [15, 60], "required": true },
+        { "file": "client/src/api.ts", "symbol": "export async function completeAuth", "lines": [25, 49], "required": true },
+        { "file": "server/src/features/auth/auth.routes.ts", "symbol": "router.get('/callback', handleGitHubCallback)", "lines": [20, 35], "required": true },
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "export const completeAuth", "lines": [190, 279], "required": false }
+      ],
+      "key_facts": [
+        "AuthCallback reads the code query param and calls completeAuth(code)",
+        "completeAuth POSTs to /auth/complete",
+        "A completeAuth controller exists in auth.controller.ts",
+        "auth.routes.ts does not register a /complete route, so the request would 404",
+        "The working OAuth path is the server-side GET /api/auth/callback (handleGitHubCallback)"
+      ]
+    },
+    {
+      "id": "D01",
+      "category": "dependency_tracing",
+      "question": "What calls answerQuestion, and where is its result consumed?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/query.controller.ts", "symbol": "answerQuestion(repoUrl, question, type, sessionId)", "lines": [30, 54], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "export async function answerQuestion", "lines": [68, 330], "required": true }
+      ],
+      "key_facts": [
+        "askController in query.controller.ts is the only caller",
+        "It lazy-loads rag.service with a dynamic import",
+        "It reads result.response.answer and result.response.citations",
+        "The answer is streamed as answer_chunk events and citations as a citations event",
+        "traceUrl, tokens, and latency are returned but not used"
+      ]
+    },
+    {
+      "id": "D02",
+      "category": "dependency_tracing",
+      "question": "What calls upsert, and what calls those callers?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "export async function upsert", "lines": [76, 108], "required": true },
+        { "file": "server/src/features/indexing/index.job.ts", "symbol": "const processBatch", "lines": [170, 208], "required": true },
+        { "file": "server/src/features/indexing/index.controller.ts", "symbol": "ensureWorker", "lines": [19, 39], "required": false },
+        { "file": "server/src/features/indexing/index-production.job.ts", "symbol": "upsert", "lines": [1, 194], "required": false }
+      ],
+      "key_facts": [
+        "upsert embeds docs and writes them with QdrantVectorStore.fromDocuments",
+        "processBatch in the index.job worker calls upsert for batches of 50 docs",
+        "Up to 5 batches run concurrently with Promise.all",
+        "The worker is created by ensureWorker, which indexRepo calls before queueing a job",
+        "index-production.job.ts also calls upsert but is not wired to any route"
+      ]
+    },
+    {
+      "id": "D03",
+      "category": "dependency_tracing",
+      "question": "Who calls getAppInstallations, and how is the result used?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/services/installation.service.ts", "symbol": "export async function getAppInstallations", "lines": [23, 42], "required": true },
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "getAppInstallations", "lines": [80, 82], "required": true },
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "getAppInstallations(githubToken)", "lines": [446, 454], "required": false },
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "getAppInstallations(githubToken)", "lines": [579, 599], "required": false }
+      ],
+      "key_facts": [
+        "handleGitHubCallback and completeAuth call it to decide whether the app is installed and to set installation_id",
+        "getGitHubUserOrgs uses it to find a personal installation and include the personal account",
+        "listRepos uses it to find the installation whose account login matches the requested org",
+        "It calls GET /user/installations with the user's GitHub token"
+      ]
+    },
+    {
+      "id": "D04",
+      "category": "dependency_tracing",
+      "question": "What depends on generateUniqueRepoId, and why must ingestion and query agree on it?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/git.service.ts", "symbol": "export const generateUniqueRepoId", "lines": [8, 17], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "generateUniqueRepoId(repoUrl)", "lines": [79, 80], "required": true },
+        { "file": "server/src/features/indexing/git.service.ts", "symbol": "const repoId = generateUniqueRepoId(url)", "lines": [30, 31], "required": false },
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "metadata.repoId", "lines": [150, 156], "required": false }
+      ],
+      "key_facts": [
+        "cloneRepo computes repoId with generateUniqueRepoId and the loader stores it in document metadata",
+        "answerQuestion computes repoId from the same repoUrl and passes it to createCodeRetriever",
+        "The retriever filters Qdrant on metadata.repoId",
+        "If the URL format differs between ingest and query, the filter matches nothing and retrieval returns no docs"
+      ]
+    },
+    {
+      "id": "D05",
+      "category": "dependency_tracing",
+      "question": "Where is chunkDocuments used?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/chunk.service.ts", "symbol": "export async function chunkDocuments", "lines": [9, 22], "required": true },
+        { "file": "server/src/features/indexing/index.job.ts", "symbol": "chunkDocuments(bigDocs)", "lines": [132, 143], "required": true },
+        { "file": "server/src/features/indexing/index-production.job.ts", "symbol": "chunkDocuments(bigDocs)", "lines": [90, 99], "required": false },
+        { "file": "server/src/features/indexing/test-full-pipeline.ts", "symbol": "chunkDocuments", "lines": [20, 61], "required": false },
+        { "file": "server/src/features/indexing/test-github-api.ts", "symbol": "chunkDocuments", "lines": [4, 57], "required": false }
+      ],
+      "key_facts": [
+        "The index.job worker calls chunkDocuments after loading documents",
+        "index-production.job.ts also calls it",
+        "The test scripts test-full-pipeline.ts and test-github-api.ts call it",
+        "vector.service.ts imports chunkDocuments but does not use it"
+      ]
+    },
+    {
+      "id": "D06",
+      "category": "dependency_tracing",
+      "question": "Where is the Conversation model written and read?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/query.controller.ts", "symbol": "Conversation.updateOne", "lines": [55, 80], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "Conversation.updateOne", "lines": [237, 252], "required": true },
+        { "file": "server/src/models/conversation.model.ts", "symbol": "const conversationSchema", "lines": [49, 81], "required": false },
+        { "file": "server/src/features/queries/query.controller.ts", "symbol": "export const addMessage", "lines": [114, 154], "required": false },
+        { "file": "server/src/features/chatHistory/chatHistory.controller.ts", "symbol": "export const getUserMessagesFlat", "lines": [47, 101], "required": false },
+        { "file": "server/src/utils/usageReport.ts", "symbol": "export async function buildUsageReport", "lines": [52, 125], "required": false },
+        { "file": "server/src/features/training/training.controller.ts", "symbol": "const extractTrainingPairs", "lines": [13, 141], "required": false }
+      ],
+      "key_facts": [
+        "askController upserts the user and assistant messages after answering",
+        "addMessage (POST /query/store) also stores the user message, which the client calls first",
+        "rag.service's generate node pushes the assistant message too, so messages can be duplicated",
+        "rag.service reads the conversation by sessionId for history",
+        "chatHistory controllers, the usage report, and the training export read conversations"
+      ]
+    },
+    {
+      "id": "D07",
+      "category": "dependency_tracing",
+      "question": "What calls getInstallationToken, and what does it depend on?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/services/github.service.ts", "symbol": "export async function getInstallationToken", "lines": [123, 150], "required": true },
+        { "file": "server/src/features/auth/services/github.service.ts", "symbol": "export async function generateAppJwt", "lines": [111, 120], "required": true },
+        { "file": "server/src/config/auth.ts", "symbol": "GITHUB_APP_PRIVATE_KEY", "lines": [10, 16], "required": false },
+        { "file": "server/src/features/githubApp/githubApp.auth.ts", "symbol": "export async function getInstallationToken", "lines": [12, 19], "required": false }
+      ],
+      "key_facts": [
+        "getRepositoriesWithMeta in github.service.ts calls getInstallationToken",
+        "It depends on generateAppJwt, which signs an RS256 JWT with the GitHub App private key",
+        "It POSTs to /app/installations/{id}/access_tokens",
+        "A second getInstallationToken exists in githubApp.auth.ts using Octokit createAppAuth, used by githubApp.service getUserRepos"
+      ]
+    },
+    {
+      "id": "D08",
+      "category": "dependency_tracing",
+      "question": "Which routes use requireAuth, which use requireTeamAuth, and which have neither?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/query.routes.ts", "symbol": "requireAuth", "lines": [8, 9], "required": true },
+        { "file": "server/src/features/training/training.routes.ts", "symbol": "requireTeamAuth", "lines": [15, 27], "required": true },
+        { "file": "server/src/features/indexing/index.routes.ts", "symbol": "router.post('/ingest'", "lines": [5, 7], "required": true },
+        { "file": "server/src/features/chatHistory/chatHistory.routes.ts", "symbol": "requireAuth", "lines": [11, 22], "required": false },
+        { "file": "server/src/features/usageReport/usageReport.routes.ts", "symbol": "requireAuth", "lines": [6, 7], "required": false },
+        { "file": "server/src/features/auth/auth.routes.ts", "symbol": "requireAuth", "lines": [22, 35], "required": false }
+      ],
+      "key_facts": [
+        "Query routes (/question, /store), chat history routes, and usage report routes use requireAuth",
+        "Training routes use requireTeamAuth",
+        "The index ingest and status routes have no auth middleware",
+        "Most auth routes have no middleware and check tokens themselves; only /app/install/callback uses requireAuth"
+      ]
+    },
+    {
+      "id": "G01",
+      "category": "configuration",
+      "question": "Where does Qdrant configuration come from?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "function getQdrantClient", "lines": [18, 51], "required": true }
+      ],
+      "key_facts": [
+        "vector.service.ts creates the Qdrant client lazily in getQdrantClient",
+        "It uses QDRANT_URL and QDRANT_API_KEY environment variables",
+        "dotenv is loaded from src/config/.env relative to the module",
+        "The collection name devai_collection_01 is hardcoded"
+      ]
+    },
+    {
+      "id": "G02",
+      "category": "configuration",
+      "question": "Which models are used for embeddings, generation, and reranking, and where are they set?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "text-embedding-3-large", "lines": [37, 48], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "gpt-4o-mini", "lines": [20, 27], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "rerank-v3.5", "lines": [169, 173], "required": false }
+      ],
+      "key_facts": [
+        "Embeddings use OpenAI text-embedding-3-large (set in vector.service.ts)",
+        "Answer generation uses gpt-4o-mini at temperature 0 (rag.service.ts)",
+        "MultiQuery query generation also uses gpt-4o-mini (vector.service.ts)",
+        "Reranking uses Cohere rerank-v3.5 (rag.service.ts)",
+        "Keys come from OPENAI_API_KEY and COHERE_API_KEY"
+      ]
+    },
+    {
+      "id": "G03",
+      "category": "configuration",
+      "question": "How is the GitHub App private key loaded?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/config/auth.ts", "symbol": "GITHUB_APP_PRIVATE_KEY", "lines": [10, 16], "required": true },
+        { "file": "server/src/config/github.config.ts", "symbol": "privateKey", "lines": [7, 7], "required": false },
+        { "file": "server/src/features/githubApp/githubApp.auth.ts", "symbol": "GITHUB_PRIVATE_KEY", "lines": [5, 5], "required": false }
+      ],
+      "key_facts": [
+        "config/auth.ts reads GITHUB_APP_PRIVATE_KEY and throws if it is missing",
+        "Literal \\n sequences are replaced with real newlines",
+        "github.service.ts uses it to sign the GitHub App JWT",
+        "githubApp.auth.ts reads a differently named variable, GITHUB_PRIVATE_KEY"
+      ]
+    },
+    {
+      "id": "G04",
+      "category": "configuration",
+      "question": "How are CORS origins configured?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/app.ts", "symbol": "const allowedOrigins", "lines": [26, 78], "required": true },
+        { "file": "server/src/config/allowedOrigins.ts", "symbol": "export const allowedOrigins", "lines": [1, 8], "required": false }
+      ],
+      "key_facts": [
+        "app.ts defines a local allowedOrigins list (localhost:5173, dev-ai.app, vercel domains, ngrok)",
+        "The cors middleware allows requests with no origin or an allowed origin, with credentials",
+        "A second middleware sets CORS headers manually and answers OPTIONS preflight with 200",
+        "config/allowedOrigins.ts exists but its import is commented out",
+        "Disallowed origins get a 403 from the error handler"
+      ]
+    },
+    {
+      "id": "G05",
+      "category": "configuration",
+      "question": "How are auth cookies configured in dev vs production?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "const cookieSettings", "lines": [90, 107], "required": true },
+        { "file": "server/src/features/auth/controllers/auth.controller.ts", "symbol": "const cookieOpts", "lines": [225, 234], "required": false }
+      ],
+      "key_facts": [
+        "Cookies are httpOnly with path '/'",
+        "In production they are secure with sameSite 'none'; in development sameSite is 'lax' and not secure",
+        "maxAge is 7 days",
+        "completeAuth always uses secure: true and sameSite: 'none'"
+      ]
+    },
+    {
+      "id": "G06",
+      "category": "configuration",
+      "question": "How does the frontend choose its API base URL?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "client/src/api.ts", "symbol": "export const API_BASE_URL", "lines": [10, 13], "required": true }
+      ],
+      "key_facts": [
+        "API_BASE_URL is defined in client/src/api.ts",
+        "It uses VITE_API_BASE_URL if set",
+        "Otherwise in production builds it uses https://devai-b2ui.onrender.com/api",
+        "Otherwise it is an empty string (relative URLs)"
+      ]
+    },
+    {
+      "id": "G07",
+      "category": "configuration",
+      "question": "How is Redis/BullMQ configured for indexing?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/index.job.ts", "symbol": "new IORedis", "lines": [16, 41], "required": true }
+      ],
+      "key_facts": [
+        "The connection comes from REDIS_URL",
+        "The client uses lazyConnect and maxRetriesPerRequest: null",
+        "Retry backoff is min(times * 50, 2000) ms",
+        "If REDIS_URL is unset, a localhost client with no retries is created and the worker will not run",
+        "The BullMQ queue is named 'index'"
+      ]
+    },
+    {
+      "id": "G08",
+      "category": "configuration",
+      "question": "Where does the MongoDB URI come from, and what happens on failure?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/config/db.ts", "symbol": "export const connectMongo", "lines": [4, 16], "required": true },
+        { "file": "server/src/server.ts", "symbol": "connectMongo()", "lines": [34, 38], "required": false }
+      ],
+      "key_facts": [
+        "The URI comes from MONGO_URI",
+        "It falls back to mongodb://localhost:27017",
+        "connectMongo calls process.exit(1) on connection failure",
+        "server.ts logs that the server will continue, but the process actually exits"
+      ]
+    },
+    {
+      "id": "M01",
+      "category": "multi_part",
+      "question": "How does ingestion start, report progress, and persist vectors?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/indexing/index.controller.ts", "symbol": "export const indexRepo", "lines": [19, 114], "required": true },
+        { "file": "server/src/features/indexing/index.job.ts", "symbol": "job.updateProgress", "lines": [82, 243], "required": true },
+        { "file": "server/src/features/indexing/vector.service.ts", "symbol": "export async function upsert", "lines": [76, 108], "required": true },
+        { "file": "client/src/components/auth/promptbaringeststatus.tsx", "symbol": "setInterval(fetchStatus, 1000)", "lines": [22, 43], "required": false }
+      ],
+      "key_facts": [
+        "POST /api/index/ingest (indexRepo) ensures the worker is running and adds a BullMQ job, returning jobId",
+        "The worker clones the repo, loads docs with TsmorphCodeLoader, and chunks them",
+        "Progress is updated to 15 after clone, 30 before chunking, 36 before upserting, then scaled to 100 per batch",
+        "Docs are upserted in batches of 50 with 5 batches in parallel",
+        "upsert embeds with text-embedding-3-large and writes to Qdrant",
+        "The client polls GET /api/index/status/:id (getJobStatus) every second"
+      ]
+    },
+    {
+      "id": "M02",
+      "category": "multi_part",
+      "question": "Which LangGraph nodes run, in what order, and what state does each add?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "new StateGraph(WorkingState)", "lines": [271, 279], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "const WorkingState", "lines": [126, 134], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "const generate = async", "lines": [196, 255], "required": false }
+      ],
+      "key_facts": [
+        "The graph runs retrieve, then rerank, then generate",
+        "The input state has only question",
+        "retrieve adds context (retrieved docs)",
+        "rerank replaces context with the top reranked docs",
+        "generate adds response (structured answer and citations)"
+      ]
+    },
+    {
+      "id": "M03",
+      "category": "multi_part",
+      "question": "How are answers streamed, and how does the client assemble them?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/query.controller.ts", "symbol": "text/event-stream", "lines": [15, 54], "required": true },
+        { "file": "client/src/components/chat/chatinput.tsx", "symbol": "const processStreamingResponse", "lines": [105, 179], "required": true }
+      ],
+      "key_facts": [
+        "The server sets text/event-stream SSE headers",
+        "It sends a status event, then answer_chunk events, then citations, then complete (or error)",
+        "The full answer is generated first, then split into 5-word chunks sent every 100ms, so it is not true token streaming",
+        "The client reads the body stream, parses 'data: ' lines, and accumulates answer_chunk content",
+        "On complete the client stores the answer with the first citation"
+      ]
+    },
+    {
+      "id": "M04",
+      "category": "multi_part",
+      "question": "How is conversation history stored, used in prompts, and displayed?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "const formatConversationHistory", "lines": [56, 104], "required": true },
+        { "file": "server/src/features/queries/query.controller.ts", "symbol": "Conversation.updateOne", "lines": [55, 80], "required": true },
+        { "file": "client/src/components/chat/chatinput.tsx", "symbol": "documentSessionId", "lines": [66, 79], "required": false },
+        { "file": "server/src/features/chatHistory/chatHistory.controller.ts", "symbol": "export const getUserMessagesFlat", "lines": [47, 101], "required": false },
+        { "file": "client/src/api.ts", "symbol": "export async function getChatHistory", "lines": [157, 167], "required": false }
+      ],
+      "key_facts": [
+        "The client keeps a sessionId in localStorage under documentSessionId",
+        "Messages are stored in the Mongo Conversation collection keyed by sessionId, repoUrl, and userId",
+        "answerQuestion loads the conversation by sessionId and injects the last 30 messages into the system prompt",
+        "The history page calls GET /chat/history/flat, which pairs user and assistant messages with the first citation"
+      ]
+    },
+    {
+      "id": "M05",
+      "category": "multi_part",
+      "question": "How are prompt types chosen on the client and applied on the server, and do they match?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "client/src/components/chat/chatinput.tsx", "symbol": "QUICK_PROMPTS", "lines": [7, 42], "required": true },
+        { "file": "server/src/features/queries/rag.service.ts", "symbol": "systemPromptType", "lines": [94, 96], "required": true },
+        { "file": "server/src/features/queries/prompts.ts", "symbol": "export const SYSTEM_PROMPTS", "lines": [1, 173], "required": false }
+      ],
+      "key_facts": [
+        "Quick prompt buttons set a prompt type: Find, Bugs, Debug, WalkThrough, Services (default is 'default')",
+        "The server picks SYSTEM_PROMPTS[type] and falls back to Find if the key does not exist",
+        "The client sends 'WalkThrough' but the server key is 'Walkthrough', so walkthroughs fall back to Find",
+        "'default' also falls back to Find",
+        "The temperature values in SYSTEM_PROMPTS are never used; the LLM runs at temperature 0"
+      ]
+    },
+    {
+      "id": "M06",
+      "category": "multi_part",
+      "question": "How is usage tracked, stored, and read?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/utils/usageReport.ts", "symbol": "export function appendQueryLog", "lines": [175, 207], "required": true },
+        { "file": "server/src/utils/usageReport.ts", "symbol": "export async function buildUsageReport", "lines": [52, 125], "required": true },
+        { "file": "server/src/features/usageReport/usageReport.controller.ts", "symbol": "export async function getUsageReport", "lines": [12, 45], "required": false },
+        { "file": "server/src/features/queries/query.controller.ts", "symbol": "appendQueryLog", "lines": [82, 87], "required": false }
+      ],
+      "key_facts": [
+        "askController calls appendQueryLog after each question",
+        "appendQueryLog appends a tab-separated line to server/logs/query-log.txt",
+        "buildUsageReport aggregates Conversation and User data into per-user sessions and queries",
+        "writeUsageReportToFile writes logs/usage-report.txt",
+        "GET /api/usage-report and /api/usage-report/query-log (requireAuth) return the report and log"
+      ]
+    },
+    {
+      "id": "M07",
+      "category": "multi_part",
+      "question": "How does the fine-tuning pipeline decide readiness, export pairs, and track runs?",
+      "type": "Find",
+      "expected_sources": [
+        { "file": "server/src/features/training/training.controller.ts", "symbol": "const extractTrainingPairs", "lines": [13, 141], "required": true },
+        { "file": "server/src/features/training/training.controller.ts", "symbol": "export const startTrainingRun", "lines": [326, 424], "required": true },
+        { "file": "server/src/features/training/training.controller.ts", "symbol": "export const checkTrainingReadiness", "lines": [147, 178], "required": false },
+        { "file": "server/src/models/trainingRun.model.ts", "symbol": "const trainingRunSchema", "lines": [19, 43], "required": false },
+        { "file": "server/src/middleware/teamAuthMiddleware.ts", "symbol": "export const requireTeamAuth", "lines": [13, 64], "required": false }
+      ],
+      "key_facts": [
+        "extractTrainingPairs builds user-to-assistant pairs from the same session in Conversation data",
+        "Each pair's instruction includes up to 4 prior messages of context, and citations are appended to the response",
+        "checkTrainingReadiness compares the pair count with min_pairs (default 200)",
+        "startTrainingRun only uses data newer than the last completed TrainingRun's lastDataTimestamp",
+        "TrainingRun documents track status (running/completed/failed), counts, and model version",
+        "Training routes are protected by requireTeamAuth"
+      ]
+    }
+  ]
+}

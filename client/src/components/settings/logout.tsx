@@ -11,9 +11,7 @@ const useLogout = () => {
       console.error('Error logging out', err);
     }
 
-    // Remove tokens from storage
-    sessionStorage.removeItem('accessToken');
-    localStorage.removeItem('accessToken');
+    // Cookies are cleared by server on /auth/logout; no client token storage (cookies-only).
 
     // Redirect to login
     navigate('/login');

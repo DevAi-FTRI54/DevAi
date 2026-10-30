@@ -70,8 +70,8 @@ const ChatMessage: React.FC<{
                       typeof children === 'string'
                         ? children
                         : Array.isArray(children)
-                        ? children.join('')
-                        : '';
+                          ? children.join('')
+                          : '';
 
                     return !inline && match ? (
                       <SyntaxHighlighter
@@ -206,14 +206,9 @@ interface FilePreviewProps {
   repoUrl: string; // "owner/repo"
   selectedPath: string;
   setSelectedPath?: (p: string) => void;
-  token: string;
 }
 
-const FilePreview: React.FC<FilePreviewProps> = ({
-  repoUrl,
-  selectedPath,
-  token,
-}) => {
+const FilePreview: React.FC<FilePreviewProps> = ({ repoUrl, selectedPath }) => {
   const [content, setContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -224,7 +219,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     const fetchFile = async () => {
       try {
-        const decoded = await getRepoFileContent(repoUrl, selectedPath, token);
+        const decoded = await getRepoFileContent(repoUrl, selectedPath);
         setContent(decoded);
       } catch (err) {
         setError('Could not load file.');
@@ -233,7 +228,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     };
 
     fetchFile();
-  }, [repoUrl, selectedPath, token]);
+  }, [repoUrl, selectedPath]);
 
   if (!selectedPath)
     return (
