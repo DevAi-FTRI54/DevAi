@@ -537,10 +537,4 @@ After the original team shipped, I have maintained the hosted app and continued 
 
 The original frontend and first RAG/Qdrant implementation were collaborative. The evaluation framework, citation reconstruction, agent experiments, and subsequent maintenance are my independent work.
 
----
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
 
