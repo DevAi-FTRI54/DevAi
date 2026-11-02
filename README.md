@@ -207,6 +207,53 @@ Useful endpoints:
 
 ---
 
+## MCP server (read-only)
+
+`mcp/` is a local stdio MCP server for reviewing **this** repository from Claude Desktop, Claude Code, or Cursor. It is not the DevAI product API: it cannot ingest GitHub repos, run RAG, or write files.
+
+**Current surface:** one tool, `read`.
+
+| Call | Result |
+|---|---|
+| `read` or `read({ "path": "." })` | Source tree |
+| `read({ "path": "server/src/app.ts" })` | That file |
+| `read({ "path": "server/src/features" })` | Directory listing |
+| `read({ "glob": "server/src/**/*.ts" })` | Matching file contents, up to `maxBytes` |
+
+Secrets, `node_modules`, build output, and binaries are skipped. Paths cannot leave the repo.
+
+```bash
+cd mcp && npm install
+```
+
+**Cursor.** This repo already includes `.cursor/mcp.json`. Open **Customize → MCPs** and enable **devai**.
+
+**Claude Code.** `.mcp.json` is at the repo root. From this directory, `claude mcp add --scope project`, or open the folder and let Claude Code pick it up.
+
+**Claude Desktop.** Claude Desktop does not read `.cursor/mcp.json`. After `npm install` in `mcp/`, add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (use your clone’s absolute path), then fully quit and reopen the app (Cmd+Q):
+
+```json
+{
+  "mcpServers": {
+    "devai": {
+      "command": "node",
+      "args": [
+        "--import",
+        "/ABS/PATH/TO/DevAi/mcp/node_modules/tsx/dist/loader.mjs",
+        "/ABS/PATH/TO/DevAi/mcp/src/index.ts"
+      ],
+      "env": {
+        "DEVAI_REPO_ROOT": "/ABS/PATH/TO/DevAi"
+      }
+    }
+  }
+}
+```
+
+More detail is in [`mcp/README.md`](mcp/README.md).
+
+---
+
 ## 🏗️ Architecture & Data Flow
 
 See [Architecture at a glance](#architecture-at-a-glance) for the component diagram. The request path, in more detail:
@@ -486,6 +533,7 @@ DevAi/
 │   ├── tests/                       # deterministic unit tests (npm test)
 │   ├── .env.example
 │   └── package.json
+├── mcp/                             # read-only MCP server (single `read` tool)
 └── package.json                     # root scripts (runs client + server)
 ```
 
@@ -534,6 +582,7 @@ After the original team shipped, I have maintained the hosted app and continued 
 - **Deterministic evidence layer**: the model cites evidence IDs, never file paths or snippets; the server reconstructs each citation from retrieved source. Measured citation validity went from ~46% to 100%.
 - **Agent experiments**: a bounded LangGraph tool-using agent over a pinned commit, plus planner variants and an answer-prompt ablation. Those runs improved evidence gathering but not answer quality, at roughly 2× latency and cost; the limitations are documented in [Evaluation](#-evaluation) rather than omitted.
 - **Production maintenance**: the live demo at [dev-ai.app](https://www.dev-ai.app/), CI, and ongoing RAG iteration.
+- **Read-only MCP server** in `mcp/`: a single `read` tool so Claude Desktop or Cursor can review this repo. It does not expose ingestion, RAG, or writes.
 
 The original frontend and first RAG/Qdrant implementation were collaborative. The evaluation framework, citation reconstruction, agent experiments, and subsequent maintenance are my independent work.
 

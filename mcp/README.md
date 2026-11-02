@@ -28,9 +28,7 @@ The entry uses the same Node + tsx stdio pattern as your other local MCP servers
 
 ### Claude Desktop
 
-This machine’s Claude Desktop config already includes `devai` in `~/Library/Application Support/Claude/claude_desktop_config.json`, using the same Node + tsx stdio pattern as `job-search-copilot`. Claude Desktop does not read `.cursor/mcp.json`.
-
-Fully quit Claude Desktop (Cmd+Q) and reopen it. Then check **Settings → Developer** (or Connectors) for **devai** and one tool named `read`.
+Claude Desktop does not read `.cursor/mcp.json`. Add a `devai` entry to `~/Library/Application Support/Claude/claude_desktop_config.json` with absolute paths to this clone (see the root [README](../README.md#mcp-server-read-only)), then fully quit and reopen the app (Cmd+Q). Check **Settings → Developer** (or Connectors) for **devai** and one tool named `read`.
 
 ### Claude Code
 
